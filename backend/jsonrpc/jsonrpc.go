@@ -109,7 +109,7 @@ func New(conn *websocket.Conn) *jsonrpc {
 			}
 		}
 
-		rpc.ClosedChan <- struct{}{}
+		// rpc.ClosedChan <- struct{}{}
 	}()
 
 	return rpc
