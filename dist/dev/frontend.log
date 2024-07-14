@@ -1,0 +1,193 @@
+Info [ "Starting frontend..." ] 
+Info [ "This is info." ] 
+Debug [ "This is debug." ] 
+Warning [ "This is a warning." ] 
+Error [ "This is an error." ] 
+Info [ "Server [STDERR]: 2024/07/07 22:41:11 INFO Starting server on port 8080\n" ] 
+Info [ "Server [STDERR]: 2024/07/07 22:41:11 INFO Product:  !BADKEY=\"{Model:{ID:1 CreatedAt:2024-07-04 21:26:52.696246 -0300 -0300 UpdatedAt:2024-07-04 21:26:52.696246 -0300 -0300 DeletedAt:{Time:0001-01-01 00:00:00 +0000 UTC Valid:false}} Code:D42 Price:100}\"\n" ] 
+Info [ "Server [STDERR]: 2024/07/07 22:41:11 INFO Upgrading connection\n" ] 
+Info [ "Server [STDERR]: 2024/07/07 22:41:11 INFO Connection upgraded\n" ] 
+Info [ "Exited with code", null ] 
+Info [ "Starting frontend..." ] 
+Info [ "This is info." ] 
+Debug [ "This is debug." ] 
+Error [ "This is an error." ] 
+Warning [ "This is a warning." ] 
+2024/07/07 22:58:31 INFO Starting server on port 8080
+2024/07/07 22:58:31 INFO Product:  !BADKEY="{Model:{ID:1 CreatedAt:2024-07-04 21:26:52.696246 -0300 -0300 UpdatedAt:2024-07-04 21:26:52.696246 -0300 -0300 DeletedAt:{Time:0001-01-01 00:00:00 +0000 UTC Valid:false}} Code:D42 Price:100}"
+2024/07/07 22:58:31 INFO Upgrading connection
+2024/07/07 22:58:31 INFO Connection upgraded
+Info [ "Pressed key:", "Arrow Right" ] 
+Info [ "Pressed key:", "Arrow Down" ] 
+Info [ "Pressed key:", "Arrow Left" ] 
+Info [ "Pressed key:", "Arrow Up" ] 
+Info [ "Exited with code", null ] 
+Frontend 10:59:32 PM Info [ "Starting frontend..." ] 
+Frontend 10:59:32 PM Warning [ "This is a warning." ] 
+Frontend 10:59:32 PM Error [ "This is an error." ] 
+Frontend 10:59:32 PM Info [ "This is info." ] 
+Frontend 10:59:32 PM Debug [ "This is debug." ] 
+2024/07/07 22:59:32 INFO Starting server on port 8080
+2024/07/07 22:59:32 INFO Product:  !BADKEY="{Model:{ID:1 CreatedAt:2024-07-04 21:26:52.696246 -0300 -0300 UpdatedAt:2024-07-04 21:26:52.696246 -0300 -0300 DeletedAt:{Time:0001-01-01 00:00:00 +0000 UTC Valid:false}} Code:D42 Price:100}"
+2024/07/07 22:59:32 INFO Upgrading connection
+2024/07/07 22:59:32 INFO Connection upgraded
+Frontend 10:59:43 PM Info [ "Pressed key:", "Arrow Right" ] 
+Frontend 10:59:44 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:44 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:45 PM Info [ "Pressed key:", "Arrow Up" ] 
+Frontend 10:59:46 PM Info [ "Pressed key:", "Arrow Right" ] 
+Frontend 10:59:46 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:46 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:47 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:47 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:47 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:47 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:47 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:48 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:48 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:48 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:48 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:49 PM Info [ "Pressed key:", "Arrow Up" ] 
+Frontend 10:59:49 PM Info [ "Pressed key:", "Arrow Up" ] 
+Frontend 10:59:49 PM Info [ "Pressed key:", "Arrow Up" ] 
+Frontend 10:59:49 PM Info [ "Pressed key:", "Arrow Up" ] 
+Frontend 10:59:49 PM Info [ "Pressed key:", "Arrow Right" ] 
+Frontend 10:59:50 PM Info [ "Pressed key:", "Arrow Right" ] 
+Frontend 10:59:50 PM Info [ "Pressed key:", "Arrow Right" ] 
+Frontend 10:59:50 PM Info [ "Pressed key:", "Arrow Right" ] 
+Frontend 10:59:50 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:50 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:51 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:51 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:51 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:51 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:52 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:52 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:52 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:52 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:52 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:52 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:52 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:52 PM Info [ "Pressed key:", "Arrow Down" ] 
+Frontend 10:59:56 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 10:59:57 PM Info [ "Pressed key:", "Arrow Right" ] 
+Frontend 10:59:57 PM Info [ "Pressed key:", "Arrow Right" ] 
+Frontend 10:59:58 PM Info [ "Pressed key:", "f" ] 
+Frontend 10:59:58 PM Info [ "Pressed key:", "f" ] 
+Frontend 10:59:59 PM Info [ "Pressed key:", "d" ] 
+Frontend 10:59:59 PM Info [ "Pressed key:", "s" ] 
+Frontend 10:59:59 PM Info [ "Pressed key:", "f" ] 
+Frontend 10:59:59 PM Info [ "Pressed key:", "d" ] 
+Frontend 10:59:59 PM Info [ "Pressed key:", "v" ] 
+Frontend 11:00:00 PM Info [ "Pressed key:", "c" ] 
+Frontend 11:00:00 PM Info [ "Pressed key:", "x" ] 
+Frontend 11:00:00 PM Info [ "Pressed key:", "v" ] 
+Frontend 11:00:00 PM Info [ "Pressed key:", "c" ] 
+Frontend 11:00:00 PM Info [ "Pressed key:", "v" ] 
+Frontend 11:00:00 PM Info [ "Pressed key:", "x" ] 
+Frontend 11:00:02 PM Info [ "Pressed key:", "P" ] 
+Frontend 11:00:48 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 11:00:48 PM Info [ "Pressed key:", "f" ] 
+Frontend 11:00:48 PM Info [ "Pressed key:", "d" ] 
+Frontend 11:00:48 PM Info [ "Pressed key:", "s" ] 
+Frontend 11:00:48 PM Info [ "Pressed key:", "f" ] 
+Frontend 11:00:48 PM Info [ "Pressed key:", "a" ] 
+Frontend 11:00:48 PM Info [ "Pressed key:", "d" ] 
+Frontend 11:00:48 PM Info [ "Pressed key:", "f" ] 
+Frontend 11:00:49 PM Info [ "Pressed key:", "s" ] 
+Frontend 11:00:49 PM Info [ "Pressed key:", "d" ] 
+Frontend 11:00:49 PM Info [ "Exited with code", null ] 
+Frontend 11:00:51 PM Info [ "Starting frontend..." ] 
+Frontend 11:00:51 PM Error [ "This is an error." ] 
+Frontend 11:00:51 PM Warning [ "This is a warning." ] 
+Frontend 11:00:51 PM Info [ "This is info." ] 
+Frontend 11:00:51 PM Debug [ "This is debug." ] 
+2024/07/07 23:00:51 INFO Starting server on port 8080
+2024/07/07 23:00:51 INFO Product:  !BADKEY="{Model:{ID:1 CreatedAt:2024-07-04 21:26:52.696246 -0300 -0300 UpdatedAt:2024-07-04 21:26:52.696246 -0300 -0300 DeletedAt:{Time:0001-01-01 00:00:00 +0000 UTC Valid:false}} Code:D42 Price:100}"
+2024/07/07 23:00:51 INFO Upgrading connection
+2024/07/07 23:00:51 INFO Connection upgraded
+Frontend 11:07:27 PM Info [ "Exited with code", null ] 
+Frontend 11:07:51 PM Info [ "Starting frontend..." ] 
+Frontend 11:07:51 PM Warning [ "This is a warning." ] 
+Frontend 11:07:51 PM Error [ "This is an error." ] 
+Frontend 11:07:51 PM Info [ "This is info." ] 
+Frontend 11:07:51 PM Debug [ "This is debug." ] 
+2024/07/07 23:07:51 INFO Starting server on port 8080
+2024/07/07 23:07:51 INFO Product:  !BADKEY="{Model:{ID:1 CreatedAt:2024-07-04 21:26:52.696246 -0300 -0300 UpdatedAt:2024-07-04 21:26:52.696246 -0300 -0300 DeletedAt:{Time:0001-01-01 00:00:00 +0000 UTC Valid:false}} Code:D42 Price:100}"
+2024/07/07 23:07:51 INFO Upgrading connection
+2024/07/07 23:07:51 INFO Connection upgraded
+Frontend 11:08:16 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 11:08:16 PM Info [ "Pressed key:", "Arrow Up" ] 
+Frontend 11:08:17 PM Info [ "Pressed key:", "Arrow Left" ] 
+Frontend 11:08:17 PM Info [ "Pressed key:", "Arrow Up" ] 
+Frontend 11:08:17 PM Info [ "Pressed key:", "c" ] 
+Frontend 11:08:18 PM Info [ "Pressed key:", "x" ] 
+Frontend 11:08:18 PM Info [ "Pressed key:", "z" ] 
+Frontend 11:08:18 PM Info [ "Pressed key:", "c" ] 
+Frontend 11:08:18 PM Info [ "Pressed key:", "x" ] 
+Frontend 11:08:18 PM Info [ "Pressed key:", "z" ] 
+Frontend 11:08:18 PM Info [ "Pressed key:", "c" ] 
+Frontend 11:08:18 PM Info [ "Pressed key:", "x" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "c" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "d" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "s" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "a" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "a" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "h" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "f" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "u" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "i" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "d" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "s" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "h" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "u" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "f" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "d" ] 
+Frontend 11:08:19 PM Info [ "Pressed key:", "s" ] 
+Frontend 11:08:33 PM Info [ "Pressed key:", "v" ] 
+Frontend 11:08:34 PM Info [ "Pressed key:", "c" ] 
+Frontend 11:08:34 PM Info [ "Pressed key:", "x" ] 
+Frontend 11:08:34 PM Info [ "Pressed key:", "v" ] 
+Frontend 11:08:34 PM Info [ "Pressed key:", "c" ] 
+Frontend 11:08:34 PM Info [ "Pressed key:", "x" ] 
+Frontend 11:08:35 PM Info [ "Exited with code", null ] 
+Frontend 11:16:58 PM Info [ "Starting frontend..." ] 
+Frontend 11:16:58 PM Error [ "This is an error." ] 
+Frontend 11:16:58 PM Warning [ "This is a warning." ] 
+Frontend 11:16:58 PM Debug [ "This is debug." ] 
+Frontend 11:16:58 PM Info [ "This is info." ] 
+2024/07/12 23:16:58 INFO Starting server on port 8080
+2024/07/12 23:16:58 INFO Product:  !BADKEY="{Model:{ID:1 CreatedAt:2024-07-04 21:26:52.696246 -0300 -0300 UpdatedAt:2024-07-04 21:26:52.696246 -0300 -0300 DeletedAt:{Time:0001-01-01 00:00:00 +0000 UTC Valid:false}} Code:D42 Price:100}"
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x2 addr=0xc0 pc=0x10442e92c]
+
+goroutine 2 [running]:
+github.com/gorilla/websocket.(*Conn).NextReader(0x0)
+	/Users/jhuggett/go/pkg/mod/github.com/gorilla/websocket@v1.5.1/conn.go:1023 +0x1c
+github.com/gorilla/websocket.(*Conn).ReadMessage(0x1400005bf78?)
+	/Users/jhuggett/go/pkg/mod/github.com/gorilla/websocket@v1.5.1/conn.go:1120 +0x1c
+github.com/jhuggett/sea/jsonrpc.New.func1()
+	/Users/jhuggett/Documents/Documents - Joel’s Mac Studio/Sandbox/games/sea/backend/jsonrpc/jsonrpc.go:42 +0x3c
+created by github.com/jhuggett/sea/jsonrpc.New in goroutine 25
+	/Users/jhuggett/Documents/Documents - Joel’s Mac Studio/Sandbox/games/sea/backend/jsonrpc/jsonrpc.go:40 +0xd0
+Frontend 11:16:58 PM Info [ "Exited with code", 2 ] 
+Frontend 11:17:42 PM Info [ "Starting frontend..." ] 
+Frontend 11:17:42 PM Warning [ "This is a warning." ] 
+Frontend 11:17:42 PM Debug [ "This is debug." ] 
+Frontend 11:17:42 PM Error [ "This is an error." ] 
+Frontend 11:17:42 PM Info [ "This is info." ] 
+2024/07/12 23:17:42 INFO Starting server on port 8080
+2024/07/12 23:17:42 INFO Product:  !BADKEY="{Model:{ID:1 CreatedAt:2024-07-04 21:26:52.696246 -0300 -0300 UpdatedAt:2024-07-04 21:26:52.696246 -0300 -0300 DeletedAt:{Time:0001-01-01 00:00:00 +0000 UTC Valid:false}} Code:D42 Price:100}"
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x2 addr=0xc0 pc=0x1006d292c]
+
+goroutine 34 [running]:
+github.com/gorilla/websocket.(*Conn).NextReader(0x0)
+	/Users/jhuggett/go/pkg/mod/github.com/gorilla/websocket@v1.5.1/conn.go:1023 +0x1c
+github.com/gorilla/websocket.(*Conn).ReadMessage(0x0?)
+	/Users/jhuggett/go/pkg/mod/github.com/gorilla/websocket@v1.5.1/conn.go:1120 +0x1c
+github.com/jhuggett/sea/jsonrpc.New.func1()
+	/Users/jhuggett/Documents/Documents - Joel’s Mac Studio/Sandbox/games/sea/backend/jsonrpc/jsonrpc.go:42 +0x3c
+created by github.com/jhuggett/sea/jsonrpc.New in goroutine 22
+	/Users/jhuggett/Documents/Documents - Joel’s Mac Studio/Sandbox/games/sea/backend/jsonrpc/jsonrpc.go:40 +0xd0
+Frontend 11:17:42 PM Info [ "Exited with code", 2 ] 
