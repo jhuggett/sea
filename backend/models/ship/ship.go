@@ -9,6 +9,8 @@ type Ship struct {
 	gorm.Model
 	X float64
 	Y float64
+
+	WorldMapID uint
 }
 
 func New() *Ship {

@@ -10,6 +10,7 @@ import (
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/jsonrpc"
 	"github.com/jhuggett/sea/models/ship"
+	"github.com/jhuggett/sea/models/world_map"
 	"github.com/jhuggett/sea/outbound"
 )
 
@@ -34,6 +35,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	dbConn := db.Conn()
 	dbConn.AutoMigrate(&ship.Ship{})
+	dbConn.AutoMigrate(&world_map.WorldMap{})
+	dbConn.AutoMigrate(&world_map.CoastalPoint{})
+	dbConn.AutoMigrate(&world_map.Continent{})
 	defer db.Close()
 
 	http.HandleFunc("/ws", wsHandler)
@@ -50,14 +54,34 @@ type ExamplePayload struct {
 	Age  int    `json:"age"`
 }
 
+type Connection struct {
+	RPC     jsonrpc.JSONRPC
+	gameCtx inbound.GameContext
+}
+
+func (c *Connection) Context() inbound.GameContext {
+	return c.gameCtx
+}
+
+func (c *Connection) Sender() *outbound.Sender {
+	return outbound.NewSender(c.RPC)
+}
+
 func run(conn *websocket.Conn) {
 	rpc := jsonrpc.New(conn)
 
-	sender := outbound.NewSender(rpc)
+	connection := &Connection{
+		RPC: rpc,
+	}
 
 	receivers := []func(){
-		rpc.Receive("MoveShip", inbound.MoveShip(sender)),
-		rpc.Receive("Login", inbound.Login()),
+		rpc.Receive("Login", inbound.Login(func(gameCtx inbound.GameContext) {
+			slog.Info("Setting game context", "gameCtx", gameCtx)
+			connection.gameCtx = gameCtx
+		})),
+		rpc.Receive("MoveShip", inbound.MoveShip(connection)),
+		rpc.Receive("Register", inbound.Register()),
+		rpc.Receive("GetWorldMap", inbound.GetWorldMap(connection)),
 	}
 
 	<-rpc.ClosedChan

@@ -7,16 +7,28 @@ import (
 	"github.com/jhuggett/sea/models/ship"
 )
 
+type GameContext struct {
+	ShipID    uint
+	GameMapID uint
+
+	// Sign this for auth in future
+}
+
 type LoginReq struct {
-	ShipID uint `json:"ship_id"`
+	GameCtx GameContext `json:"context"`
 }
 
+type ShipInfo struct {
+	X  float64 `json:"x"`
+	Y  float64 `json:"y"`
+	ID uint    `json:"id"`
+}
 type LoginResp struct {
-	ShipID  uint `json:"ship_id,omitempty"`
-	Success bool `json:"success"`
+	Ship    ShipInfo `json:"ship"`
+	Success bool     `json:"success"`
 }
 
-func Login() InboundFunc {
+func Login(setGameContext func(gameCtx GameContext)) InboundFunc {
 	return func(req json.RawMessage) (interface{}, error) {
 		var r LoginReq
 		if err := json.Unmarshal(req, &r); err != nil {
@@ -24,32 +36,18 @@ func Login() InboundFunc {
 			return nil, err
 		}
 
-		slog.Info("Login", "id", r.ShipID)
+		setGameContext(r.GameCtx)
 
-		if r.ShipID == 0 {
-			slog.Info("Creating new ship")
-			s := ship.New()
-			id, err := s.Create()
-			if err != nil {
-				return nil, err
-			}
-			slog.Info("Ship created", "id", id)
-			return LoginResp{
-				ShipID:  id,
-				Success: true,
-			}, nil
-		}
-
-		s, err := ship.Get(r.ShipID)
+		s, err := ship.Get(r.GameCtx.ShipID)
 		if err != nil {
-			slog.Error("Ship not found", "id", r.ShipID)
+			slog.Error("Ship not found", "id", r.GameCtx.ShipID)
 			return nil, err
 		}
 
 		slog.Info("Ship found", "id", s.ID)
 
 		return LoginResp{
-			ShipID:  s.ID,
+			Ship:    ShipInfo{ID: s.ID, X: s.X, Y: s.Y},
 			Success: true,
 		}, nil
 	}

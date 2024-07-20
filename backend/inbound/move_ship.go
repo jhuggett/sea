@@ -9,25 +9,24 @@ import (
 )
 
 type MoveShipReq struct {
-	ShipID uint    `json:"ship_id"`
-	X      float64 `json:"x"`
-	Y      float64 `json:"y"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 type MoveShipResp struct {
 	Success bool `json:"success"`
 }
 
-func MoveShip(send *outbound.Sender) InboundFunc {
+func MoveShip(conn connection) InboundFunc {
 	return func(req json.RawMessage) (interface{}, error) {
 		var r MoveShipReq
 		if err := json.Unmarshal(req, &r); err != nil {
 			return nil, err
 		}
 
-		slog.Info("MoveShip", "id", r.ShipID, "x", r.X, "y", r.Y)
+		slog.Info("MoveShip", "id", conn.Context().ShipID, "x", r.X, "y", r.Y)
 
-		s, err := ship.Get(r.ShipID)
+		s, err := ship.Get(conn.Context().ShipID)
 		if err != nil {
 			return nil, err
 		}
@@ -37,7 +36,7 @@ func MoveShip(send *outbound.Sender) InboundFunc {
 			return nil, err
 		}
 
-		_, err = send.ShipChangedTarget(outbound.ShipChangedTargetReq{
+		_, err = conn.Sender().ShipChangedTarget(outbound.ShipChangedTargetReq{
 			ShipID: s.ID,
 			X:      s.X,
 			Y:      s.Y,

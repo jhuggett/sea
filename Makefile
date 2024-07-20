@@ -11,3 +11,8 @@ generate-types:
 	cd ./backend; \
 	tygo generate; \
 
+.PHONY: backend
+backend:
+	make generate-types; \
+	cd ./frontend/web; \
+	yarn upgrade @shared/sea;

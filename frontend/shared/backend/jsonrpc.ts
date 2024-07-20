@@ -150,11 +150,11 @@ export class JSONRPC {
   send<T extends keyof Outbound>(
     method: T,
     params: Outbound[T]["req"]
-  ): Promise<Omit<Response<Outbound[T]["resp"]>, "id">> {
+  ): Promise<Outbound[T]["resp"]> {
     const id = Math.random().toString(36).slice(2);
 
     const { promise, reject, resolve } =
-      Promise.withResolvers<Omit<Response<Outbound[T]["resp"]>, "id">>();
+      Promise.withResolvers<Outbound[T]["resp"]>();
 
     this.responseRegistry.set(id, { reject, resolve });
 
