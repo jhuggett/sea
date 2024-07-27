@@ -4,18 +4,11 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/jhuggett/sea/models/ship"
+	"github.com/jhuggett/sea/game_context"
 )
 
-type GameContext struct {
-	ShipID    uint
-	GameMapID uint
-
-	// Sign this for auth in future
-}
-
 type LoginReq struct {
-	GameCtx GameContext `json:"context"`
+	Snapshot game_context.Snapshot `json:"snapshot"`
 }
 
 type ShipInfo struct {
@@ -28,7 +21,7 @@ type LoginResp struct {
 	Success bool     `json:"success"`
 }
 
-func Login(setGameContext func(gameCtx GameContext)) InboundFunc {
+func Login(setGameContext func(snapshot game_context.Snapshot) *game_context.GameContext) InboundFunc {
 	return func(req json.RawMessage) (interface{}, error) {
 		var r LoginReq
 		if err := json.Unmarshal(req, &r); err != nil {
@@ -36,11 +29,11 @@ func Login(setGameContext func(gameCtx GameContext)) InboundFunc {
 			return nil, err
 		}
 
-		setGameContext(r.GameCtx)
+		ctx := setGameContext(r.Snapshot)
 
-		s, err := ship.Get(r.GameCtx.ShipID)
+		s, err := ctx.Ship()
 		if err != nil {
-			slog.Error("Ship not found", "id", r.GameCtx.ShipID)
+			slog.Error("Ship not found", "id", ctx.ShipID())
 			return nil, err
 		}
 

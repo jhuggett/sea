@@ -5,27 +5,10 @@ import (
 	"gorm.io/gorm"
 )
 
-type Continent struct {
-	gorm.Model
-
-	WorldMapID uint
-
-	CoastalPoints []CoastalPoint `gorm:"foreignKey:ContinentID"`
-}
-
-type CoastalPoint struct {
-	gorm.Model
-
-	ContinentID uint
-
-	X int
-	Y int
-}
-
 type WorldMap struct {
 	gorm.Model
 
-	Continents []Continent `gorm:"foreignKey:WorldMapID"`
+	Continents []*Continent `gorm:"foreignKey:WorldMapID"`
 }
 
 func New() *WorldMap {
@@ -108,10 +91,9 @@ func (w *WorldMap) GenerateCoasts() error {
 	continentsToGenerate := []struct {
 		x, y, r int
 	}{
-		{x: 0, y: 0, r: 5},
-		{x: 20, y: 20, r: 7},
-		{x: -10, y: 16, r: 10},
-		{x: -10, y: -10, r: 4},
+		{x: 0, y: 20, r: 3},
+		{x: -10, y: -2, r: 10},
+		{x: 10, y: -2, r: 6},
 	}
 
 	for _, continent := range continentsToGenerate {

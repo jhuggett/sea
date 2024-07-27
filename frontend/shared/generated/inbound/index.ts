@@ -11,22 +11,10 @@ export interface CoastalPoint {
 }
 export interface Continent {
   coastal_points: CoastalPoint[];
+  center: any /* world_map.Point */;
 }
 export interface GetWorldMapResp {
-  continents: Continent[];
-}
-
-//////////
-// source: get_world_map_chunk.go
-
-export interface GetWorldMapChunkReq {
-  start_x: number /* float64 */;
-  start_y: number /* float64 */;
-  end_x: number /* float64 */;
-  end_y: number /* float64 */;
-}
-export interface GetWorldMapChunkResp {
-  chunk: number /* float64 */[][];
+  continents: (Continent | undefined)[];
 }
 
 //////////
@@ -55,12 +43,8 @@ export type InboundFunc = any;
 //////////
 // source: login.go
 
-export interface GameContext {
-  ShipID: number /* uint */;
-  GameMapID: number /* uint */;
-}
 export interface LoginReq {
-  context: GameContext;
+  snapshot: any /* game_context.Snapshot */;
 }
 export interface ShipInfo {
   x: number /* float64 */;
@@ -82,6 +66,8 @@ export interface MoveShipReq {
 export interface MoveShipResp {
   success: boolean;
 }
+export interface RouteShip {
+}
 
 //////////
 // source: register.go
@@ -89,5 +75,5 @@ export interface MoveShipResp {
 export interface RegisterReq {
 }
 export interface RegisterResp {
-  context: GameContext;
+  snapshot: any /* game_context.Snapshot */;
 }

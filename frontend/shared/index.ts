@@ -1,6 +1,7 @@
 import { JSONRPC, JSONRPCError } from "./backend";
 export * from "./backend";
 export * from "./generated/inbound";
+export * from "./generated/game_context";
 
 export var logger = {
   log: console.info,

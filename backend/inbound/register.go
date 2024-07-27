@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/models/world_map"
 )
@@ -12,7 +13,7 @@ type RegisterReq struct {
 }
 
 type RegisterResp struct {
-	GameCtx GameContext `json:"context"`
+	GameCtx game_context.Snapshot `json:"snapshot"`
 }
 
 func Register() InboundFunc {
@@ -61,7 +62,7 @@ func Register() InboundFunc {
 		}
 
 		return RegisterResp{
-			GameCtx: GameContext{
+			GameCtx: game_context.Snapshot{
 				ShipID:    shipID,
 				GameMapID: worldMapID,
 			},

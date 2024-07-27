@@ -14,21 +14,20 @@ export interface Outbound {
     req: ExampleReq;
     resp: ExampleResp;
   };
-  ShipChangedTarget: {
-    req: ShipChangedTargetReq;
-    resp: ShipChangedTargetResp;
+  ShipMoved: {
+    req: ShipMovedReq;
+    resp: ShipMovedResp;
   };
 }
 export interface Sender {
 }
 
 //////////
-// source: ship_changed_target.go
+// source: ship_moved.go
 
-export interface ShipChangedTargetReq {
+export interface ShipMovedReq {
   ship_id: number /* uint */;
-  x: number /* float64 */;
-  y: number /* float64 */;
+  location: any /* world_map.Point */;
 }
-export interface ShipChangedTargetResp {
+export interface ShipMovedResp {
 }

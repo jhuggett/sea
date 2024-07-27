@@ -1,11 +1,12 @@
 import * as ex from "excalibur";
+import { TILE_SIZE } from "./main";
 
 export class Ship {
   actor: ex.Actor;
   constructor() {
     this.actor = new ex.Actor({
-      width: 50,
-      height: 20,
+      width: TILE_SIZE,
+      height: TILE_SIZE,
 
       // Let's give it some color with one of the predefined
       // color constants
@@ -16,11 +17,6 @@ export class Ship {
   }
 
   setTarget(x: number, y: number) {
-    this.actor.actions.clearActions();
-    this.actor.actions.rotateTo(
-      Math.atan2(y - this.actor.pos.y, x - this.actor.pos.x),
-      10
-    );
     this.actor.actions.moveTo(x, y, 250);
   }
 }

@@ -3,6 +3,7 @@ package inbound
 import (
 	"encoding/json"
 
+	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/outbound"
 )
 
@@ -22,11 +23,6 @@ type Inbound struct {
 		Resp RegisterResp `json:"resp"`
 	}
 
-	// GetWorldMapChunk struct {
-	// 	Req  GetWorldMapChunkReq  `json:"req"`
-	// 	Resp GetWorldMapChunkResp `json:"resp"`
-	// }
-
 	GetWorldMap struct {
 		Req  GetWorldMapReq  `json:"req"`
 		Resp GetWorldMapResp `json:"resp"`
@@ -36,6 +32,6 @@ type Inbound struct {
 type InboundFunc func(req json.RawMessage) (interface{}, error)
 
 type connection interface {
-	Context() GameContext
+	Context() *game_context.GameContext
 	Sender() *outbound.Sender
 }

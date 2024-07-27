@@ -1,15 +1,16 @@
 import { Ship } from "./ship";
 import "./style.css";
 import * as ex from "excalibur";
-import { SetupRPC, GameContext, Continent } from "@sea/shared";
-import { sortPoints } from "./utils/clockwise-sort";
+import { SetupRPC, Snapshot, Continent } from "@sea/shared";
 
-const setGameContext = (ctx: GameContext) => {
-  localStorage.setItem("game_context", JSON.stringify(ctx));
+export const TILE_SIZE = 32;
+
+const setGameSnapshot = (ctx: Snapshot) => {
+  localStorage.setItem("game_snapshot", JSON.stringify(ctx));
 };
 
-const getGameContext = (): GameContext | undefined => {
-  const ctx = localStorage.getItem("game_context");
+const getGameSnapshot = (): Snapshot | undefined => {
+  const ctx = localStorage.getItem("game_snapshot");
   if (!ctx) {
     return undefined;
   }
@@ -17,27 +18,16 @@ const getGameContext = (): GameContext | undefined => {
 };
 
 function drawContinent(continent: Continent) {
-  var pointCenter = { x: 0, y: 0 };
-  for (const point of continent.coastal_points) {
-    pointCenter.x += point.x;
-    pointCenter.y += point.y;
-  }
-
-  pointCenter.x /= continent.coastal_points.length;
-  pointCenter.y /= continent.coastal_points.length;
-
-  const multiplier = 10;
-
   const triangle = new ex.Polygon({
-    points: sortPoints(continent.coastal_points, pointCenter).flatMap((p) => [
-      new ex.Vector(p.x * multiplier, p.y * multiplier),
+    points: continent.coastal_points.flatMap((p) => [
+      new ex.Vector(p.x * TILE_SIZE, p.y * TILE_SIZE),
     ]),
     color: ex.Color.Green,
   });
 
   const actor = new ex.Actor({
-    x: pointCenter.x * multiplier,
-    y: pointCenter.y * multiplier,
+    x: continent.center.x * TILE_SIZE,
+    y: continent.center.y * TILE_SIZE,
   });
 
   actor.graphics.add(triangle);
@@ -53,17 +43,17 @@ const ship = new Ship();
 conn.onopen = async () => {
   console.log("Connected to server");
 
-  var ctx = getGameContext();
+  var ctx = getGameSnapshot();
 
   if (!ctx) {
     const registerResp = await rpc.send("Register", {});
 
-    ctx = registerResp.context;
-    setGameContext(ctx);
+    ctx = registerResp.snapshot;
+    setGameSnapshot(ctx!);
   }
 
   const loginResp = await rpc.send("Login", {
-    context: ctx,
+    snapshot: ctx,
   });
 
   ship.actor.pos.x = loginResp.ship.x;
@@ -77,7 +67,9 @@ conn.onopen = async () => {
 
   for (const continent of worldMapResp.continents) {
     console.log("Continent", continent);
-    drawContinent(continent);
+    if (continent) {
+      drawContinent(continent);
+    }
   }
 };
 
@@ -89,8 +81,8 @@ game.add(ship.actor);
 
 game.input.pointers.primary.on("down", (evt) => {
   rpc.send("MoveShip", {
-    x: evt.coordinates.worldPos.x,
-    y: evt.coordinates.worldPos.y,
+    x: evt.coordinates.worldPos.x / TILE_SIZE,
+    y: evt.coordinates.worldPos.y / TILE_SIZE,
   });
 });
 
@@ -111,10 +103,9 @@ game.input.keyboard.on("press", (evt) => {
   }
 });
 
-rpc.receive("ShipChangedTarget", ({ x, y }) => {
-  console.log("Received ShipChangedTarget:", x, y);
-
-  ship.setTarget(x, y);
+rpc.receive("ShipMoved", ({ location }) => {
+  ship.actor.actions.clearActions();
+  ship.setTarget(location.x * TILE_SIZE, location.y * TILE_SIZE);
 
   return Promise.resolve({
     result: {},

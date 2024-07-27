@@ -1,6 +1,9 @@
 package outbound
 
-import "github.com/jhuggett/sea/jsonrpc"
+import (
+	"github.com/jhuggett/sea/game_context"
+	"github.com/jhuggett/sea/jsonrpc"
+)
 
 type ExampleReq struct {
 	Name string `json:"name"`
@@ -16,18 +19,20 @@ type Outbound struct {
 		Resp ExampleResp `json:"resp"`
 	}
 
-	ShipChangedTarget struct {
-		Req  ShipChangedTargetReq  `json:"req"`
-		Resp ShipChangedTargetResp `json:"resp"`
+	ShipMoved struct {
+		Req  ShipMovedReq  `json:"req"`
+		Resp ShipMovedResp `json:"resp"`
 	}
 }
 
 type Sender struct {
-	rpc jsonrpc.JSONRPC
+	rpc         jsonrpc.JSONRPC
+	gameContext *game_context.GameContext
 }
 
-func NewSender(rpc jsonrpc.JSONRPC) *Sender {
+func NewSender(rpc jsonrpc.JSONRPC, gameContext *game_context.GameContext) *Sender {
 	return &Sender{
-		rpc: rpc,
+		rpc:         rpc,
+		gameContext: gameContext,
 	}
 }
