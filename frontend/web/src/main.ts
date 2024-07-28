@@ -112,4 +112,50 @@ rpc.receive("ShipMoved", ({ location }) => {
   });
 });
 
+var isPaused = false;
+
+export function togglePause(button: HTMLButtonElement) {
+  return async () => {
+    console.log("Toggling pause");
+
+    if (isPaused) {
+      rpc.send("ControlTime", {
+        set_ticks_per_second_by: 5,
+      });
+    } else {
+      rpc.send("ControlTime", {
+        set_ticks_per_second_to: 0,
+      });
+    }
+
+    isPaused = !isPaused;
+    button.innerText = isPaused ? "Pause" : "Resume";
+  };
+}
+
+const pauseButton = document.getElementById("pauseButton");
+if (pauseButton) {
+  pauseButton.onclick = togglePause(pauseButton as HTMLButtonElement);
+}
+
+class TestButton extends HTMLElement {
+  text = "";
+
+  constructor() {
+    super();
+  }
+
+  connectedCallback() {
+    this.text = this.getAttribute("text") || "Not set";
+
+    this.innerHTML = `<button>${this.text}</button>`;
+  }
+
+  // render() {
+  //   return `<button>${this.text}</button>`;
+  // }
+}
+
+customElements.define("test-button", TestButton);
+
 game.start();

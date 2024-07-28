@@ -91,6 +91,7 @@ func run(conn *websocket.Conn) {
 		rpc.Receive("MoveShip", inbound.MoveShip(connection)),
 		rpc.Receive("Register", inbound.Register()),
 		rpc.Receive("GetWorldMap", inbound.GetWorldMap(connection)),
+		rpc.Receive("ControlTime", inbound.ControlTime(connection)),
 	}
 
 	<-rpc.ClosedChan

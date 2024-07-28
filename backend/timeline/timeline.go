@@ -33,6 +33,14 @@ type ContinualEvent interface {
 // type TargetedEvent interface {
 // }
 
+func (t *Timeline) SetTicksPerSecond(ticksPerSecond uint64) {
+	t.ticksPerSecond = ticksPerSecond
+}
+
+func (t *Timeline) TicksPerSecond() uint64 {
+	return t.ticksPerSecond
+}
+
 func (t *Timeline) Tick() uint64 {
 	t.current += t.ticksPerSecond
 	return t.ticksPerSecond

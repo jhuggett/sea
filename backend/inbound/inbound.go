@@ -27,6 +27,11 @@ type Inbound struct {
 		Req  GetWorldMapReq  `json:"req"`
 		Resp GetWorldMapResp `json:"resp"`
 	}
+
+	ControlTime struct {
+		Req  ControlTimeReq  `json:"req"`
+		Resp ControlTimeResp `json:"resp"`
+	}
 }
 
 type InboundFunc func(req json.RawMessage) (interface{}, error)

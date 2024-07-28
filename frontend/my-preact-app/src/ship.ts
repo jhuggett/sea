@@ -1,5 +1,5 @@
 import * as ex from "excalibur";
-import { TILE_SIZE } from "./main";
+import { TILE_SIZE } from "./pages/Home";
 
 export class Ship {
   actor: ex.Actor;
