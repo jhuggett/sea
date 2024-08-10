@@ -2,7 +2,7 @@ import * as ex from "excalibur";
 import preactLogo from "../../assets/preact.svg";
 import "./style.css";
 import { Snapshot, Continent, SetupRPC } from "@sea/shared";
-import { Ship } from "../../ship";
+import { Ship } from "../../../../web-react/src/ship";
 
 /*
 <div class="home">

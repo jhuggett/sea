@@ -1,5 +1,5 @@
 import * as ex from "excalibur";
-import { TILE_SIZE } from "./pages/Home";
+import { TILE_SIZE } from "../../my-preact-app/src/pages/Home";
 
 export class Ship {
   actor: ex.Actor;
