@@ -11,6 +11,19 @@ export interface ControlTimeResp {
 }
 
 //////////
+// source: get_ports.go
+
+export interface GetPortsReq {
+}
+export interface Port {
+  id: number /* uint */;
+  point: CoastalPoint;
+}
+export interface GetPortsResp {
+  ports: Port[];
+}
+
+//////////
 // source: get_world_map.go
 
 export interface GetWorldMapReq {
@@ -46,6 +59,10 @@ export interface Inbound {
   GetWorldMap: {
     req: GetWorldMapReq;
     resp: GetWorldMapResp;
+  };
+  GetPorts: {
+    req: GetPortsReq;
+    resp: GetPortsResp;
   };
   ControlTime: {
     req: ControlTimeReq;

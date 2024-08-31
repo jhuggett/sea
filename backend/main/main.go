@@ -10,6 +10,7 @@ import (
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/jsonrpc"
+	"github.com/jhuggett/sea/models/port"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/models/world_map"
 	"github.com/jhuggett/sea/outbound"
@@ -40,6 +41,7 @@ func main() {
 	dbConn.AutoMigrate(&world_map.WorldMap{})
 	dbConn.AutoMigrate(&world_map.CoastalPoint{})
 	dbConn.AutoMigrate(&world_map.Continent{})
+	dbConn.AutoMigrate(&port.Port{})
 	defer db.Close()
 
 	http.HandleFunc("/ws", wsHandler)
@@ -91,6 +93,7 @@ func run(conn *websocket.Conn) {
 		rpc.Receive("MoveShip", inbound.MoveShip(connection)),
 		rpc.Receive("Register", inbound.Register()),
 		rpc.Receive("GetWorldMap", inbound.GetWorldMap(connection)),
+		rpc.Receive("GetPorts", inbound.GetPorts(connection)),
 		rpc.Receive("ControlTime", inbound.ControlTime(connection)),
 	}
 

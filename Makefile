@@ -14,5 +14,5 @@ generate-types:
 .PHONY: backend
 backend:
 	make generate-types; \
-	cd ./frontend/web; \
+	cd ./frontend/web-react; \
 	yarn upgrade @shared/sea;

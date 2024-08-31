@@ -28,6 +28,11 @@ type Inbound struct {
 		Resp GetWorldMapResp `json:"resp"`
 	}
 
+	GetPorts struct {
+		Req  GetPortsReq  `json:"req"`
+		Resp GetPortsResp `json:"resp"`
+	}
+
 	ControlTime struct {
 		Req  ControlTimeReq  `json:"req"`
 		Resp ControlTimeResp `json:"resp"`

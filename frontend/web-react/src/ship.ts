@@ -1,12 +1,11 @@
 import * as ex from "excalibur";
-import { TILE_SIZE } from "../../my-preact-app/src/pages/Home";
-
+import { TILE_SIZE } from "./App";
 export class Ship {
   actor: ex.Actor;
   constructor() {
     this.actor = new ex.Actor({
-      width: TILE_SIZE,
-      height: TILE_SIZE,
+      width: TILE_SIZE / 8,
+      height: TILE_SIZE / 8,
 
       // Let's give it some color with one of the predefined
       // color constants

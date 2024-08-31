@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/jhuggett/sea/game_context"
+	"github.com/jhuggett/sea/models/port"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/models/world_map"
 )
@@ -32,26 +33,21 @@ func Register() InboundFunc {
 			return nil, err
 		}
 
-		// numberOfHightPoints := 20
-
-		// minX := 0
-		// maxX := 30
-		// minY := 0
-		// maxY := 30
-
-		// for i := 0; i < numberOfHightPoints; i++ {
-		// 	// randomize x and y and elevation
-		// 	x := rand.Float64()*float64(maxX-minX) + float64(minX)
-		// 	y := rand.Float64()*float64(maxY-minY) + float64(minY)
-		// 	elevation := (rand.Float64()*50 + 50) / 100
-
-		// 	err = worldMap.AddHighPoint(x, y, elevation)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// }
-
 		worldMap.GenerateCoasts()
+
+		worldMap, err = world_map.Get(worldMapID) // reload
+		if err != nil {
+			return nil, err
+		}
+
+		// create ports
+		port := port.New()
+		port.WorldMapID = worldMapID
+		port.CoastalPointID = worldMap.Continents[0].CoastalPoints[0].ID
+		_, err = port.Create()
+		if err != nil {
+			return nil, err
+		}
 
 		// create ship
 		ship := ship.New()

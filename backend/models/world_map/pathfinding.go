@@ -1,11 +1,9 @@
 package world_map
 
 import (
-	"errors"
 	"log/slog"
 
 	"github.com/beefsack/go-astar"
-	"github.com/soniakeys/raycast"
 )
 
 type obstacleMap map[int]map[int]bool
@@ -118,36 +116,38 @@ func (w *WorldMap) PlotRoute(starting *Point, ending *Point) ([]Point, error) {
 
 	slog.Info("Plotting Route", "starting", *starting, "ending", *ending)
 
-	endingXY := raycast.XY{
-		X: float64(ending.X),
-		Y: float64(ending.Y),
-	}
+	// endingXY := raycast.XY{
+	// 	X: float64(ending.X),
+	// 	Y: float64(ending.Y),
+	// }
+
+	// move coastal point and inland check to methods on world map so we can check outside of here
 
 	for _, continent := range w.Continents {
-		poly := raycast.Poly{}
+		// poly := raycast.Poly{}
 
-		Sort(continent.CoastalPoints)
+		// Sort(continent.CoastalPoints)
 
 		for _, coastalPoint := range continent.CoastalPoints {
 
-			slog.Info("Coastal Point", "x", coastalPoint.X, "y", coastalPoint.Y)
-			if ending.SameAs(coastalPoint.Point()) {
-				slog.Info("ending point is a coastal point")
-				return nil, errors.New("ending point is a coastal point")
-			}
-			poly = append(poly, raycast.XY{
-				X: float64(coastalPoint.X),
-				Y: float64(coastalPoint.Y),
-			})
+			// slog.Info("Coastal Point", "x", coastalPoint.X, "y", coastalPoint.Y)
+			// if ending.SameAs(coastalPoint.Point()) {
+			// 	slog.Info("ending point is a coastal point")
+			// 	return nil, errors.New("ending point is a coastal point")
+			// }
+			// poly = append(poly, raycast.XY{
+			// 	X: float64(coastalPoint.X),
+			// 	Y: float64(coastalPoint.Y),
+			// })
 			obstacles.AddObstacle(&Point{
 				X: coastalPoint.X,
 				Y: coastalPoint.Y,
 			})
 		}
-		if endingXY.In(poly) {
-			slog.Info("Ending point is in a continent")
-			return nil, errors.New("ending point is in a continent")
-		}
+		// if endingXY.In(poly) {
+		// 	slog.Info("Ending point is in a continent")
+		// 	return nil, errors.New("ending point is in a continent")
+		// }
 	}
 
 	pointMap := lookUpMap{}

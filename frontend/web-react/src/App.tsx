@@ -3,6 +3,8 @@ import * as ex from "excalibur";
 import "./App.css";
 import { Ship } from "./ship";
 import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
+import { Tablet } from "./ui/tablet";
 
 export const TILE_SIZE = 32;
 
@@ -66,6 +68,8 @@ async function start() {
     let ctx = getGameSnapshot();
 
     if (!ctx) {
+      console.log("No context found, registering");
+
       const registerResp = await rpc!.send("Register", {});
 
       ctx = registerResp.snapshot;
@@ -81,6 +85,7 @@ async function start() {
 
     console.log("Login response", loginResp);
 
+    // render continents
     const worldMapResp = await rpc!.send("GetWorldMap", {});
 
     console.log("World map response", worldMapResp);
@@ -90,6 +95,22 @@ async function start() {
       if (continent) {
         drawContinent(continent);
       }
+    }
+
+    // render ports
+    const portsResp = await rpc!.send("GetPorts", {});
+
+    console.log("Ports response", portsResp);
+
+    for (const port of portsResp.ports) {
+      const actor = new ex.Actor({
+        x: port.point.x * TILE_SIZE,
+        y: port.point.y * TILE_SIZE,
+        radius: 10,
+        color: ex.Color.Red,
+      });
+
+      game.add(actor);
     }
   };
 
@@ -165,21 +186,32 @@ function App() {
   return (
     <>
       <div className="absolute w-screen h-screen  top-0 left-0 z-50 pointer-events-none">
-        <div className="flex">
-          <div className="p-4 gap-4 flex bg-slate-300 pointer-events-auto">
-            <span>Ticks per second: {ticksPerSecond}</span>
-            <button onClick={() => setIsPaused((prev) => !prev)}>
-              {isPaused ? "Resume" : "Pause"}
-            </button>
-            <button onClick={() => setTicksPerSecond((prev) => prev + 1)}>
-              +
-            </button>
-            <button
-              onClick={() => setTicksPerSecond((prev) => Math.max(0, prev - 1))}
-            >
-              -
-            </button>
-          </div>
+        <div className="flex justify-between">
+          <Tablet>
+            <div className="flex flex-col">
+              <span>Ticks per second: {ticksPerSecond}</span>
+              <div>
+                <Button onClick={() => setIsPaused((prev) => !prev)}>
+                  {isPaused ? "Resume" : "Pause"}
+                </Button>
+                <Button onClick={() => setTicksPerSecond((prev) => prev + 1)}>
+                  +
+                </Button>
+                <Button
+                  onClick={() =>
+                    setTicksPerSecond((prev) => Math.max(0, prev - 1))
+                  }
+                >
+                  -
+                </Button>
+              </div>
+            </div>
+          </Tablet>
+          <Tablet>
+            <Button onClick={() => localStorage.removeItem("game_snapshot")}>
+              Clear current context
+            </Button>
+          </Tablet>
         </div>
       </div>
       <canvas id="game"></canvas>
