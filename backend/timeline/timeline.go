@@ -3,7 +3,20 @@ package timeline
 import (
 	"log/slog"
 	"time"
+
+	"github.com/jhuggett/sea/utils/callback"
 )
+
+var eventStore = map[string]Event{}
+
+func StoreEvent(event Event, id string) {
+	eventStore[id] = event
+}
+
+func GetEvent(id string) (Event, bool) {
+	event, ok := eventStore[id]
+	return event, ok
+}
 
 type Timeline struct {
 	current uint64
@@ -23,8 +36,8 @@ func New() *Timeline {
 	}
 }
 
-// type Event interface {
-// }
+type Event interface {
+}
 
 type ContinualEvent interface {
 	Do(ticks uint64) (stop bool)
@@ -33,8 +46,24 @@ type ContinualEvent interface {
 // type TargetedEvent interface {
 // }
 
+var OnTicksPerSecondChanged = callback.NewRegistry[struct {
+	Old       uint64
+	New       uint64
+	TickCount uint64
+}]()
+
 func (t *Timeline) SetTicksPerSecond(ticksPerSecond uint64) {
 	t.ticksPerSecond = ticksPerSecond
+
+	OnTicksPerSecondChanged.Invoke(struct {
+		Old       uint64
+		New       uint64
+		TickCount uint64
+	}{
+		Old:       t.ticksPerSecond,
+		New:       ticksPerSecond,
+		TickCount: t.current,
+	})
 }
 
 func (t *Timeline) TicksPerSecond() uint64 {
@@ -73,11 +102,18 @@ func (t *Timeline) Start() {
 }
 
 func (t *Timeline) processContinualEvents(ticks uint64) {
-	for i, event := range t.continualEvents {
-		if event.Do(ticks) {
-			t.continualEvents = append(t.continualEvents[:i], t.continualEvents[i+1:]...)
+
+	// seems like continual events aren't working...
+	// eg. ship moving only seems to move once and then hangs or something
+
+	var nextContinualEvents []ContinualEvent
+	for _, event := range t.continualEvents {
+		if !event.Do(ticks) {
+			// t.continualEvents = append(t.continualEvents[:i], t.continualEvents[i+1:]...)
+			nextContinualEvents = append(nextContinualEvents, event)
 		}
 	}
+	t.continualEvents = nextContinualEvents
 }
 
 /*

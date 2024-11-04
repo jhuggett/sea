@@ -5,23 +5,20 @@ import (
 	"github.com/jhuggett/sea/jsonrpc"
 )
 
-type ExampleReq struct {
-	Name string `json:"name"`
-}
-
-type ExampleResp struct {
-	Age int `json:"age"`
-}
-
 type Outbound struct {
-	Example struct {
-		Req  ExampleReq  `json:"req"`
-		Resp ExampleResp `json:"resp"`
-	}
-
 	ShipMoved struct {
 		Req  ShipMovedReq  `json:"req"`
 		Resp ShipMovedResp `json:"resp"`
+	}
+
+	ShipDocked struct {
+		Req  ShipDockedReq  `json:"req"`
+		Resp ShipDockedResp `json:"resp"`
+	}
+
+	TimeChanged struct {
+		Req  TimeChangedReq  `json:"req"`
+		Resp TimeChangedResp `json:"resp"`
 	}
 }
 

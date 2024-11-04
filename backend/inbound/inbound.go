@@ -41,7 +41,7 @@ type Inbound struct {
 
 type InboundFunc func(req json.RawMessage) (interface{}, error)
 
-type connection interface {
+type Connection interface {
 	Context() *game_context.GameContext
 	Sender() *outbound.Sender
 }

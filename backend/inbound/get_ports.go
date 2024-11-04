@@ -19,7 +19,7 @@ type GetPortsResp struct {
 	Ports []Port `json:"ports"`
 }
 
-func GetPorts(conn connection) InboundFunc {
+func GetPorts(conn Connection) InboundFunc {
 	return func(req json.RawMessage) (interface{}, error) {
 		var r GetPortsReq
 		if err := json.Unmarshal(req, &r); err != nil {

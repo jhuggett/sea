@@ -6,16 +6,23 @@ import (
 	"github.com/beefsack/go-astar"
 )
 
-type obstacleMap map[int]map[int]bool
+type ObstacleMap map[int]map[int]bool
 
-func (o *obstacleMap) AddObstacle(p *Point) {
+func (o *ObstacleMap) AddObstacle(p *Point) {
 	if _, ok := (*o)[p.X]; !ok {
 		(*o)[p.X] = map[int]bool{}
 	}
 	(*o)[p.X][p.Y] = true
 }
 
-func (o *obstacleMap) IsObstacle(p *Point) bool {
+func (o *ObstacleMap) RemoveObstacle(p *Point) {
+	if _, ok := (*o)[p.X]; !ok {
+		return
+	}
+	delete((*o)[p.X], p.Y)
+}
+
+func (o *ObstacleMap) IsObstacle(p *Point) bool {
 	if _, ok := (*o)[p.X]; !ok {
 		return false
 	}
@@ -43,7 +50,7 @@ func (l *lookUpMap) AddOrRetrievePoint(p *AStartPoint) *AStartPoint {
 type AStartPoint struct {
 	Point
 
-	obstacleMap obstacleMap
+	obstacleMap ObstacleMap
 	pointLookUp lookUpMap
 }
 
@@ -106,49 +113,7 @@ func (p *AStartPoint) PathEstimatedCost(to astar.Pather) float64 {
 	return float64(absX + absY)
 }
 
-func (w *WorldMap) PlotRoute(starting *Point, ending *Point) ([]Point, error) {
-	obstacles := obstacleMap{}
-
-	if starting.SameAs(ending) {
-		slog.Info("Starting and ending points are the same")
-		return []Point{}, nil
-	}
-
-	slog.Info("Plotting Route", "starting", *starting, "ending", *ending)
-
-	// endingXY := raycast.XY{
-	// 	X: float64(ending.X),
-	// 	Y: float64(ending.Y),
-	// }
-
-	// move coastal point and inland check to methods on world map so we can check outside of here
-
-	for _, continent := range w.Continents {
-		// poly := raycast.Poly{}
-
-		// Sort(continent.CoastalPoints)
-
-		for _, coastalPoint := range continent.CoastalPoints {
-
-			// slog.Info("Coastal Point", "x", coastalPoint.X, "y", coastalPoint.Y)
-			// if ending.SameAs(coastalPoint.Point()) {
-			// 	slog.Info("ending point is a coastal point")
-			// 	return nil, errors.New("ending point is a coastal point")
-			// }
-			// poly = append(poly, raycast.XY{
-			// 	X: float64(coastalPoint.X),
-			// 	Y: float64(coastalPoint.Y),
-			// })
-			obstacles.AddObstacle(&Point{
-				X: coastalPoint.X,
-				Y: coastalPoint.Y,
-			})
-		}
-		// if endingXY.In(poly) {
-		// 	slog.Info("Ending point is in a continent")
-		// 	return nil, errors.New("ending point is in a continent")
-		// }
-	}
+func (w *WorldMap) PlotRoute(starting *Point, ending *Point, obstacles ObstacleMap) ([]Point, error) {
 
 	pointMap := lookUpMap{}
 
@@ -164,11 +129,11 @@ func (w *WorldMap) PlotRoute(starting *Point, ending *Point) ([]Point, error) {
 		pointLookUp: pointMap,
 	})
 
-	slog.Info("PlotRoute", "starting", starting, "ending", ending)
+	slog.Debug("PlotRoute", "starting", starting, "ending", ending)
 
 	path, distance, found := astar.Path(startingPoint, endingPoint)
 
-	slog.Info("Path", "path", path, "distance", distance, "found", found)
+	slog.Debug("Path", "distance", distance, "found", found)
 
 	if !found {
 		return nil, nil

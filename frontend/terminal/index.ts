@@ -14,7 +14,7 @@ console.debug("This is debug.");
 
 const { stopBackend } = startBackend();
 
-const connection = await connectToBackend();
+const Connection = await connectToBackend();
 
 const rpc = new JSONRPC<
   {
@@ -23,7 +23,7 @@ const rpc = new JSONRPC<
   {
     hello: { req: { message: string }; resp: { message: string } };
   }
->(connection);
+>(Connection);
 
 rpc.receive("ping", async ({ method, params }) => {
   console.log("Received ping:", params);

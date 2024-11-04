@@ -51,3 +51,13 @@ func All(worldMapID uint) ([]*Port, error) {
 
 	return ports, nil
 }
+
+func Find(point world_map.CoastalPoint) (*Port, error) {
+	var port *Port
+	err := db.Conn().Preload("CoastalPoint").Where("coastal_point_id = ?", point.ID).Find(&port).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return port, nil
+}

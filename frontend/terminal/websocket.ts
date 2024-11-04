@@ -7,7 +7,7 @@ class FailedToConnectError extends Error {
 }
 
 export const connectToBackend = async () => {
-  var connection: WebSocket | undefined;
+  var Connection: WebSocket | undefined;
   var attemptedConnections = 0;
   while (attemptedConnections < 8) {
     const socket = new WebSocket("ws://localhost:8080/ws");
@@ -24,7 +24,7 @@ export const connectToBackend = async () => {
 
     try {
       await promise;
-      connection = socket;
+      Connection = socket;
       break;
     } catch (error) {
       attemptedConnections++;
@@ -32,9 +32,9 @@ export const connectToBackend = async () => {
     }
   }
 
-  if (!connection) {
+  if (!Connection) {
     throw new FailedToConnectError();
   }
 
-  return connection;
+  return Connection;
 };

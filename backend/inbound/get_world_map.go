@@ -24,7 +24,7 @@ type GetWorldMapResp struct {
 	Continents []*Continent `json:"continents"`
 }
 
-func GetWorldMap(conn connection) InboundFunc {
+func GetWorldMap(conn Connection) InboundFunc {
 	return func(req json.RawMessage) (interface{}, error) {
 
 		worldMap, err := world_map.Get(conn.Context().GameMapID())

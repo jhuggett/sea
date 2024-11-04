@@ -3,23 +3,32 @@
 //////////
 // source: outbound.go
 
-export interface ExampleReq {
-  name: string;
-}
-export interface ExampleResp {
-  age: number /* int */;
-}
 export interface Outbound {
-  Example: {
-    req: ExampleReq;
-    resp: ExampleResp;
-  };
   ShipMoved: {
     req: ShipMovedReq;
     resp: ShipMovedResp;
   };
+  ShipDocked: {
+    req: ShipDockedReq;
+    resp: ShipDockedResp;
+  };
+  TimeChanged: {
+    req: TimeChangedReq;
+    resp: TimeChangedResp;
+  };
 }
 export interface Sender {
+}
+
+//////////
+// source: ship_docked.go
+
+export interface ShipDockedReq {
+  ship_id?: number /* uint */;
+  location?: any /* world_map.Point */;
+  undocked?: boolean;
+}
+export interface ShipDockedResp {
 }
 
 //////////
@@ -30,4 +39,14 @@ export interface ShipMovedReq {
   location: any /* world_map.Point */;
 }
 export interface ShipMovedResp {
+}
+
+//////////
+// source: time_changed.go
+
+export interface TimeChangedReq {
+  current_tick: number /* uint64 */;
+  ticks_per_second: number /* uint64 */;
+}
+export interface TimeChangedResp {
 }

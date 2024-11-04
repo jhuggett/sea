@@ -1,7 +1,6 @@
 package world_map
 
 import (
-	"errors"
 	"log/slog"
 
 	"github.com/soniakeys/raycast"
@@ -25,7 +24,7 @@ type PointInformation struct {
 	CoastalPoint *CoastalPoint
 }
 
-func (c *Continent) ContainsPoint(point Point) (isWithin bool, information PointInformation, err error) {
+func (c *Continent) Contains(point Point) (isWithin bool, information PointInformation, err error) {
 
 	pointXY := raycast.XY{
 		X: float64(point.X),
@@ -37,11 +36,10 @@ func (c *Continent) ContainsPoint(point Point) (isWithin bool, information Point
 	Sort(c.CoastalPoints)
 
 	for _, coastalPoint := range c.CoastalPoints {
-
-		slog.Info("Coastal Point", "x", coastalPoint.X, "y", coastalPoint.Y)
 		if point.SameAs(coastalPoint.Point()) {
-			slog.Info("point point is a coastal point")
-			return nil, errors.New("point point is a coastal point")
+			return true, PointInformation{
+				CoastalPoint: coastalPoint,
+			}, nil
 		}
 		poly = append(poly, raycast.XY{
 			X: float64(coastalPoint.X),
@@ -50,7 +48,7 @@ func (c *Continent) ContainsPoint(point Point) (isWithin bool, information Point
 	}
 	if pointXY.In(poly) {
 		slog.Info("point point is in a continent")
-		return nil, errors.New("point point is in a continent")
+		return true, PointInformation{}, nil
 	}
 
 	return false, PointInformation{}, nil

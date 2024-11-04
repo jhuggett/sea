@@ -1,6 +1,8 @@
 package world_map
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type CoastalPoint struct {
 	gorm.Model

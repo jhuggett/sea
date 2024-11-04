@@ -2,6 +2,7 @@ package ship
 
 import (
 	"github.com/jhuggett/sea/db"
+	"github.com/jhuggett/sea/models/world_map"
 	"gorm.io/gorm"
 )
 
@@ -10,7 +11,12 @@ type Ship struct {
 	X float64
 	Y float64
 
+	CrewCapacity  uint
+	CargoCapacity uint
+
 	WorldMapID uint
+
+	IsDocked bool
 }
 
 func New() *Ship {
@@ -50,4 +56,8 @@ func Get(id uint) (*Ship, error) {
 	}
 
 	return &s, nil
+}
+
+func (s *Ship) Location() world_map.Point {
+	return world_map.Point{X: int(s.X), Y: int(s.Y)}
 }

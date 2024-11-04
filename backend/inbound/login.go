@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/jhuggett/sea/game_context"
+	"github.com/jhuggett/sea/models/ship"
 )
 
 type LoginReq struct {
@@ -21,7 +22,7 @@ type LoginResp struct {
 	Success bool     `json:"success"`
 }
 
-func Login(setGameContext func(snapshot game_context.Snapshot) *game_context.GameContext) InboundFunc {
+func Login(setGameContext func(snapshot game_context.Snapshot) Connection) InboundFunc {
 	return func(req json.RawMessage) (interface{}, error) {
 		var r LoginReq
 		if err := json.Unmarshal(req, &r); err != nil {
@@ -29,7 +30,9 @@ func Login(setGameContext func(snapshot game_context.Snapshot) *game_context.Gam
 			return nil, err
 		}
 
-		ctx := setGameContext(r.Snapshot)
+		conn := setGameContext(r.Snapshot)
+
+		ctx := conn.Context()
 
 		s, err := ctx.Ship()
 		if err != nil {
@@ -38,6 +41,21 @@ func Login(setGameContext func(snapshot game_context.Snapshot) *game_context.Gam
 		}
 
 		slog.Info("Ship found", "id", s.ID)
+
+		s.OnDockedDo(func(data ship.DockedEventData) {
+			slog.Info("Ship docked", "id", s.ID)
+			conn.Sender().ShipDocked(s.ID, data.Location, false)
+		})
+
+		s.OnUndockedDo(func(data ship.UnDockedEventData) {
+			slog.Info("Ship undocked", "id", s.ID)
+			conn.Sender().ShipDocked(s.ID, data.Location, true)
+		})
+
+		s.OnMovedDo(func(data ship.ShipMovedEventData) {
+			slog.Info("Ship moved", "id", s.ID)
+			conn.Sender().ShipMoved(s.ID, data.Location)
+		})
 
 		return LoginResp{
 			Ship:    ShipInfo{ID: s.ID, X: s.X, Y: s.Y},

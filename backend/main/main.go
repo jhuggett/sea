@@ -10,6 +10,7 @@ import (
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/jsonrpc"
+	"github.com/jhuggett/sea/log"
 	"github.com/jhuggett/sea/models/port"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/models/world_map"
@@ -22,11 +23,11 @@ var upgrader = websocket.Upgrader{}
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	slog.Info("Upgrading connection")
+	slog.Info("Upgrading Connection")
 	c, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
-		slog.Error("Error upgrading connection: ", err)
+		slog.Error("Error upgrading Connection: ", err)
 		return
 	}
 
@@ -36,6 +37,24 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// set global logger with custom options
+	slog.SetDefault(
+		slog.New(log.NewHandler(&log.HandlerOptions{
+			HandlerOptions: slog.HandlerOptions{
+				AddSource: true,
+				Level:     log.OptInDebug,
+			},
+			UseColor: true,
+
+			BlockList: []string{
+				"utils/callback",
+			},
+			Allowlist: []string{},
+		})),
+	)
+
+	slog.Debug("Starting server")
+
 	dbConn := db.Conn()
 	dbConn.AutoMigrate(&ship.Ship{})
 	dbConn.AutoMigrate(&world_map.WorldMap{})
@@ -51,6 +70,8 @@ func main() {
 	if err != nil {
 		fmt.Println("Error starting server: ", err)
 	}
+
+	slog.Debug("All done")
 }
 
 type ExamplePayload struct {
@@ -74,27 +95,35 @@ func (c *Connection) Sender() *outbound.Sender {
 func run(conn *websocket.Conn) {
 	rpc := jsonrpc.New(conn)
 
-	connection := &Connection{
+	Connection := &Connection{
 		RPC: rpc,
 	}
 
 	Timeline := timeline.New()
 
+	timeline.OnTicksPerSecondChanged.Register(func(s struct {
+		Old       uint64
+		New       uint64
+		TickCount uint64
+	}) {
+		Connection.Sender().TimeChanged(s.New, s.TickCount)
+	})
+
 	Timeline.Start()
 
 	receivers := []func(){
-		rpc.Receive("Login", inbound.Login(func(snapshot game_context.Snapshot) *game_context.GameContext {
+		rpc.Receive("Login", inbound.Login(func(snapshot game_context.Snapshot) inbound.Connection {
 			slog.Info("Setting game context")
-			connection.gameCtx = game_context.New(snapshot)
-			connection.gameCtx.Timeline = Timeline
+			Connection.gameCtx = game_context.New(snapshot)
+			Connection.gameCtx.Timeline = Timeline
 
-			return connection.gameCtx
+			return Connection
 		})),
-		rpc.Receive("MoveShip", inbound.MoveShip(connection)),
+		rpc.Receive("MoveShip", inbound.MoveShip(Connection)),
 		rpc.Receive("Register", inbound.Register()),
-		rpc.Receive("GetWorldMap", inbound.GetWorldMap(connection)),
-		rpc.Receive("GetPorts", inbound.GetPorts(connection)),
-		rpc.Receive("ControlTime", inbound.ControlTime(connection)),
+		rpc.Receive("GetWorldMap", inbound.GetWorldMap(Connection)),
+		rpc.Receive("GetPorts", inbound.GetPorts(Connection)),
+		rpc.Receive("ControlTime", inbound.ControlTime(Connection)),
 	}
 
 	<-rpc.ClosedChan

@@ -13,7 +13,7 @@ type ControlTimeReq struct {
 type ControlTimeResp struct {
 }
 
-func ControlTime(conn connection) InboundFunc {
+func ControlTime(conn Connection) InboundFunc {
 	return func(req json.RawMessage) (interface{}, error) {
 		var reqObj ControlTimeReq
 		if err := json.Unmarshal(req, &reqObj); err != nil {

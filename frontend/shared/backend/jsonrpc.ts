@@ -67,8 +67,8 @@ const isResponse = <T>(data: any): data is Response<T> => {
 };
 
 export class JSONRPC {
-  constructor(private connection: WebSocket) {
-    this.connection.onmessage = (message) => {
+  constructor(private Connection: WebSocket) {
+    this.Connection.onmessage = (message) => {
       const data = JSON.parse(message.data);
       if (isRequest(data)) {
         this.handleRequest(data);
@@ -79,11 +79,11 @@ export class JSONRPC {
   }
 
   private sendResponse(data: Response<any>) {
-    this.connection.send(JSON.stringify(data));
+    this.Connection.send(JSON.stringify(data));
   }
 
   private sendRequest(data: Request<any>) {
-    this.connection.send(JSON.stringify(data));
+    this.Connection.send(JSON.stringify(data));
   }
 
   private async handleRequest(data: Request<unknown>) {

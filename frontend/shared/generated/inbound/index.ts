@@ -70,6 +70,7 @@ export interface Inbound {
   };
 }
 export type InboundFunc = any;
+export type Connection = any;
 
 //////////
 // source: login.go

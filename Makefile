@@ -1,10 +1,22 @@
-.PHONY: dev
-dev:
+.PHONY: run-backend
+run-backend: 
 	cd ./backend/main; \
-	go build -o ../../dist/dev/server; \
-	cd ../../frontend; \
-	bun build ./index.ts --compile --outfile ../dist/dev/game; \
-	cd .. && ./dist/dev/game; \
+	go run main.go; \
+
+.PHONY: backend-dev
+backend-dev:
+	$(MAKE) backend; \
+	$(MAKE) run-backend;
+
+.PHONY: frontend-setup
+frontend-setup:
+	cd ./frontend/web-react; \
+	yarn install; \
+
+.PHONY: frontend-dev
+frontend-dev:
+	cd ./frontend/web-react; \
+	yarn dev; \
 
 .PHONY: generate-types
 generate-types:
