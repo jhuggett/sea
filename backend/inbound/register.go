@@ -5,7 +5,8 @@ import (
 	"log/slog"
 
 	"github.com/jhuggett/sea/game_context"
-	"github.com/jhuggett/sea/models/port"
+	"github.com/jhuggett/sea/models"
+	"github.com/jhuggett/sea/models/crew"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/models/world_map"
 )
@@ -27,7 +28,9 @@ func Register() InboundFunc {
 		slog.Info("Register")
 
 		// create world map
-		worldMap := world_map.New()
+		worldMap := &world_map.WorldMap{
+			Persistent: models.WorldMap{},
+		}
 		worldMapID, err := worldMap.Create()
 		if err != nil {
 			return nil, err
@@ -41,18 +44,32 @@ func Register() InboundFunc {
 		}
 
 		// create ports
-		port := port.New()
-		port.WorldMapID = worldMapID
-		port.CoastalPointID = worldMap.Continents[0].CoastalPoints[0].ID
-		_, err = port.Create()
+		// port := port.New()
+		// port.Persistent.WorldMapID = worldMapID
+		// port.Persistent.CoastalPointID = worldMap.Persistent.Continents[0].CoastalPoints[0].ID
+		// _, err = port.Create()
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		// create ship
+		ship := ship.New()
+		ship.Persistent.Coffers = 1000
+		ship.Persistent.WorldMapID = worldMapID
+		shipID, err := ship.Create()
 		if err != nil {
 			return nil, err
 		}
 
-		// create ship
-		ship := ship.New()
-		ship.WorldMapID = worldMapID
-		shipID, err := ship.Create()
+		// create crew
+		crew := crew.New(models.Crew{
+			ShipID:  shipID,
+			Size:    1,
+			Wage:    1,
+			Rations: 1,
+			Morale:  1,
+		})
+		_, err = crew.Create()
 		if err != nil {
 			return nil, err
 		}

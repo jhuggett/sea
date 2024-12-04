@@ -35,21 +35,96 @@ const useStart = () => {
       };
     
       function drawContinent(continent: Continent) {
-        const triangle = new ex.Polygon({
-          points: continent.coastal_points.flatMap((p) => [
-            new ex.Vector(p.x * TILE_SIZE, p.y * TILE_SIZE),
-          ]),
-          color: ex.Color.Green,
-        });
+        // const triangle = new ex.Polygon({
+        //   points: continent.coastal_points.map((p) => 
+        //     new ex.Vector(p.x * TILE_SIZE, p.y * TILE_SIZE)
+        //   ),
+        //   color: ex.Color.Green,
+        // });
     
+        // const actor = new ex.Actor({
+        //   x: continent.center.x * TILE_SIZE,
+        //   y: continent.center.y * TILE_SIZE,
+        // });
+    
+        // actor.graphics.add(triangle);
+    
+        // game.add(actor);
+
+        let i = 0
+
+        const randomRed = Math.floor(Math.random() * 255)
+        const randomBlue = Math.floor(Math.random() * 255)
+        const randomGreen = Math.floor(Math.random() * 255)
+
+        // draw square for center
         const actor = new ex.Actor({
           x: continent.center.x * TILE_SIZE,
-          y: continent.center.y * TILE_SIZE,
+          y: -continent.center.y * TILE_SIZE,
+          width: TILE_SIZE,
+          height: TILE_SIZE,
+          color: ex.Color.fromRGB(randomRed, randomGreen, randomBlue),
         });
-    
-        actor.graphics.add(triangle);
-    
+
+        const textSquare = new ex.Actor({
+          x: continent.center.x * TILE_SIZE,
+          y: -continent.center.y * TILE_SIZE,
+          width: TILE_SIZE,
+          height: TILE_SIZE,
+          color: ex.Color.Transparent,
+        });
+
+        const text = new ex.Text({
+          text: `${continent.center.x}, ${-continent.center.y}`,
+          color: ex.Color.White,
+        });
+
+        textSquare.graphics.use(text);
+
         game.add(actor);
+        game.add(textSquare);
+
+        
+        for (const point of continent.coastal_points) {
+          const scale = i / continent.coastal_points.length ;  
+          const actor = new ex.Actor({
+            x: point.x * TILE_SIZE,
+            y: point.y * TILE_SIZE,
+            width: TILE_SIZE,
+            height: TILE_SIZE,
+            color: ex.Color.fromRGB(scale * randomRed, scale * randomGreen, scale * randomBlue),
+          });
+
+          const textSquare = new ex.Actor({
+            x: point.x * TILE_SIZE,
+            y: point.y * TILE_SIZE,
+            width: TILE_SIZE,
+            height: TILE_SIZE,
+            color: ex.Color.Transparent,
+          });
+
+          // add coors as text on the square
+        //   const text = new ex.Text({
+        //     text: 'Some Text Drawn Here\nNext line'
+        // });
+        // const actor = new ex.Actor({
+        //     pos: ex.vec(100, 100)
+        // });
+        // actor.graphics.use(text);
+        // game.currentScene.add(actor);
+
+          const text = new ex.Text({
+            text: `${point.x}, ${-point.y}`,
+            color: ex.Color.White,
+          });
+
+          textSquare.graphics.use(text);
+
+          i += 1;
+    
+          game.add(actor);
+          game.add(textSquare);
+        }
       }
     
       console.log("Connecting to server");
@@ -100,6 +175,13 @@ const useStart = () => {
         console.log("World map response", worldMapResp);
     
         for (const continent of worldMapResp.continents) {
+
+          if (continent) {
+            for (const point of continent.coastal_points) {
+              point.y = -point.y;
+            }
+          }
+          
           console.log("Continent", continent);
           if (continent) {
             drawContinent(continent);
@@ -115,7 +197,8 @@ const useStart = () => {
           const actor = new ex.Actor({
             x: port.point.x * TILE_SIZE,
             y: port.point.y * TILE_SIZE,
-            radius: 10,
+            width: TILE_SIZE,
+            height: TILE_SIZE,
             color: ex.Color.Red,
           });
     
@@ -132,6 +215,15 @@ const useStart = () => {
     
       game.add(ship.actor);
     
+      // game.input.pointers.primary.on("move", (evt) => {
+      //     game.currentScene.camera.move(
+      //       new ex.Vector(evt.worldPos.x, evt.worldPos.y),
+      //       .1
+      //     );
+      // })
+      
+      
+
       game.input.pointers.primary.on("down", (evt) => {
         rpc!.send("MoveShip", {
           x: evt.coordinates.worldPos.x / TILE_SIZE,
@@ -204,6 +296,41 @@ const useStart = () => {
     }
 }
 
+export const useDraggable = () => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState<{ offsetX: number; offsetY: number }>();
+
+  return {
+    onMouseMove: (evt: React.MouseEvent) => {
+      if (dragging) {
+        setPosition({
+          x: evt.clientX + dragging.offsetX,
+          y: evt.clientY + dragging.offsetY,
+        });
+      }
+    },
+    onMouseDown: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => setDragging({
+      offsetX: e.currentTarget.offsetLeft - e.clientX,
+      offsetY: e.currentTarget.offsetTop - e.clientY,
+    }),
+    onMouseUp: () => setDragging(undefined),
+    onMouseLeave: () => setDragging(undefined),
+    position
+  }
+}
+
+const useInventory = () => {
+  const [open, setOpen] = useState(true);
+
+  return {
+    inventoryWidget: open ? 
+      <Tablet classNames="fixed" > 
+      Inventory
+      </Tablet>: null,
+      setOpen
+  };
+}
+
 
 function App() {
   const { isDocked } = useStart();
@@ -227,9 +354,12 @@ function App() {
     
   }, [ticksPerSecond, isPaused]);
 
+  const { inventoryWidget} = useInventory();
+
   return (
     <>
       <div className="absolute w-screen h-screen  top-0 left-0 z-50 pointer-events-none">
+        {inventoryWidget}
         <div className="flex justify-between">
           <Tablet>
             <div className="flex flex-col">
@@ -258,7 +388,7 @@ function App() {
           </Tablet>
         </div>
         {isDocked && (
-          <Tablet>
+          <Tablet classNames="fixed">
             <div className="flex flex-col">
               <span>Port</span>
             </div>

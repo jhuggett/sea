@@ -25,7 +25,7 @@ export interface Sender {
 
 export interface ShipDockedReq {
   ship_id?: number /* uint */;
-  location?: any /* world_map.Point */;
+  location?: any /* coordination.Point */;
   undocked?: boolean;
 }
 export interface ShipDockedResp {
@@ -36,7 +36,7 @@ export interface ShipDockedResp {
 
 export interface ShipMovedReq {
   ship_id: number /* uint */;
-  location: any /* world_map.Point */;
+  location: any /* coordination.Point */;
 }
 export interface ShipMovedResp {
 }

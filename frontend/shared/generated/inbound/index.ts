@@ -34,7 +34,7 @@ export interface CoastalPoint {
 }
 export interface Continent {
   coastal_points: CoastalPoint[];
-  center: any /* world_map.Point */;
+  center: any /* coordination.Point */;
 }
 export interface GetWorldMapResp {
   continents: (Continent | undefined)[];

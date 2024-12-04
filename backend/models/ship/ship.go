@@ -1,22 +1,16 @@
 package ship
 
 import (
+	"fmt"
+
 	"github.com/jhuggett/sea/db"
-	"github.com/jhuggett/sea/models/world_map"
-	"gorm.io/gorm"
+	"github.com/jhuggett/sea/models"
+	"github.com/jhuggett/sea/models/crew"
+	"github.com/jhuggett/sea/utils/coordination"
 )
 
 type Ship struct {
-	gorm.Model
-	X float64
-	Y float64
-
-	CrewCapacity  uint
-	CargoCapacity uint
-
-	WorldMapID uint
-
-	IsDocked bool
+	Persistent models.Ship
 }
 
 func New() *Ship {
@@ -24,21 +18,21 @@ func New() *Ship {
 }
 
 func (s *Ship) Create() (uint, error) {
-	err := db.Conn().Create(s).Error
+	err := db.Conn().Create(&s.Persistent).Error
 	if err != nil {
 		return 0, err
 	}
 
-	return s.ID, nil
+	return s.Persistent.ID, nil
 }
 
 func (s *Ship) Save() error {
-	return db.Conn().Save(s).Error
+	return db.Conn().Save(s.Persistent).Error
 }
 
 func (s *Ship) Move(x, y float64) error {
-	s.X = x
-	s.Y = y
+	s.Persistent.X = x
+	s.Persistent.Y = y
 
 	err := s.Save()
 	if err != nil {
@@ -49,15 +43,30 @@ func (s *Ship) Move(x, y float64) error {
 }
 
 func Get(id uint) (*Ship, error) {
-	var s Ship
+	var s models.Ship
 	err := db.Conn().First(&s, id).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return &s, nil
+	return &Ship{
+		Persistent: s,
+	}, nil
 }
 
-func (s *Ship) Location() world_map.Point {
-	return world_map.Point{X: int(s.X), Y: int(s.Y)}
+func (s *Ship) Location() coordination.Point {
+	return coordination.Point{X: int(s.Persistent.X), Y: int(s.Persistent.Y)}
+}
+
+func (s *Ship) Crew() (*crew.Crew, error) {
+	return crew.Where(models.Crew{ShipID: s.Persistent.ID})
+}
+
+func (s *Ship) SubtractFromCoffers(amount float64) error {
+	if s.Persistent.Coffers < amount {
+		return fmt.Errorf("insufficient funds")
+	}
+
+	s.Persistent.Coffers -= amount
+	return s.Save()
 }

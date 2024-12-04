@@ -40,25 +40,25 @@ func Login(setGameContext func(snapshot game_context.Snapshot) Connection) Inbou
 			return nil, err
 		}
 
-		slog.Info("Ship found", "id", s.ID)
+		slog.Info("Ship found", "id", s.Persistent.ID)
 
 		s.OnDockedDo(func(data ship.DockedEventData) {
-			slog.Info("Ship docked", "id", s.ID)
-			conn.Sender().ShipDocked(s.ID, data.Location, false)
+			slog.Info("Ship docked", "id", s.Persistent.ID)
+			conn.Sender().ShipDocked(s.Persistent.ID, data.Location, false)
 		})
 
 		s.OnUndockedDo(func(data ship.UnDockedEventData) {
-			slog.Info("Ship undocked", "id", s.ID)
-			conn.Sender().ShipDocked(s.ID, data.Location, true)
+			slog.Info("Ship undocked", "id", s.Persistent.ID)
+			conn.Sender().ShipDocked(s.Persistent.ID, data.Location, true)
 		})
 
 		s.OnMovedDo(func(data ship.ShipMovedEventData) {
-			slog.Info("Ship moved", "id", s.ID)
-			conn.Sender().ShipMoved(s.ID, data.Location)
+			slog.Info("Ship moved", "id", s.Persistent.ID)
+			conn.Sender().ShipMoved(s.Persistent.ID, data.Location)
 		})
 
 		return LoginResp{
-			Ship:    ShipInfo{ID: s.ID, X: s.X, Y: s.Y},
+			Ship:    ShipInfo{ID: s.Persistent.ID, X: s.Persistent.X, Y: s.Persistent.Y},
 			Success: true,
 		}, nil
 	}

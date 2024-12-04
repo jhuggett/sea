@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/jhuggett/sea/models/world_map"
 	"gorm.io/gorm"
 )
 
@@ -11,5 +10,5 @@ type Port struct {
 	CoastalPointID uint
 	WorldMapID     uint
 
-	CoastalPoint *world_map.CoastalPoint `gorm:"foreignKey:CoastalPointID"`
+	CoastalPoint *CoastalPoint `gorm:"foreignKey:CoastalPointID"`
 }

@@ -1,129 +1,158 @@
 package timeline
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/jhuggett/sea/utils/callback"
+	"github.com/jhuggett/sea/utils/priority_queue"
 )
-
-var eventStore = map[string]Event{}
-
-func StoreEvent(event Event, id string) {
-	eventStore[id] = event
-}
-
-func GetEvent(id string) (Event, bool) {
-	event, ok := eventStore[id]
-	return event, ok
-}
 
 type Timeline struct {
 	current uint64
 
-	stop chan struct{}
+	ticksPerCycle uint64
 
-	ticksPerSecond uint64
+	queue *priority_queue.PriorityQueue[Event]
 
-	continualEvents []ContinualEvent
+	stop   chan struct{}
+	cycler func(cycle func(), stop chan struct{})
 }
 
 func New() *Timeline {
 	return &Timeline{
-		current:        0,
-		stop:           make(chan struct{}),
-		ticksPerSecond: 1,
+		current:       0,
+		ticksPerCycle: 1,
+
+		cycler: func(cycle func(), stop chan struct{}) {
+			for {
+				select {
+				case <-stop:
+					return
+				case <-time.After(time.Second):
+					cycle()
+				}
+			}
+		},
+
+		queue: priority_queue.New(func(a, b Event) bool {
+			return (a).Target < (b).Target
+		}),
 	}
 }
 
-type Event interface {
-}
-
-type ContinualEvent interface {
-	Do(ticks uint64) (stop bool)
-}
-
-// type TargetedEvent interface {
-// }
-
-var OnTicksPerSecondChanged = callback.NewRegistry[struct {
-	Old       uint64
-	New       uint64
-	TickCount uint64
-}]()
-
-func (t *Timeline) SetTicksPerSecond(ticksPerSecond uint64) {
-	t.ticksPerSecond = ticksPerSecond
-
-	OnTicksPerSecondChanged.Invoke(struct {
-		Old       uint64
-		New       uint64
-		TickCount uint64
-	}{
-		Old:       t.ticksPerSecond,
-		New:       ticksPerSecond,
-		TickCount: t.current,
-	})
-}
-
-func (t *Timeline) TicksPerSecond() uint64 {
-	return t.ticksPerSecond
-}
-
-func (t *Timeline) Tick() uint64 {
-	t.current += t.ticksPerSecond
-	return t.ticksPerSecond
-}
-
-func (t *Timeline) RegisterContinualEvent(event ContinualEvent) {
-	t.continualEvents = append(t.continualEvents, event)
-}
-
-func (t *Timeline) run() {
-	for {
-		select {
-		case <-t.stop:
-			slog.Info("Timeline stopped")
-			// should save here in future etc
-			return
-		case <-time.After(1 * time.Second):
-			elapsedTicks := t.Tick()
-			t.processContinualEvents(elapsedTicks)
-		}
-	}
-}
-
+// Stop the timeline.
 func (t *Timeline) Stop() {
+	slog.Debug("Stopping timeline", "current", t.current)
 	close(t.stop)
 }
 
+// Start the timeline (will resume if previously stopped).
 func (t *Timeline) Start() {
-	go t.run()
+	t.stop = make(chan struct{})
+
+	slog.Debug("Starting timeline", "current", t.current)
+
+	go t.cycler(func() {
+		slog.Debug("Cycling", "current", t.current)
+		t.current += t.ticksPerCycle
+		t.processQueue()
+		slog.Debug("Finished cycling", "current", t.current)
+	}, t.stop)
 }
 
-func (t *Timeline) processContinualEvents(ticks uint64) {
+// Should return how many ticks to wait until it is invoke again. 0 means it will not be invoked again.
+type EventDo func() uint64
 
-	// seems like continual events aren't working...
-	// eg. ship moving only seems to move once and then hangs or something
+type Event struct {
+	Target   uint64  // The tick when the event should be invoked.
+	Enqueued uint64  // The tick when the event was enqueued.
+	Do       EventDo // The function to invoke.
+}
 
-	var nextContinualEvents []ContinualEvent
-	for _, event := range t.continualEvents {
-		if !event.Do(ticks) {
-			// t.continualEvents = append(t.continualEvents[:i], t.continualEvents[i+1:]...)
-			nextContinualEvents = append(nextContinualEvents, event)
+func (e *Event) LogValue() slog.Value {
+	return slog.StringValue(fmt.Sprintf("Event{Target: %d, Enqueued: %d}", e.Target, e.Enqueued))
+}
+
+func (t *Timeline) processQueue() {
+	slog.Debug("Processing queue", "current", t.current, "queue", t.queue.Len())
+	event := t.queue.PopIt()
+
+	for event != nil {
+		slog.Debug("Processing event", "event", event)
+		if event.Target > t.current {
+			t.queue.PushIt(*event)
+			slog.Debug("Re-enqueued event; passed target", "event", event)
+			break
 		}
+
+		inTicks := event.Do()
+		if inTicks > 0 {
+			slog.Debug("Re-enqueued event", "event", event)
+			t.queue.PushIt(Event{
+				Target:   event.Target + uint64(inTicks),
+				Do:       event.Do,
+				Enqueued: event.Target,
+			})
+		}
+		event = t.queue.PopIt()
 	}
-	t.continualEvents = nextContinualEvents
+
+	slog.Debug("Finished processing queue", "current", t.current, "queue", t.queue.Len())
 }
 
-/*
-Eg
+// Do will invoke the do function after inTicks.
+func (t *Timeline) Do(do EventDo, afterTicks uint64) {
+	slog.Debug("Enqueuing event", "current", t.current, "afterTicks", afterTicks)
+	t.queue.PushIt(Event{
+		Target:   t.current + afterTicks,
+		Do:       do,
+		Enqueued: t.current,
+	})
+}
 
-Move ship
-every tick, move ship based on speed
+// TODO: add actual identifier for timeline
+func (t *Timeline) id() int {
+	return 0
+}
 
+func (t *Timeline) TicksPerCycle() uint64 {
+	return t.ticksPerCycle
+}
 
-Events
-- Continual events (pass number of ticks as time passes until it says to stop)
-- Targeted events (trigger when total ticks reaches the target tick. Could be repeatable)
-*/
+func (t *Timeline) CurrentTick() uint64 {
+	return t.current
+}
+
+type TicksPerCycleChangedEventData struct {
+	PrevTicksPerCycle uint64
+	NewTicksPerCycle  uint64
+	CurrentTick       uint64
+}
+
+var onTicksPerCycleChanged = callback.NewRegistryMap[TicksPerCycleChangedEventData]()
+
+func (t *Timeline) SetTicksPerCycle(ticksPerCycle uint64) {
+
+	eventData := TicksPerCycleChangedEventData{
+		PrevTicksPerCycle: t.ticksPerCycle,
+		NewTicksPerCycle:  ticksPerCycle,
+		CurrentTick:       t.current,
+	}
+
+	t.ticksPerCycle = ticksPerCycle
+
+	onTicksPerCycleChanged.Invoke([]any{t.id()}, eventData)
+}
+
+func (t *Timeline) OnTicksPerCycleChangedDo(do func(TicksPerCycleChangedEventData)) func() {
+	return onTicksPerCycleChanged.Register([]any{t.id()}, do)
+}
+
+const (
+	Day   uint64 = 2
+	Week  uint64 = 7 * Day
+	Month uint64 = 30 * Day
+	Year  uint64 = 12 * Month
+)

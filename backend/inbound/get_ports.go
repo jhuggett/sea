@@ -38,10 +38,10 @@ func GetPorts(conn Connection) InboundFunc {
 		for _, p := range ports {
 			port := Port{}
 
-			port.ID = p.ID
+			port.ID = p.Persistent.ID
 			port.Point = CoastalPoint{
-				X: p.CoastalPoint.X,
-				Y: p.CoastalPoint.Y,
+				X: p.Persistent.CoastalPoint.X,
+				Y: p.Persistent.CoastalPoint.Y,
 			}
 
 			resp.Ports = append(resp.Ports, port)
