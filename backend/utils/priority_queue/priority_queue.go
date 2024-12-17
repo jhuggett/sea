@@ -2,15 +2,19 @@ package priority_queue
 
 import "container/heap"
 
+type Compareable interface {
+	SameAs(other Compareable) bool
+}
+
 // An Item is something we manage in a priority queue.
-type Item[T any] struct {
+type Item[T Compareable] struct {
 	value T // The value of the item.
 	// The index is needed by update and is maintained by the heap.Interface methods.
 	index int // The index of the item in the heap.
 }
 
 // A PriorityQueue implements heap.Interface and holds Items.
-type PriorityQueue[T any] struct {
+type PriorityQueue[T Compareable] struct {
 	items   []*Item[T]
 	compare func(a, b T) bool
 }
@@ -55,7 +59,7 @@ func (pq *PriorityQueue[T]) Pop() any {
 	return item
 }
 
-func New[T any](compare func(a, b T) bool) *PriorityQueue[T] {
+func New[T Compareable](compare func(a, b T) bool) *PriorityQueue[T] {
 	pq := &PriorityQueue[T]{
 		items:   []*Item[T]{},
 		compare: compare,
@@ -75,4 +79,13 @@ func (pq *PriorityQueue[T]) PopIt() *T {
 		return nil
 	}
 	return &heap.Pop(pq).(*Item[T]).value
+}
+
+func (pq *PriorityQueue[T]) RemoveIt(value T) {
+	for i, item := range pq.items {
+		if item.value.SameAs(value) {
+			heap.Remove(pq, i)
+			return
+		}
+	}
 }

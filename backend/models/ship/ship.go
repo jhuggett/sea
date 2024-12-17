@@ -1,11 +1,10 @@
 package ship
 
 import (
-	"fmt"
-
 	"github.com/jhuggett/sea/db"
 	"github.com/jhuggett/sea/models"
 	"github.com/jhuggett/sea/models/crew"
+	"github.com/jhuggett/sea/models/inventory"
 	"github.com/jhuggett/sea/utils/coordination"
 )
 
@@ -18,7 +17,25 @@ func New() *Ship {
 }
 
 func (s *Ship) Create() (uint, error) {
-	err := db.Conn().Create(&s.Persistent).Error
+	// Create inventory
+	i := models.Inventory{}
+
+	err := db.Conn().Create(&i).Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	s.Persistent.InventoryID = i.ID
+
+	err = db.Conn().Create(&s.Persistent).Error
+	if err != nil {
+		return 0, err
+	}
+
+	// reload
+
+	err = db.Conn().Preload("Inventory").Preload("Inventory.Items").First(&s.Persistent, s.Persistent.ID).Error
 	if err != nil {
 		return 0, err
 	}
@@ -27,7 +44,7 @@ func (s *Ship) Create() (uint, error) {
 }
 
 func (s *Ship) Save() error {
-	return db.Conn().Save(s.Persistent).Error
+	return db.Conn().Save(&s.Persistent).Error
 }
 
 func (s *Ship) Move(x, y float64) error {
@@ -44,7 +61,7 @@ func (s *Ship) Move(x, y float64) error {
 
 func Get(id uint) (*Ship, error) {
 	var s models.Ship
-	err := db.Conn().First(&s, id).Error
+	err := db.Conn().Preload("Inventory").Preload("Inventory.Items").First(&s, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +79,13 @@ func (s *Ship) Crew() (*crew.Crew, error) {
 	return crew.Where(models.Crew{ShipID: s.Persistent.ID})
 }
 
-func (s *Ship) SubtractFromCoffers(amount float64) error {
-	if s.Persistent.Coffers < amount {
-		return fmt.Errorf("insufficient funds")
+func (s *Ship) Inventory() *inventory.Inventory {
+
+	if s.Persistent.Inventory != nil {
+		return &inventory.Inventory{Persistent: *s.Persistent.Inventory}
 	}
 
-	s.Persistent.Coffers -= amount
-	return s.Save()
+	panic("Inventory not loaded for ship")
+
+	return nil
 }

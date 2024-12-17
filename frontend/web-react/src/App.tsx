@@ -1,20 +1,25 @@
-import { Snapshot, Continent, SetupRPC, JSONRPC } from "@sea/shared";
+import { Snapshot, Continent, SetupRPC, JSONRPC, ShipInventoryChangedReq } from "@sea/shared";
 import * as ex from "excalibur";
 import "./App.css";
 import { Ship } from "./ship";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Tablet } from "./ui/tablet";
+import { Copy } from "./ui/copy";
+
+type InventoryItem = ShipInventoryChangedReq["items"][0];
 
 export const TILE_SIZE = 32;
 
 let rpc: JSONRPC | undefined = undefined;
 
-// async function 
-
-// let isDocked = false;
-
-const useStart = () => {
+const useStart = ({
+  timeChanged,
+  inventoryChanged
+} : {
+  timeChanged?: (current_tick: number, ticks_per_second: number) => void;
+  inventoryChanged?: (items: InventoryItem[]) => void;
+}) => {
 
   const [isDocked, setIsDocked] = useState(false)
 
@@ -35,97 +40,42 @@ const useStart = () => {
       };
     
       function drawContinent(continent: Continent) {
-        // const triangle = new ex.Polygon({
-        //   points: continent.coastal_points.map((p) => 
-        //     new ex.Vector(p.x * TILE_SIZE, p.y * TILE_SIZE)
-        //   ),
-        //   color: ex.Color.Green,
-        // });
-    
-        // const actor = new ex.Actor({
-        //   x: continent.center.x * TILE_SIZE,
-        //   y: continent.center.y * TILE_SIZE,
-        // });
-    
-        // actor.graphics.add(triangle);
-    
-        // game.add(actor);
 
-        let i = 0
+        const graphicsGroup = new ex.GraphicsGroup({
+          useAnchor: false,
+          members: continent.points.map(p => {
 
-        const randomRed = Math.floor(Math.random() * 255)
-        const randomBlue = Math.floor(Math.random() * 255)
-        const randomGreen = Math.floor(Math.random() * 255)
+            const dark = ex.Color.fromHex("#563010")
+            const light = ex.Color.fromHex("#B39253")
 
-        // draw square for center
+            const c = ex.Color.fromRGB(
+              dark.r + (light.r - dark.r) * p.elevation,
+              dark.g + (light.g - dark.g) * p.elevation,
+              dark.b + (light.b - dark.b) * p.elevation
+            )
+            
+            return {
+              graphic: new ex.Rectangle({
+                width: TILE_SIZE,
+                height: TILE_SIZE,
+                color: c // ex.Color.fromHex("#B39253"). // ex.Color.fromHex("#563010") // ex.Color.fromRGB(0, 180 - 100 * p.elevation, 0),
+              }),
+              offset: new ex.Vector((p.x) * TILE_SIZE - TILE_SIZE / 2, (p.y) * TILE_SIZE - TILE_SIZE / 2)
+            }
+          })
+        })
+
+          
         const actor = new ex.Actor({
-          x: continent.center.x * TILE_SIZE,
-          y: -continent.center.y * TILE_SIZE,
-          width: TILE_SIZE,
-          height: TILE_SIZE,
-          color: ex.Color.fromRGB(randomRed, randomGreen, randomBlue),
+          z: 0
         });
 
-        const textSquare = new ex.Actor({
-          x: continent.center.x * TILE_SIZE,
-          y: -continent.center.y * TILE_SIZE,
-          width: TILE_SIZE,
-          height: TILE_SIZE,
-          color: ex.Color.Transparent,
-        });
+        actor.graphics.use(graphicsGroup);
 
-        const text = new ex.Text({
-          text: `${continent.center.x}, ${-continent.center.y}`,
-          color: ex.Color.White,
-        });
-
-        textSquare.graphics.use(text);
+        // game.toggleDebug();
 
         game.add(actor);
-        game.add(textSquare);
-
-        
-        for (const point of continent.coastal_points) {
-          const scale = i / continent.coastal_points.length ;  
-          const actor = new ex.Actor({
-            x: point.x * TILE_SIZE,
-            y: point.y * TILE_SIZE,
-            width: TILE_SIZE,
-            height: TILE_SIZE,
-            color: ex.Color.fromRGB(scale * randomRed, scale * randomGreen, scale * randomBlue),
-          });
-
-          const textSquare = new ex.Actor({
-            x: point.x * TILE_SIZE,
-            y: point.y * TILE_SIZE,
-            width: TILE_SIZE,
-            height: TILE_SIZE,
-            color: ex.Color.Transparent,
-          });
-
-          // add coors as text on the square
-        //   const text = new ex.Text({
-        //     text: 'Some Text Drawn Here\nNext line'
-        // });
-        // const actor = new ex.Actor({
-        //     pos: ex.vec(100, 100)
-        // });
-        // actor.graphics.use(text);
-        // game.currentScene.add(actor);
-
-          const text = new ex.Text({
-            text: `${point.x}, ${-point.y}`,
-            color: ex.Color.White,
-          });
-
-          textSquare.graphics.use(text);
-
-          i += 1;
-    
-          game.add(actor);
-          game.add(textSquare);
-        }
-      }
+     }
     
       console.log("Connecting to server");
     
@@ -175,12 +125,6 @@ const useStart = () => {
         console.log("World map response", worldMapResp);
     
         for (const continent of worldMapResp.continents) {
-
-          if (continent) {
-            for (const point of continent.coastal_points) {
-              point.y = -point.y;
-            }
-          }
           
           console.log("Continent", continent);
           if (continent) {
@@ -195,12 +139,16 @@ const useStart = () => {
     
         for (const port of portsResp.ports) {
           const actor = new ex.Actor({
-            x: port.point.x * TILE_SIZE,
-            y: port.point.y * TILE_SIZE,
-            width: TILE_SIZE,
-            height: TILE_SIZE,
+            x: port.point.X * TILE_SIZE,
+            y: port.point.Y * TILE_SIZE,
             color: ex.Color.Red,
+            z: 1,
           });
+
+          actor.graphics.use(new ex.Circle({
+            radius: TILE_SIZE / 2,
+            color: ex.Color.fromRGB(200, 50, 70, 1)
+          }))
     
           game.add(actor);
         }
@@ -214,25 +162,42 @@ const useStart = () => {
       });
     
       game.add(ship.actor);
+
+      const targetActor = new ex.Actor({
+        x: 0,
+        y: 0,
+        z: 2,
+      });
+
+
+      // square outline
+      targetActor.graphics.use(
+        new ex.Rectangle({
+          width: TILE_SIZE,
+          height: TILE_SIZE,
+          color: ex.Color.Transparent,
+          lineWidth: 3,
+          strokeColor: ex.Color.Black,
+        })
+      );
+
+      game.add(targetActor);
     
-      // game.input.pointers.primary.on("move", (evt) => {
-      //     game.currentScene.camera.move(
-      //       new ex.Vector(evt.worldPos.x, evt.worldPos.y),
-      //       .1
-      //     );
-      // })
-      
+      game.input.pointers.primary.on("move", (evt) => {
+        targetActor.pos.x = Math.round(evt.worldPos.x / TILE_SIZE) * TILE_SIZE;
+        targetActor.pos.y = Math.round(evt.worldPos.y / TILE_SIZE) * TILE_SIZE;
+      })
       
 
       game.input.pointers.primary.on("down", (evt) => {
         rpc!.send("MoveShip", {
-          x: evt.coordinates.worldPos.x / TILE_SIZE,
-          y: evt.coordinates.worldPos.y / TILE_SIZE,
+          x: Math.round(evt.coordinates.worldPos.x / TILE_SIZE),
+          y: Math.round(evt.coordinates.worldPos.y / TILE_SIZE),
         });
       });
     
       game.input.pointers.primary.on("wheel", (evt) => {
-        game.currentScene.camera.zoom += evt.deltaY / 1000;
+        game.currentScene.camera.zoom += evt.deltaY / 5000;
       });
     
       let locked = false;
@@ -261,6 +226,8 @@ const useStart = () => {
       rpc?.receive("TimeChanged", ({ current_tick, ticks_per_second }) => {
         console.log("Time changed", current_tick, ticks_per_second);
 
+        timeChanged?.(current_tick, ticks_per_second);
+
         return Promise.resolve({
           result: {},
         });
@@ -283,8 +250,22 @@ const useStart = () => {
         return Promise.resolve({
           result: {},
         });
+
+
       })
-    
+
+      rpc?.receive("ShipInventoryChanged", ({items}) => {
+        inventoryChanged?.(items);
+
+        return Promise.resolve({
+          result: {}
+        })
+      } )
+
+      
+
+      game.backgroundColor = ex.Color.fromHex("#E0D08A");
+
       game.start();
     })()
       
@@ -322,18 +303,42 @@ export const useDraggable = () => {
 const useInventory = () => {
   const [open, setOpen] = useState(true);
 
+  const [items, setItems] = useState<InventoryItem[]>([]);
+
   return {
     inventoryWidget: open ? 
       <Tablet classNames="fixed" > 
-      Inventory
+      <Copy>Inventory</Copy>
+      <ul>
+        {items.map((item) => (
+          <li key={item.id}>
+            {item.name}: {item.amount}
+          </li>
+        ))}
+      </ul>
       </Tablet>: null,
-      setOpen
+      setOpen,
+      setItems,
   };
 }
 
 
 function App() {
-  const { isDocked } = useStart();
+
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const { inventoryWidget, setItems} = useInventory();
+
+  const { isDocked } = useStart({
+    timeChanged: (current_tick, ticks_per_second) => {
+      console.log("Time changed", current_tick, ticks_per_second);
+      setCurrentTime(current_tick);
+    },
+    inventoryChanged: (items) => {
+      console.log("Inventory changed", items);
+      setItems(items);
+    }
+  });
 
   const [ticksPerSecond, setTicksPerSecond] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
@@ -354,7 +359,7 @@ function App() {
     
   }, [ticksPerSecond, isPaused]);
 
-  const { inventoryWidget} = useInventory();
+  
 
   return (
     <>
@@ -364,6 +369,7 @@ function App() {
           <Tablet>
             <div className="flex flex-col">
               <span>Ticks per second: {ticksPerSecond}</span>
+              <Copy>Current time: {currentTime}</Copy>
               <div>
                 <Button onClick={() => setIsPaused((prev) => !prev)}>
                   {isPaused ? "Resume" : "Pause"}

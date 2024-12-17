@@ -3,7 +3,6 @@ package port
 import (
 	"github.com/jhuggett/sea/db"
 	"github.com/jhuggett/sea/models"
-	"github.com/jhuggett/sea/models/coastal_point"
 )
 
 type Port struct {
@@ -15,7 +14,18 @@ func New() *Port {
 }
 
 func (s *Port) Create() (uint, error) {
-	err := db.Conn().Create(&s.Persistent).Error
+	// Create inventory
+	i := models.Inventory{}
+
+	err := db.Conn().Create(&i).Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	s.Persistent.InventoryID = i.ID
+
+	err = db.Conn().Create(&s.Persistent).Error
 	if err != nil {
 		return 0, err
 	}
@@ -40,8 +50,8 @@ func Get(id uint) (*Port, error) {
 }
 
 func All(worldMapID uint) ([]*Port, error) {
-	var persistedPortData []*models.Port
-	err := db.Conn().Preload("CoastalPoint").Where("world_map_id = ?", worldMapID).Find(&persistedPortData).Error
+	var persistedPortData []models.Port
+	err := db.Conn().Preload("Point").Where("world_map_id = ?", worldMapID).Find(&persistedPortData).Error
 	if err != nil {
 		return nil, err
 	}
@@ -49,21 +59,21 @@ func All(worldMapID uint) ([]*Port, error) {
 	ports := []*Port{}
 	for _, p := range persistedPortData {
 		ports = append(ports, &Port{
-			Persistent: *p,
+			Persistent: p,
 		})
 	}
 
 	return ports, nil
 }
 
-func Find(point coastal_point.CoastalPoint) (*Port, error) {
-	var port *models.Port
-	err := db.Conn().Preload("CoastalPoint").Where("coastal_point_id = ?", point.Persistent.ID).Find(&port).Error
+func Find(point models.Point) (*Port, error) {
+	var port models.Port
+	err := db.Conn().Preload("Point").Where("point_id = ?", point.ID).Find(&port).Error
 	if err != nil {
 		return nil, err
 	}
 
 	return &Port{
-		Persistent: *port,
+		Persistent: port,
 	}, nil
 }

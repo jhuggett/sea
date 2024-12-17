@@ -7,5 +7,5 @@ type Continent struct {
 
 	WorldMapID uint
 
-	CoastalPoints []*CoastalPoint `gorm:"foreignKey:ContinentID"`
+	Points []*Point `gorm:"foreignKey:ContinentID"`
 }

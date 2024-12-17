@@ -1,12 +1,10 @@
 package continent
 
 import (
-	"log/slog"
+	"fmt"
 
 	"github.com/jhuggett/sea/models"
-	"github.com/jhuggett/sea/models/coastal_point"
 	"github.com/jhuggett/sea/utils/coordination"
-	"github.com/soniakeys/raycast"
 )
 
 type Continent struct {
@@ -18,38 +16,26 @@ type Continent struct {
 
 // A continents population acts in essence as a business. It has demands for it's people that it buys out of its wealth from ports.
 
-type PointInformation struct {
-	CoastalPoint *coastal_point.CoastalPoint
+var ErrNotInContinent = fmt.Errorf("point is not in continent")
+
+func (c *Continent) Contains(point coordination.Point) (*models.Point, error) {
+	for _, landPoint := range c.Persistent.Points {
+		if landPoint.Point().SameAs(point) {
+			return landPoint, nil
+		}
+	}
+
+	return nil, ErrNotInContinent
 }
 
-func (c *Continent) Contains(point coordination.Point) (isWithin bool, information PointInformation, err error) {
+func (c *Continent) GetCoastalPoints() []*models.Point {
+	coastalPoints := []*models.Point{}
 
-	pointXY := raycast.XY{
-		X: float64(point.X),
-		Y: float64(point.Y),
-	}
-
-	poly := raycast.Poly{}
-
-	coordination.Sort(c.Persistent.CoastalPoints)
-
-	for _, coastalPoint := range c.Persistent.CoastalPoints {
-		if point.SameAs(coastalPoint.Point()) {
-			return true, PointInformation{
-				CoastalPoint: &coastal_point.CoastalPoint{
-					Persistent: *coastalPoint,
-				},
-			}, nil
+	for _, point := range c.Persistent.Points {
+		if point.Coastal {
+			coastalPoints = append(coastalPoints, point)
 		}
-		poly = append(poly, raycast.XY{
-			X: float64(coastalPoint.X),
-			Y: float64(coastalPoint.Y),
-		})
-	}
-	if pointXY.In(poly) {
-		slog.Info("point point is in a continent")
-		return true, PointInformation{}, nil
 	}
 
-	return false, PointInformation{}, nil
+	return coastalPoints
 }

@@ -25,55 +25,119 @@ func getDistance(a Point, b Point) float64 {
 	return math.Sqrt(math.Pow(float64(a.X-b.X), 2) + math.Pow(float64(a.Y-b.Y), 2))
 }
 
-func comparePoints(center Point, a Point, b Point) bool {
+func comparePoints(center Point, a Point, b Point, clockwise bool, nearest bool) bool {
 	angleA := getAngle(center, a)
 	angleB := getAngle(center, b)
 
 	distanceA := getDistance(center, a)
 	distanceB := getDistance(center, b)
 
+	if nearest {
+		if distanceA < distanceB {
+			return true
+		} else if distanceA > distanceB {
+			return false
+		}
+	}
+
+	if clockwise {
+		if angleA > angleB {
+			return true
+		} else if angleA < angleB {
+			return false
+		}
+	} else {
+		if angleA < angleB {
+			return true
+		} else if angleA > angleB {
+			return false
+		}
+	}
+
 	if distanceA < distanceB {
 		return true
-	} else if distanceA > distanceB {
-		return false
 	}
-
-	if angleA < angleB {
-		return true
-	} else if angleA > angleB {
-		return false
-	}
-
-	if distanceA < distanceB {
-		return true
-	}
-
-	// if distanceA < distanceB {
-	// 	if angleA < angleB {
-	// 		return true
-	// 	} else if angleA > angleB {
-	// 		return false
-	// 	}
-	// } else if distanceA > distanceB {
-	// 	if angleA > angleB {
-	// 		return true
-	// 	} else if angleA < angleB {
-	// 		return false
-	// 	}
-	// }
 
 	return false
 }
 
-func Sort2[T Pointable](points []T) (Point, []T) {
+func Sort2[T Pointable](points []T) []T {
 
-	return Point{}, points
+	pointMap := map[Point]T{}
+
+	for _, point := range points {
+		pointMap[point.Point()] = point
+	}
+
+	startingPoint := points[0].Point()
+
+	previousPoint := startingPoint
+
+	currentPoint := startingPoint
+
+	sortedPoints := []T{}
+
+	// the scan should always be over water
+
+	for {
+		sortedPoints = append(sortedPoints, pointMap[currentPoint])
+
+		adjacentPoints := currentPoint.AdjacentDiagonalAndCardinal()
+
+		sort.SliceStable(adjacentPoints, func(i, j int) bool {
+			return comparePoints(currentPoint, adjacentPoints[i], adjacentPoints[j], true, true)
+		})
+
+		previousPointIndex := 0
+
+		for i, point := range adjacentPoints {
+			if point.SameAs(previousPoint) {
+				previousPointIndex = i
+				break
+			}
+		}
+
+		if !currentPoint.SameAs(startingPoint) {
+			resortedAdjacentPoints := []Point{}
+
+			currentIndex := previousPointIndex + 1
+
+			for len(resortedAdjacentPoints) < len(adjacentPoints) {
+				if currentIndex >= len(adjacentPoints) {
+					currentIndex = 0
+				}
+
+				resortedAdjacentPoints = append(resortedAdjacentPoints, adjacentPoints[currentIndex])
+
+				currentIndex++
+			}
+
+			adjacentPoints = resortedAdjacentPoints
+		}
+
+		for _, point := range adjacentPoints {
+			if _, ok := pointMap[point]; ok {
+				previousPoint = currentPoint
+				currentPoint = point
+				break
+			}
+		}
+
+		if currentPoint.SameAs(startingPoint) {
+			slog.Info("Reached starting point", "currentPoint", currentPoint)
+			break
+		}
+	}
+
+	if len(sortedPoints) != len(points) {
+		slog.Error("Did not sort all points", "sorted", len(sortedPoints), "points", len(points))
+	}
+
+	return sortedPoints
 }
 
 // Returns the center of the points and the points sorted in clockwise order
 func Sort[T Pointable](points []T) (Point, []T) {
-
-	// return Sort2(points)
 
 	center := Point{X: 0, Y: 0}
 
@@ -85,11 +149,7 @@ func Sort[T Pointable](points []T) (Point, []T) {
 	center.X /= len(points)
 	center.Y /= len(points)
 
-	//	return center, points
-
-	// sort.SliceStable(points, func(i, j int) bool {
-	// 	return comparePoints(center, points[i].Point(), points[j].Point())
-	// })
+	return center, points
 
 	pointMap := map[Point]T{}
 
@@ -131,11 +191,6 @@ func Sort[T Pointable](points []T) (Point, []T) {
 		visited[current] = true
 
 		sorted = append(sorted, pointMap[current])
-		// delete(pointMap, current)
-
-		//		foundNeighbor := false
-
-		// possibleNeighbors := []Point{}
 
 		possiblePoints := func(points []Point) []Point {
 			p := []Point{}
@@ -149,27 +204,6 @@ func Sort[T Pointable](points []T) (Point, []T) {
 			return p
 		}
 
-		// for _, neighbor := range current.AdjacentDiagonalAndCardinal() {
-		// 	if _, ok := pointMap[neighbor]; ok && !neighbor.SameAs(previous) {
-		// 		// previous = current
-		// 		// current = neighbor
-		// 		// foundNeighbor = true
-
-		// 		possibleNeighbors = append(possibleNeighbors, neighbor)
-		// 	}
-		// }
-
-		// if !foundNeighbor {
-		// 	for _, neighbor := range current.AdjacentDiagonal() {
-		// 		if _, ok := pointMap[neighbor]; ok && !neighbor.SameAs(previous) {
-		// 			// previous = current
-		// 			// current = neighbor
-		// 			// foundNeighbor = true
-
-		// 			possibleNeighbors = append(possibleNeighbors, neighbor)
-		// 		}
-		// 	}
-		// }
 		foundNeighbor := false
 
 		adjacentOptions := possiblePoints(current.AdjacentDiagonalAndCardinal())
@@ -182,34 +216,11 @@ func Sort[T Pointable](points []T) (Point, []T) {
 
 		if len(adjacentOptions) > 0 {
 			sort.SliceStable(adjacentOptions, func(i, j int) bool {
-				return comparePoints(current, adjacentOptions[i], adjacentOptions[j])
+				return comparePoints(current, adjacentOptions[i], adjacentOptions[j], true, false)
 			})
 
 			selectNext(adjacentOptions)
 		}
-		// } else {
-		// 	diagonalOptions := possiblePoints(current.AdjacentDiagonal())
-
-		// 	if len(diagonalOptions) > 0 {
-		// 		sort.SliceStable(diagonalOptions, func(i, j int) bool {
-		// 			return comparePoints(current, diagonalOptions[i], diagonalOptions[j])
-		// 		})
-
-		// 		slog.Info("Diagonal options", "current", current, "diagonalOptions", diagonalOptions)
-
-		// 		selectNext(diagonalOptions)
-		// 	}
-		// }
-
-		// if len(possibleNeighbors) > 0 {
-		// 	sort.SliceStable(possibleNeighbors, func(i, j int) bool {
-		// 		return comparePoints(current, possibleNeighbors[i], possibleNeighbors[j])
-		// 	})
-
-		// 	previous = current
-		// 	current = possibleNeighbors[0]
-		// 	foundNeighbor = true
-		// }
 
 		if !foundNeighbor {
 			if len(sorted) >= len(points) {

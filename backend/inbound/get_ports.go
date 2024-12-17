@@ -3,6 +3,7 @@ package inbound
 import (
 	"encoding/json"
 
+	"github.com/jhuggett/sea/models"
 	"github.com/jhuggett/sea/models/port"
 )
 
@@ -12,7 +13,7 @@ type GetPortsReq struct {
 type Port struct {
 	ID uint `json:"id"`
 
-	Point CoastalPoint `json:"point"`
+	Point models.Point `json:"point"`
 }
 
 type GetPortsResp struct {
@@ -39,10 +40,7 @@ func GetPorts(conn Connection) InboundFunc {
 			port := Port{}
 
 			port.ID = p.Persistent.ID
-			port.Point = CoastalPoint{
-				X: p.Persistent.CoastalPoint.X,
-				Y: p.Persistent.CoastalPoint.Y,
-			}
+			port.Point = *p.Persistent.Point
 
 			resp.Ports = append(resp.Ports, port)
 		}

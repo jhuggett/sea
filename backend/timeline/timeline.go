@@ -1,6 +1,7 @@
 package timeline
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log/slog"
 	"time"
@@ -69,6 +70,12 @@ type Event struct {
 	Target   uint64  // The tick when the event should be invoked.
 	Enqueued uint64  // The tick when the event was enqueued.
 	Do       EventDo // The function to invoke.
+
+	uid string
+}
+
+func (e Event) SameAs(other priority_queue.Compareable) bool {
+	return e.uid == other.(Event).uid
 }
 
 func (e *Event) LogValue() slog.Value {
@@ -94,6 +101,7 @@ func (t *Timeline) processQueue() {
 				Target:   event.Target + uint64(inTicks),
 				Do:       event.Do,
 				Enqueued: event.Target,
+				uid:      event.uid,
 			})
 		}
 		event = t.queue.PopIt()
@@ -102,14 +110,34 @@ func (t *Timeline) processQueue() {
 	slog.Debug("Finished processing queue", "current", t.current, "queue", t.queue.Len())
 }
 
+func generateUID() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		slog.Error("Failed to generate UID", "error", err)
+		return ""
+	}
+	return fmt.Sprintf("%x", b)
+}
+
 // Do will invoke the do function after inTicks.
-func (t *Timeline) Do(do EventDo, afterTicks uint64) {
+func (t *Timeline) Do(do EventDo, afterTicks uint64) func() {
 	slog.Debug("Enqueuing event", "current", t.current, "afterTicks", afterTicks)
-	t.queue.PushIt(Event{
+
+	e := Event{
 		Target:   t.current + afterTicks,
 		Do:       do,
 		Enqueued: t.current,
-	})
+		uid:      generateUID(),
+	}
+
+	t.queue.PushIt(e)
+
+	return func() {
+		slog.Debug("Removing event", "current", t.current, "afterTicks", afterTicks)
+
+		t.queue.RemoveIt(e)
+	}
 }
 
 // TODO: add actual identifier for timeline

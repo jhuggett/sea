@@ -2,7 +2,6 @@ package inbound
 
 import (
 	"encoding/json"
-	"log/slog"
 
 	"github.com/jhuggett/sea/models/world_map"
 	"github.com/jhuggett/sea/utils/coordination"
@@ -11,14 +10,17 @@ import (
 type GetWorldMapReq struct {
 }
 
-type CoastalPoint struct {
+type Point struct {
 	X int `json:"x"`
 	Y int `json:"y"`
+
+	Coastal   bool    `json:"coastal"`
+	Elevation float64 `json:"elevation"`
 }
 
 type Continent struct {
-	CoastalPoints []CoastalPoint     `json:"coastal_points"`
-	Center        coordination.Point `json:"center"`
+	Points []Point            `json:"points"`
+	Center coordination.Point `json:"center"`
 }
 
 type GetWorldMapResp struct {
@@ -37,20 +39,18 @@ func GetWorldMap(conn Connection) InboundFunc {
 
 		for _, continent := range worldMap.Persistent.Continents {
 			c := &Continent{
-				CoastalPoints: []CoastalPoint{},
+				Points: []Point{},
 			}
 
-			center, s := coordination.Sort(continent.CoastalPoints)
+			center, s := coordination.Sort(continent.Points)
 
-			slog.Info("Center", "x", center.X, "y", center.Y, "coastal_points", s)
-
-			for _, coastalPoint := range s {
-				cp := CoastalPoint{
-					X: coastalPoint.X,
-					Y: coastalPoint.Y,
-				}
-
-				c.CoastalPoints = append(c.CoastalPoints, cp)
+			for _, point := range s {
+				c.Points = append(c.Points, Point{
+					X:         point.X,
+					Y:         point.Y,
+					Coastal:   point.Coastal,
+					Elevation: point.Elevation,
+				})
 			}
 
 			c.Center = center

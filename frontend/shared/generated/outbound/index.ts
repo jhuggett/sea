@@ -16,6 +16,10 @@ export interface Outbound {
     req: TimeChangedReq;
     resp: TimeChangedResp;
   };
+  ShipInventoryChanged: {
+    req: ShipInventoryChangedReq;
+    resp: ShipInventoryChangedResp;
+  };
 }
 export interface Sender {
 }
@@ -29,6 +33,21 @@ export interface ShipDockedReq {
   undocked?: boolean;
 }
 export interface ShipDockedResp {
+}
+
+//////////
+// source: ship_inventory_changed.go
+
+export interface Item {
+  id: number /* uint */;
+  name: string;
+  amount: number /* float32 */;
+}
+export interface ShipInventoryChangedReq {
+  ship_id: number /* uint */;
+  items: Item[];
+}
+export interface ShipInventoryChangedResp {
 }
 
 //////////

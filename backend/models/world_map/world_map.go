@@ -8,7 +8,6 @@ import (
 	"github.com/beefsack/go-astar"
 	"github.com/jhuggett/sea/db"
 	"github.com/jhuggett/sea/models"
-	"github.com/jhuggett/sea/models/coastal_point"
 	"github.com/jhuggett/sea/models/continent"
 	"github.com/jhuggett/sea/utils/coordination"
 	"github.com/ojrac/opensimplex-go"
@@ -65,38 +64,6 @@ func Circle(x, y, radius int) [][]int {
 	return points
 }
 
-func (w *WorldMap) generateCircleContinent(x, y, r int) error {
-	circlePoints := Circle(x, y, r)
-
-	continent := continent.Continent{
-		Persistent: models.Continent{
-			WorldMapID: w.Persistent.ID,
-		},
-	}
-
-	err := db.Conn().Create(&continent.Persistent).Error
-	if err != nil {
-		return err
-	}
-
-	for _, point := range circlePoints {
-		cp := coastal_point.CoastalPoint{
-			Persistent: models.CoastalPoint{
-				ContinentID: continent.Persistent.ID,
-				X:           point[0],
-				Y:           point[1],
-			},
-		}
-
-		err := db.Conn().Create(&cp.Persistent).Error
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 type Noise struct {
 	layers []opensimplex.Noise
 
@@ -129,13 +96,29 @@ func (n *Noise) Sample(x, y float64) float64 {
 	return noise / float64(n.Octaves)
 }
 
-func (w *WorldMap) GenerateCoasts() error {
-	noise := NewNoise(5, 1.0/15.0)
+type Point struct {
+	X int
+	Y int
 
-	width, height := 50, 50
+	IsCoastal bool
+
+	Elevation float64
+}
+
+func (p Point) Point() coordination.Point {
+	return coordination.Point{
+		X: p.X,
+		Y: p.Y,
+	}
+}
+
+func (w *WorldMap) Generate() error {
+	noise := NewNoise(4, 1.0/16.0)
+
+	width, height := 100, 100
 
 	visited := map[coordination.Point]bool{}
-	groups := []map[coordination.Point]bool{}
+	groups := []map[coordination.Point]*Point{}
 
 	isLand := func(point coordination.Point) bool {
 		return noise.Sample(float64(point.X), float64(point.Y)) > 0.1
@@ -143,20 +126,24 @@ func (w *WorldMap) GenerateCoasts() error {
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			slog.Debug("GenerateCoasts", "x", x, "y", y)
 			if _, ok := visited[coordination.Point{X: x, Y: y}]; ok {
 				continue
 			}
 
 			if isLand(coordination.Point{X: x, Y: y}) {
-				group := map[coordination.Point]bool{}
+				group := map[coordination.Point]*Point{}
 
 				flood := []coordination.Point{{X: x, Y: y}}
 
 				for len(flood) > 0 {
 					nextFlood := []coordination.Point{}
 					for _, point := range flood {
-						group[point] = true
+						group[point] = &Point{
+							X:         point.X,
+							Y:         point.Y,
+							IsCoastal: false,
+							Elevation: noise.Sample(float64(point.X), float64(point.Y)),
+						}
 						visited[point] = true
 
 						for _, neighbor := range point.Adjacent() {
@@ -173,44 +160,19 @@ func (w *WorldMap) GenerateCoasts() error {
 		}
 	}
 
-	// coasts are any point that is missing a neighbor
-
-	// slog.Warn("Heightmap", "heightmap", heightmap, "len", len(heightmap))
-
-	// noise := New(rand.Int63())
-
-	// w, h := 100, 100
-	// heightmap := make([]float64, w*h)
-	// for y := 0; y < h; y++ {
-	// 	for x := 0; x < w; x++ {
-	// 		xFloat := float64(x) / float64(w)
-	// 		yFloat := float64(y) / float64(h)
-	// 		heightmap[(y*w)+x] = noise.Eval2(xFloat, yFloat)
-	// 	}
-	// }
-
-	// for _, continent := range continentsToGenerate {
-	// 	err := w.generateContinent(continent.x, continent.y, continent.r)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
 	for _, group := range groups {
 
 		// need to get the coastal ring of the group
 
-		waterAdjacentPoints := map[coordination.Point]bool{}
-
 		for point, _ := range group {
 			for _, neighbor := range point.Adjacent() {
 				if _, ok := group[neighbor]; !ok {
-					waterAdjacentPoints[point] = true
+					group[point].IsCoastal = true
 				}
 			}
 		}
 
-		err := w.generateContinent(waterAdjacentPoints)
+		err := w.generateContinent(group)
 		if err != nil {
 			return fmt.Errorf("error generating continent: %w", err)
 		}
@@ -219,7 +181,7 @@ func (w *WorldMap) GenerateCoasts() error {
 	return nil
 }
 
-func (w *WorldMap) generateContinent(points map[coordination.Point]bool) error {
+func (w *WorldMap) generateContinent(points map[coordination.Point]*Point) error {
 	continent := continent.Continent{
 		Persistent: models.Continent{
 			WorldMapID: w.Persistent.ID,
@@ -231,16 +193,16 @@ func (w *WorldMap) generateContinent(points map[coordination.Point]bool) error {
 		return err
 	}
 
-	for point, _ := range points {
-		cp := coastal_point.CoastalPoint{
-			Persistent: models.CoastalPoint{
-				ContinentID: continent.Persistent.ID,
-				X:           point.X,
-				Y:           point.Y,
-			},
+	for _, point := range points {
+		cp := models.Point{
+			ContinentID: continent.Persistent.ID,
+			X:           point.X,
+			Y:           point.Y,
+			Elevation:   point.Elevation,
+			Coastal:     point.IsCoastal,
 		}
 
-		err := db.Conn().Create(&cp.Persistent).Error
+		err := db.Conn().Create(&cp).Error
 		if err != nil {
 			return err
 		}
@@ -251,7 +213,7 @@ func (w *WorldMap) generateContinent(points map[coordination.Point]bool) error {
 
 func Get(id uint) (*WorldMap, error) {
 	var w models.WorldMap
-	err := db.Conn().Preload("Continents.CoastalPoints").First(&w, id).Error
+	err := db.Conn().Preload("Continents.Points").First(&w, id).Error
 	if err != nil {
 		return nil, err
 	}

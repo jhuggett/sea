@@ -17,7 +17,7 @@ export interface GetPortsReq {
 }
 export interface Port {
   id: number /* uint */;
-  point: CoastalPoint;
+  point: any /* models.Point */;
 }
 export interface GetPortsResp {
   ports: Port[];
@@ -28,12 +28,14 @@ export interface GetPortsResp {
 
 export interface GetWorldMapReq {
 }
-export interface CoastalPoint {
+export interface Point {
   x: number /* int */;
   y: number /* int */;
+  coastal: boolean;
+  elevation: number /* float64 */;
 }
 export interface Continent {
-  coastal_points: CoastalPoint[];
+  points: Point[];
   center: any /* coordination.Point */;
 }
 export interface GetWorldMapResp {

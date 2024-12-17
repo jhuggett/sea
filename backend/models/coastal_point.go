@@ -5,16 +5,19 @@ import (
 	"gorm.io/gorm"
 )
 
-type CoastalPoint struct {
+type Point struct {
 	gorm.Model
 
 	ContinentID uint
 
 	X int
 	Y int
+
+	Coastal   bool
+	Elevation float64
 }
 
-func (cp *CoastalPoint) Point() coordination.Point {
+func (cp *Point) Point() coordination.Point {
 	return coordination.Point{
 		X: cp.X,
 		Y: cp.Y,

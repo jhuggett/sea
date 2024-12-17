@@ -6,7 +6,9 @@ import (
 
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/models"
+	"github.com/jhuggett/sea/models/continent"
 	"github.com/jhuggett/sea/models/crew"
+	"github.com/jhuggett/sea/models/port"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/models/world_map"
 )
@@ -36,27 +38,40 @@ func Register() InboundFunc {
 			return nil, err
 		}
 
-		worldMap.GenerateCoasts()
+		worldMap.Generate()
 
 		worldMap, err = world_map.Get(worldMapID) // reload
 		if err != nil {
 			return nil, err
 		}
 
-		// create ports
-		// port := port.New()
-		// port.Persistent.WorldMapID = worldMapID
-		// port.Persistent.CoastalPointID = worldMap.Persistent.Continents[0].CoastalPoints[0].ID
-		// _, err = port.Create()
-		// if err != nil {
-		// 	return nil, err
-		// }
+		for _, c := range worldMap.Persistent.Continents {
+			// create ports
+			port := port.New()
+			port.Persistent.WorldMapID = worldMapID
+
+			continent := continent.Continent{Persistent: *c}
+
+			port.Persistent.PointID = continent.GetCoastalPoints()[0].ID
+			_, err = port.Create()
+			if err != nil {
+				return nil, err
+			}
+		}
 
 		// create ship
 		ship := ship.New()
-		ship.Persistent.Coffers = 1000
+		// ship.Persistent.Coffers = 1000
 		ship.Persistent.WorldMapID = worldMapID
 		shipID, err := ship.Create()
+		if err != nil {
+			return nil, err
+		}
+
+		err = ship.Inventory().AddItem(models.Item{
+			Name:   string(models.ItemTypePieceOfEight),
+			Amount: 1000,
+		})
 		if err != nil {
 			return nil, err
 		}

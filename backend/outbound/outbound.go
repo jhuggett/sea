@@ -20,6 +20,11 @@ type Outbound struct {
 		Req  TimeChangedReq  `json:"req"`
 		Resp TimeChangedResp `json:"resp"`
 	}
+
+	ShipInventoryChanged struct {
+		Req  ShipInventoryChangedReq  `json:"req"`
+		Resp ShipInventoryChangedResp `json:"resp"`
+	}
 }
 
 type Sender struct {

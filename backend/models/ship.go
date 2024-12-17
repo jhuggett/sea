@@ -14,7 +14,8 @@ type Ship struct {
 
 	WorldMapID uint
 
-	Coffers float64
-
 	IsDocked bool
+
+	InventoryID uint
+	Inventory   *Inventory
 }

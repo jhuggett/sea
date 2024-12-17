@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/jhuggett/sea/log"
+	continent_model "github.com/jhuggett/sea/models/continent"
 	"github.com/jhuggett/sea/models/port"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/timeline"
@@ -30,11 +31,18 @@ type RouteShip struct {
 
 	conn Connection
 
+	started bool
+
 	portToDockTo *port.Port
 }
 
 func (e *RouteShip) Do(ticks uint64) (stop bool) {
 	slog.Info("RouteShip.Do", "ticks", ticks, "e.ticks", e.ticks)
+
+	if !e.started {
+		e.started = true
+		e.ship.AnchorRaised()
+	}
 
 	e.ticks += ticks
 
@@ -68,9 +76,14 @@ func (e *RouteShip) Do(ticks uint64) (stop bool) {
 		slog.Debug("Ship reached destination", "id", e.ship.Persistent.ID)
 
 		if e.portToDockTo != nil {
-			slog.Debug("Docking at port", "id", e.portToDockTo.Persistent.ID, "coastalPoint", e.portToDockTo.Persistent.CoastalPoint)
-
+			e.ship.AnchorLowered(ship.AnchorLoweredEventData{
+				Location: ship.AnchorLoweredLocationPort,
+			})
 			e.ship.Docked()
+		} else {
+			e.ship.AnchorLowered(ship.AnchorLoweredEventData{
+				Location: ship.AnchorLoweredLocationOpenSea,
+			})
 		}
 
 		return true
@@ -118,23 +131,20 @@ func MoveShip(conn Connection) InboundFunc {
 		shipRouter := RouteShip{}
 
 		for _, continent := range worldMap.Continents() {
-			for _, coastalPoint := range continent.Persistent.CoastalPoints {
-				obstacles.AddObstacle(coordination.Point{
-					X: coastalPoint.X,
-					Y: coastalPoint.Y,
-				})
+			for _, p := range continent.Persistent.Points {
+				obstacles.AddObstacle(p.Point())
 			}
 
-			contains, pointInfo, err := continent.Contains(ending)
-			if err != nil {
+			land, err := continent.Contains(ending)
+			if err != nil && !errors.Is(err, continent_model.ErrNotInContinent) {
 				return nil, err
 			}
 
-			slog.Debug("Checking if ending point is in a continent", "contains", contains, "pointInfo", pointInfo, "err", err)
+			// slog.Debug("Checking if ending point is in a continent", "contains", contains, "pointInfo", pointInfo, "err", err)
 
-			if pointInfo.CoastalPoint != nil {
-				slog.Debug("Ending point is a coastal point", "point", pointInfo.CoastalPoint)
-				port, err := port.Find(*pointInfo.CoastalPoint)
+			if land != nil && land.Coastal == true {
+				slog.Debug("Ending point is a coastal point", "point", land)
+				port, err := port.Find(*land)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 				} else if err != nil {
 					return nil, err
@@ -142,11 +152,11 @@ func MoveShip(conn Connection) InboundFunc {
 					slog.Debug("Ending point is a port", "port", port)
 					shipRouter.portToDockTo = port
 					obstacles.RemoveObstacle(coordination.Point{
-						X: pointInfo.CoastalPoint.Persistent.X,
-						Y: pointInfo.CoastalPoint.Persistent.Y,
+						X: land.X,
+						Y: land.Y,
 					})
 				}
-			} else if contains {
+			} else if land != nil {
 				slog.Debug("Ending point is in a continent")
 				return nil, errors.New("ending point is in a continent")
 			}

@@ -12,6 +12,8 @@ import (
 	"github.com/jhuggett/sea/jsonrpc"
 	"github.com/jhuggett/sea/log"
 	"github.com/jhuggett/sea/models"
+	"github.com/jhuggett/sea/models/inventory"
+	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/outbound"
 	"github.com/jhuggett/sea/timeline"
 )
@@ -44,13 +46,8 @@ func main() {
 			},
 			UseColor: true,
 
-			BlockList: []string{
-				"utils/callback",
-				"timeline",
-			},
-			Allowlist: []string{
-				"backend/utils/coordination/clockwise_sort",
-			},
+			BlockList: []string{},
+			Allowlist: []string{},
 		})),
 	)
 
@@ -59,10 +56,12 @@ func main() {
 	dbConn := db.Conn()
 	dbConn.AutoMigrate(&models.Ship{})
 	dbConn.AutoMigrate(&models.WorldMap{})
-	dbConn.AutoMigrate(&models.CoastalPoint{})
+	dbConn.AutoMigrate(&models.Point{})
 	dbConn.AutoMigrate(&models.Continent{})
 	dbConn.AutoMigrate(&models.Port{})
 	dbConn.AutoMigrate(&models.Crew{})
+	dbConn.AutoMigrate(&models.Inventory{})
+	dbConn.AutoMigrate(&models.Item{})
 	defer db.Close()
 
 	http.HandleFunc("/ws", wsHandler)
@@ -144,15 +143,16 @@ func startGame(conn *Connection) {
 
 	Timeline.Start()
 
+	s, err := conn.Context().Ship()
+	if err != nil {
+		slog.Error("Error getting ship", "err", err)
+		panic(err)
+	}
+
 	Timeline.Do(func() uint64 {
 		slog.Info("A day has passed")
 
 		// Pay wages (probably should be payed in a different way later)
-		s, err := conn.Context().Ship()
-		if err != nil {
-			slog.Error("Error getting ship", "err", err)
-			return timeline.Day
-		}
 
 		crew, err := s.Crew()
 		if err != nil {
@@ -160,14 +160,66 @@ func startGame(conn *Connection) {
 			return timeline.Day
 		}
 
-		err = s.SubtractFromCoffers(crew.Persistent.Wage)
+		slog.Info("Got crew", "crew", crew)
+
+		inventory, err := s.Inventory().Fetch()
 		if err != nil {
-			slog.Error("Error subtracting from coffers", "err", err)
+			slog.Error("Error fetching inventory", "err", err)
 			return timeline.Day
 		}
 
-		slog.Info("Paid wages", "wage", crew.Persistent.Wage, "coffers", s.Persistent.Coffers)
+		err = inventory.RemoveItem(models.Item{
+			Name:   string(models.ItemTypePieceOfEight),
+			Amount: float32(crew.Persistent.Wage),
+		})
+
+		if err != nil {
+			slog.Error("Error removing item", "err", err)
+		}
 
 		return timeline.Day
 	}, timeline.Day)
+
+	Timeline.Do(func() uint64 {
+		conn.Sender().TimeChanged(Timeline.CurrentTick(), Timeline.TicksPerCycle())
+
+		return 1
+	}, 1)
+
+	s.Inventory().OnChangedDo(func(data inventory.OnChangedEventData) {
+		slog.Info("Inventory changed", "id", s.Persistent.ID, "inventory", data.Inventory)
+		conn.Sender().ShipInventoryChanged(s.Persistent.ID, data.Inventory)
+	})
+
+	var stopFishing func()
+
+	s.OnAnchorRaisedDo(func(data ship.AnchorRaisedEventData) {
+		if stopFishing != nil {
+			stopFishing()
+		}
+	})
+
+	s.OnAnchorLoweredDo(func(data ship.AnchorLoweredEventData) {
+		if data.Location == ship.AnchorLoweredLocationOpenSea {
+			stopFishing = Timeline.Do(func() uint64 {
+				inventory, err := s.Inventory().Fetch()
+				if err != nil {
+					slog.Error("Error fetching inventory", "err", err)
+					return timeline.Day
+
+				}
+
+				err = inventory.AddItem(models.Item{
+					Name:   string(models.ItemTypeFish),
+					Amount: 1,
+				})
+
+				if err != nil {
+					slog.Error("Error adding item", "err", err)
+				}
+
+				return timeline.Day
+			}, timeline.Day)
+		}
+	})
 }

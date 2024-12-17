@@ -4,15 +4,16 @@ export class Ship {
   actor: ex.Actor;
   constructor() {
     this.actor = new ex.Actor({
-      width: TILE_SIZE / 8,
-      height: TILE_SIZE / 8,
-
-      // Let's give it some color with one of the predefined
-      // color constants
-      color: ex.Color.Chartreuse,
     });
 
-    this.actor.body.collisionType = ex.CollisionType.Fixed;
+
+    this.actor.graphics.use(new ex.Circle({
+      radius: TILE_SIZE / 8,
+      color: ex.Color.fromRGB(0, 0, 0, 1),
+      quality: 2,
+    }))
+
+    
   }
 
   setTarget(x: number, y: number) {
@@ -29,5 +30,7 @@ export class Ship {
       new ex.Vector(1, 1),
       new ex.Vector(shrinkSpeed, shrinkSpeed)
     );
+
+    
   }
 }
