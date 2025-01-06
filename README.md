@@ -17,15 +17,15 @@ Focus on game logic, keep UI / UX at the bare minimum to get the gameplay loop d
     - [ ] Storms
     - [ ] Wind directions
 - [ ] Supply / Demand for trade
-    - [ ] Goods production on islands
+    - [x] Goods production on islands
     - [ ] Demands by island populations
 - [ ] Navigation
     - [ ] Plotting multi stop routes
-    - [ ] Canceling routes in progress
+    - [x] Canceling routes in progress
 - [ ] Ship purchasing / building / outfitting
     - [ ] Guns
-    - [ ] Cargo capacity
-    - [ ] Crew capacity
+    - [x] Cargo capacity
+    - [x] Crew capacity
     - [ ] Fishing capabilities
     - [ ] Names / naming
 - [ ] Fleets
@@ -49,7 +49,7 @@ Focus on game logic, keep UI / UX at the bare minimum to get the gameplay loop d
         - [ ] Piracy
 - [ ] Events at port
 - [ ] Crew management
-    - [ ] Morale
+    - [x] Morale
     - [ ] Wages vs profit splitting
     - [ ] Names
 - [ ] Retiring
