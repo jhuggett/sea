@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,6 +46,8 @@ type Handler struct {
 
 	Allowlist []string
 	BlockList []string
+
+	WriteToFile string // path to file
 }
 
 func (h *Handler) colorize(colorCode int, v string) string {
@@ -122,6 +125,22 @@ Allowed:
 	bits = strings.Split(pkg, ".")
 	pkg = bits[0]
 
+	bytes, err := json.MarshalIndent(attrs, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error when marshaling attrs: %w", err)
+	}
+
+	if h.WriteToFile != "" {
+		file, err := os.OpenFile(h.WriteToFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("error when opening file for writing: %w", err)
+		}
+		_, err = file.Write([]byte(fmt.Sprintf("%s %s %s %s (%s:%v %s) %s\n", level, pkg, r.Time.Format(timeFormat), message, source["file"], source["line"], source["function"], string(bytes))))
+		if err != nil {
+			return fmt.Errorf("error when writing to file: %w", err)
+		}
+	}
+
 	switch r.Level {
 	case slog.LevelDebug:
 		level = h.colorize(cyan, "🟦 DBG")
@@ -136,10 +155,6 @@ Allowed:
 		message = h.colorize(red, message)
 	}
 
-	bytes, err := json.MarshalIndent(attrs, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error when marshaling attrs: %w", err)
-	}
 	if len(attrs) == 0 {
 		bytes = []byte{}
 	}
@@ -200,6 +215,8 @@ type HandlerOptions struct {
 
 	Allowlist []string
 	BlockList []string
+
+	WriteToFile string // path to file
 }
 
 func NewHandler(opts *HandlerOptions) *Handler {
@@ -220,6 +237,8 @@ func NewHandler(opts *HandlerOptions) *Handler {
 
 		Allowlist: opts.Allowlist,
 		BlockList: opts.BlockList,
+
+		WriteToFile: opts.WriteToFile,
 	}
 }
 

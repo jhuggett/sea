@@ -3,6 +3,7 @@ package port
 import (
 	"github.com/jhuggett/sea/db"
 	"github.com/jhuggett/sea/models"
+	"github.com/jhuggett/sea/models/inventory"
 )
 
 type Port struct {
@@ -26,9 +27,6 @@ func (s *Port) Create() (uint, error) {
 	s.Persistent.InventoryID = i.ID
 
 	err = db.Conn().Create(&s.Persistent).Error
-	if err != nil {
-		return 0, err
-	}
 
 	return s.Persistent.ID, nil
 }
@@ -51,7 +49,7 @@ func Get(id uint) (*Port, error) {
 
 func All(worldMapID uint) ([]*Port, error) {
 	var persistedPortData []models.Port
-	err := db.Conn().Preload("Point").Where("world_map_id = ?", worldMapID).Find(&persistedPortData).Error
+	err := db.Conn().Preload("Point").Preload("Inventory").Preload("Inventory.Items").Where("world_map_id = ?", worldMapID).Find(&persistedPortData).Error
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +66,23 @@ func All(worldMapID uint) ([]*Port, error) {
 
 func Find(point models.Point) (*Port, error) {
 	var port models.Port
-	err := db.Conn().Preload("Point").Where("point_id = ?", point.ID).Find(&port).Error
+	err := db.Conn().Debug().Preload("Point").Preload("Inventory").Preload("Inventory.Items").Where("point_id = ?", point.ID).First(&port).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &Port{
+		Persistent: port,
+	}, nil
+}
+
+func (s *Port) Inventory() *inventory.Inventory {
+	return &inventory.Inventory{Persistent: s.Persistent.Inventory}
+}
+
+func (s *Port) Fetch() (*Port, error) {
+	var port models.Port
+	err := db.Conn().Preload("Point").Preload("Inventory").Preload("Inventory.Items").First(&port, s.Persistent.ID).Error
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ package continent
 import (
 	"fmt"
 
+	"github.com/jhuggett/sea/db"
 	"github.com/jhuggett/sea/models"
 	"github.com/jhuggett/sea/utils/coordination"
 )
@@ -28,6 +29,7 @@ func (c *Continent) Contains(point coordination.Point) (*models.Point, error) {
 	return nil, ErrNotInContinent
 }
 
+// Get rid of this
 func (c *Continent) GetCoastalPoints() []*models.Point {
 	coastalPoints := []*models.Point{}
 
@@ -38,4 +40,16 @@ func (c *Continent) GetCoastalPoints() []*models.Point {
 	}
 
 	return coastalPoints
+}
+
+// Use this in future
+func (c *Continent) CoastalPoints() ([]*models.Point, error) {
+	var points []*models.Point
+	err := db.Conn().Where("continent_id = ?", c.Persistent.ID).Where("coastal = ?", true).Find(&points).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return points, nil
 }

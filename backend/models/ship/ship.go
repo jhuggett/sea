@@ -12,10 +12,6 @@ type Ship struct {
 	Persistent models.Ship
 }
 
-func New() *Ship {
-	return &Ship{}
-}
-
 func (s *Ship) Create() (uint, error) {
 	// Create inventory
 	i := models.Inventory{}
@@ -88,4 +84,36 @@ func (s *Ship) Inventory() *inventory.Inventory {
 	panic("Inventory not loaded for ship")
 
 	return nil
+}
+
+func (s *Ship) SailingSpeed() (float64, error) {
+
+	crew, err := s.Crew()
+	if err != nil {
+		return 0, err
+	}
+
+	speed := s.Persistent.BaseSpeed
+
+	if uint(crew.Persistent.Size) < s.Persistent.MinimumSafeManning {
+		speed = speed * (1 - (float64(crew.Persistent.Size) / float64(s.Persistent.MinimumSafeManning)))
+	} else if uint(crew.Persistent.Size) > s.Persistent.MaximumSafeManning {
+		// TOOD: add speed reduction for overmanning
+		speed = speed
+	}
+
+	speed = speed * s.Persistent.StateOfRepair
+
+	// add cargo speed reduction
+
+	return speed, nil
+}
+
+func (s *Ship) Fetch() (*Ship, error) {
+	err := db.Conn().Preload("Inventory").Preload("Inventory.Items").First(&s.Persistent, s.Persistent.ID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }

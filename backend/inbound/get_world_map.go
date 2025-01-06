@@ -3,6 +3,7 @@ package inbound
 import (
 	"encoding/json"
 
+	"github.com/jhuggett/sea/models/continent"
 	"github.com/jhuggett/sea/models/world_map"
 	"github.com/jhuggett/sea/utils/coordination"
 )
@@ -37,14 +38,19 @@ func GetWorldMap(conn Connection) InboundFunc {
 
 		continents := []*Continent{}
 
-		for _, continent := range worldMap.Persistent.Continents {
+		for _, continentData := range worldMap.Persistent.Continents {
 			c := &Continent{
 				Points: []Point{},
 			}
 
-			center, s := coordination.Sort(continent.Points)
+			coastalPoints, err := (&continent.Continent{Persistent: *continentData}).CoastalPoints()
+			if err != nil {
+				return nil, err
+			}
 
-			for _, point := range s {
+			center, _ := coordination.Sort(coastalPoints)
+
+			for _, point := range coastalPoints {
 				c.Points = append(c.Points, Point{
 					X:         point.X,
 					Y:         point.Y,

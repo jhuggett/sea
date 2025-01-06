@@ -9,8 +9,9 @@ type Item struct {
 }
 
 type ShipInventoryChangedReq struct {
-	ShipID uint   `json:"ship_id"`
-	Items  []Item `json:"items"`
+	ShipID uint `json:"ship_id"`
+
+	Inventory Inventory `json:"inventory"`
 }
 
 type ShipInventoryChangedResp struct{}
@@ -29,7 +30,10 @@ func (s *Sender) ShipInventoryChanged(shipId uint, inventory inventory.Inventory
 
 	_, err := s.rpc.Send("ShipInventoryChanged", ShipInventoryChangedReq{
 		ShipID: shipId,
-		Items:  items,
+		Inventory: Inventory{
+			ID:    inventory.Persistent.ID,
+			Items: items,
+		},
 	})
 
 	return err

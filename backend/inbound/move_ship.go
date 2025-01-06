@@ -6,9 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/jhuggett/sea/log"
-	continent_model "github.com/jhuggett/sea/models/continent"
 	"github.com/jhuggett/sea/models/port"
-	"github.com/jhuggett/sea/models/ship"
+	ship_model "github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/timeline"
 	"github.com/jhuggett/sea/utils/coordination"
 	"gorm.io/gorm"
@@ -23,73 +22,86 @@ type MoveShipResp struct {
 	Success bool `json:"success"`
 }
 
-type RouteShip struct {
-	ship  *ship.Ship
-	route []coordination.Point
+func Plot(start coordination.Point, end coordination.Point, conn Connection) ([]coordination.Point, *port.Port, error) {
+	starting := start
+	ending := end
 
-	ticks uint64
+	obstacles := coordination.ObstacleMap{}
 
-	conn Connection
-
-	started bool
-
-	portToDockTo *port.Port
-}
-
-func (e *RouteShip) Do(ticks uint64) (stop bool) {
-	slog.Info("RouteShip.Do", "ticks", ticks, "e.ticks", e.ticks)
-
-	if !e.started {
-		e.started = true
-		e.ship.AnchorRaised()
+	if starting.SameAs(ending) {
+		return []coordination.Point{}, nil, nil
 	}
 
-	e.ticks += ticks
-
-	speed := 3.0 // points per tick
-
-	slog.Debug("RouteShip", "id", e.ship.Persistent.ID, "ticks", e.ticks, "route", len(e.route), "travelled", float64(e.ticks)*speed)
-
-	if float64(e.ticks)*speed > 1.0 {
-		tilesMoved := int(float64(e.ticks) * speed)
-		if tilesMoved > len(e.route) {
-			tilesMoved = len(e.route)
-		}
-		slog.Info("RouteShip", "id", e.ship.Persistent.ID, "tilesMoved", tilesMoved)
-		e.ship.Persistent.X = float64(e.route[tilesMoved-1].X)
-		e.ship.Persistent.Y = float64(e.route[tilesMoved-1].Y)
-		err := e.ship.Save()
-		if err != nil {
-			slog.Error("RouteShip failed to save", "id", e.ship.Persistent.ID, "err", err)
-			return true
-		}
-		e.ticks = 0
-		e.route = e.route[tilesMoved:]
-
-		if e.ship.Persistent.IsDocked {
-			e.ship.Undocked()
-		}
-		e.ship.Moved()
+	worldMap, err := conn.Context().GameMap()
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if len(e.route) == 0 {
-		slog.Debug("Ship reached destination", "id", e.ship.Persistent.ID)
+	var portToDockTo *port.Port
 
-		if e.portToDockTo != nil {
-			e.ship.AnchorLowered(ship.AnchorLoweredEventData{
-				Location: ship.AnchorLoweredLocationPort,
-			})
-			e.ship.Docked()
+	/*
+
+		- Need to check if ending is a Point
+			- if it is, check if there is a port there
+				- if there is, dock there
+
+
+		- Need to build an obstacle map of all the coastal points
+		  - need to able to query all the coastal points of a world map
+	*/
+
+	// ---
+
+	land, err := worldMap.HasLand(ending.X, ending.Y)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if land != nil {
+		if land.Coastal == true {
+			port, err := port.Find(*land)
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, nil, errors.New("no port found")
+			} else if err != nil {
+				return nil, nil, err
+			} else {
+				portToDockTo = port
+			}
 		} else {
-			e.ship.AnchorLowered(ship.AnchorLoweredEventData{
-				Location: ship.AnchorLoweredLocationOpenSea,
-			})
+			return nil, nil, errors.New("ending point is in a continent")
 		}
-
-		return true
 	}
 
-	return false
+	coastalPoints, err := worldMap.CoastalPoints()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, p := range coastalPoints {
+		obstacles.AddObstacle(p.Point())
+	}
+
+	if portToDockTo != nil {
+		obstacles.RemoveObstacle(coordination.Point{
+			X: land.X,
+			Y: land.Y,
+		})
+	}
+
+	route, err := worldMap.PlotRoute(
+		starting,
+		ending,
+		obstacles,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if portToDockTo != nil {
+		route = route[:len(route)-1]
+	}
+
+	return route, portToDockTo, nil
 }
 
 func MoveShip(conn Connection) InboundFunc {
@@ -105,82 +117,38 @@ func MoveShip(conn Connection) InboundFunc {
 
 		slog.Debug("MoveShip called")
 
-		worldMap, err := conn.Context().GameMap()
-		if err != nil {
-			return nil, err
-		}
-
 		ship, err := conn.Context().Ship()
 		if err != nil {
 			return nil, err
 		}
 
-		starting := coordination.Point{X: int(ship.Persistent.X), Y: int(ship.Persistent.Y)}
-		ending := coordination.Point{X: int(r.X), Y: int(r.Y)}
+		shipRouter := ship_model.RouteShip{}
 
-		obstacles := coordination.ObstacleMap{}
-
-		if starting.SameAs(ending) {
-			slog.Info("Starting and ending points are the same")
-			return []coordination.Point{}, nil
-		}
-
-		slog.Debug("Plotting Route")
-		slog.Debug("route", "starting", starting, "ending", ending)
-
-		shipRouter := RouteShip{}
-
-		for _, continent := range worldMap.Continents() {
-			for _, p := range continent.Persistent.Points {
-				obstacles.AddObstacle(p.Point())
-			}
-
-			land, err := continent.Contains(ending)
-			if err != nil && !errors.Is(err, continent_model.ErrNotInContinent) {
-				return nil, err
-			}
-
-			// slog.Debug("Checking if ending point is in a continent", "contains", contains, "pointInfo", pointInfo, "err", err)
-
-			if land != nil && land.Coastal == true {
-				slog.Debug("Ending point is a coastal point", "point", land)
-				port, err := port.Find(*land)
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-				} else if err != nil {
-					return nil, err
-				} else {
-					slog.Debug("Ending point is a port", "port", port)
-					shipRouter.portToDockTo = port
-					obstacles.RemoveObstacle(coordination.Point{
-						X: land.X,
-						Y: land.Y,
-					})
-				}
-			} else if land != nil {
-				slog.Debug("Ending point is in a continent")
-				return nil, errors.New("ending point is in a continent")
-			}
-		}
-
-		route, err := worldMap.PlotRoute(
-			starting,
-			ending,
-			obstacles,
+		route, portToDockTo, err := Plot(
+			ship.Location(),
+			coordination.Point{
+				X: int(r.X),
+				Y: int(r.Y),
+			},
+			conn,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		if shipRouter.portToDockTo != nil {
-			slog.Debug("Dropping last point in route", "route", route)
-			route = route[:len(route)-1]
+		shipRouter.PortToDockTo = portToDockTo
+
+		shipRouter.Ship = ship
+		shipRouter.Route = route
+		// shipRouter.conn = conn
+
+		shipRouter.Broadcast = func(routeShipEvent *ship_model.RouteShip) {
+			conn.Sender().ShipMoved(
+				ship.Persistent.ID,
+			)
 		}
 
-		shipRouter.ship = ship
-		shipRouter.route = route
-		shipRouter.conn = conn
-
-		conn.Context().Timeline.Do(func(routeShipEvent *RouteShip) timeline.EventDo {
+		conn.Context().Timeline.Do(func(routeShipEvent *ship_model.RouteShip) timeline.EventDo {
 			lastTickTimestamp := conn.Context().Timeline.CurrentTick()
 
 			return func() uint64 {
@@ -196,6 +164,8 @@ func MoveShip(conn Connection) InboundFunc {
 				return conn.Context().Timeline.TicksPerCycle()
 			}
 		}(&shipRouter), 0)
+
+		ship_model.RegisterRoute(&shipRouter)
 
 		return MoveShipResp{
 			Success: true,

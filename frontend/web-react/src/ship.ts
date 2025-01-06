@@ -1,5 +1,5 @@
 import * as ex from "excalibur";
-import { TILE_SIZE } from "./App";
+import { TILE_SIZE } from "./game";
 export class Ship {
   actor: ex.Actor;
   constructor() {
@@ -7,11 +7,33 @@ export class Ship {
     });
 
 
-    this.actor.graphics.use(new ex.Circle({
-      radius: TILE_SIZE / 8,
-      color: ex.Color.fromRGB(0, 0, 0, 1),
-      quality: 2,
-    }))
+    // this.actor.graphics.use(new ex.Circle({
+    //   radius: TILE_SIZE / 8,
+    //   color: ex.Color.fromRGB(0, 0, 0, 1),
+    //   quality: 2,
+    // }))
+
+    const x =  (new ex.ImageSource('http://localhost:5173/another-attempt-at-a-ship.png'))
+
+
+
+   x.load().then(() => {
+
+    if (!x.isLoaded()) {
+      console.log("Image not loaded");
+      return
+    }
+
+
+      this.actor.graphics.use(
+        new ex.Sprite({
+          image: x,
+         scale: new ex.Vector(.015625, .015625),
+        })    
+      )
+    })
+
+   
 
     
   }

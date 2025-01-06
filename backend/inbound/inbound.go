@@ -37,6 +37,31 @@ type Inbound struct {
 		Req  ControlTimeReq  `json:"req"`
 		Resp ControlTimeResp `json:"resp"`
 	}
+
+	Trade struct {
+		Req  TradeReq  `json:"req"`
+		Resp TradeResp `json:"resp"`
+	}
+
+	PlotRoute struct {
+		Req  PlotRouteReq  `json:"req"`
+		Resp PlotRouteResp `json:"resp"`
+	}
+
+	HireCrew struct {
+		Req  HireCrewReq  `json:"req"`
+		Resp HireCrewResp `json:"resp"`
+	}
+
+	RepairShip struct {
+		Req  RepairShipReq  `json:"req"`
+		Resp RepairShipResp `json:"resp"`
+	}
+
+	ManageRoute struct {
+		Req  ManageRouteReq  `json:"req"`
+		Resp ManageRouteResp `json:"resp"`
+	}
 }
 
 type InboundFunc func(req json.RawMessage) (interface{}, error)

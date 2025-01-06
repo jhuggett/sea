@@ -89,8 +89,6 @@ export class JSONRPC {
   private async handleRequest(data: Request<unknown>) {
     const { method, params, id } = data;
 
-    console.log("Handling request", data);
-
     const callback = this.requestRegistry.get(method);
 
     if (!callback) {

@@ -25,7 +25,17 @@ func (s *Crew) Create() (uint, error) {
 }
 
 func (s *Crew) Save() error {
-	return db.Conn().Save(s.Persistent).Error
+	err := db.Conn().Save(s.Persistent).Error
+
+	if err != nil {
+		return err
+	}
+
+	onChangedRegistryMap.Invoke([]any{s.Persistent.ID}, OnChangedEventData{
+		Crew: *s,
+	})
+
+	return nil
 }
 
 func Get(id uint) (*Crew, error) {
@@ -50,4 +60,13 @@ func Where(data models.Crew) (*Crew, error) {
 	return &Crew{
 		Persistent: s,
 	}, nil
+}
+
+func (s *Crew) Fetch() (*Crew, error) {
+	err := db.Conn().First(&s.Persistent, s.Persistent.ID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }

@@ -3,6 +3,7 @@ package jsonrpc
 import (
 	"encoding/json"
 	"log/slog"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -16,8 +17,11 @@ type JSONRPC interface {
 type jsonrpc struct {
 	conn *websocket.Conn
 
-	requestRegistry  map[string]func(params json.RawMessage) (interface{}, error)
-	responseRegistry map[string]chan Response
+	requestRegistryMutex sync.Mutex
+	requestRegistry      map[string]func(params json.RawMessage) (interface{}, error)
+
+	responseRegistryMutex sync.Mutex
+	responseRegistry      map[string]chan Response
 
 	ClosedChan chan struct{}
 }
@@ -53,12 +57,16 @@ func New(conn *websocket.Conn) *jsonrpc {
 			}
 
 			if msg.Method != "" {
+				rpc.requestRegistryMutex.Lock()
 				if callback, ok := rpc.requestRegistry[msg.Method]; ok {
+					rpc.requestRegistryMutex.Unlock()
 					result, err := callback(msg.Params)
 
 					var respMessage []byte
 
 					if err != nil {
+						slog.Error("jsonrpc: error in callback: %v", err)
+
 						marshaledErr, err := json.Marshal(err)
 						if err != nil {
 							slog.Warn("jsonrpc: failed to marshal error: %v", err)
@@ -77,7 +85,7 @@ func New(conn *websocket.Conn) *jsonrpc {
 					} else {
 						marshaledResult, err := json.Marshal(result)
 						if err != nil {
-							slog.Warn("jsonrpc: failed to marshal result: %v", err)
+							slog.Warn("jsonrpc: failed to marshal result", "err", err, "result", result)
 							continue
 						}
 
@@ -98,6 +106,7 @@ func New(conn *websocket.Conn) *jsonrpc {
 					}
 				}
 			} else {
+				rpc.responseRegistryMutex.Lock()
 				if respChannel, ok := rpc.responseRegistry[msg.ID]; ok {
 					respChannel <- Response{
 						ID:     msg.ID,
@@ -106,6 +115,7 @@ func New(conn *websocket.Conn) *jsonrpc {
 					}
 					delete(rpc.responseRegistry, msg.ID)
 				}
+				rpc.responseRegistryMutex.Unlock()
 			}
 		}
 
@@ -143,7 +153,9 @@ func (j *jsonrpc) Send(method string, params interface{}) (chan Response, error)
 
 	respChannel := make(chan Response, 1)
 
+	j.responseRegistryMutex.Lock()
 	j.responseRegistry[req.ID] = respChannel
+	j.responseRegistryMutex.Unlock()
 
 	return respChannel, nil
 }

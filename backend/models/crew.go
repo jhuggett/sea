@@ -8,8 +8,8 @@ type Crew struct {
 	Size int
 	// Ship determines the crew capacity
 
-	Wage    float64
-	Rations float64
+	Wage    float64 // per crew member
+	Rations float64 // per crew member
 
 	Morale float64
 

@@ -1,6 +1,7 @@
 package world_map
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -11,6 +12,7 @@ import (
 	"github.com/jhuggett/sea/models/continent"
 	"github.com/jhuggett/sea/utils/coordination"
 	"github.com/ojrac/opensimplex-go"
+	"gorm.io/gorm"
 )
 
 type WorldMap struct {
@@ -113,15 +115,15 @@ func (p Point) Point() coordination.Point {
 }
 
 func (w *WorldMap) Generate() error {
-	noise := NewNoise(4, 1.0/16.0)
+	noise := NewNoise(8, 1.0/15.0)
 
-	width, height := 100, 100
+	width, height := 250, 250
 
 	visited := map[coordination.Point]bool{}
 	groups := []map[coordination.Point]*Point{}
 
 	isLand := func(point coordination.Point) bool {
-		return noise.Sample(float64(point.X), float64(point.Y)) > 0.1
+		return noise.Sample(float64(point.X), float64(point.Y)) > 0.05
 	}
 
 	for y := 0; y < height; y++ {
@@ -196,6 +198,7 @@ func (w *WorldMap) generateContinent(points map[coordination.Point]*Point) error
 	for _, point := range points {
 		cp := models.Point{
 			ContinentID: continent.Persistent.ID,
+			WorldMapID:  w.Persistent.ID,
 			X:           point.X,
 			Y:           point.Y,
 			Elevation:   point.Elevation,
@@ -213,7 +216,7 @@ func (w *WorldMap) generateContinent(points map[coordination.Point]*Point) error
 
 func Get(id uint) (*WorldMap, error) {
 	var w models.WorldMap
-	err := db.Conn().Preload("Continents.Points").First(&w, id).Error
+	err := db.Conn().Preload("Continents").First(&w, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -282,4 +285,30 @@ func (w *WorldMap) Continents() []*continent.Continent {
 	}
 
 	return continents
+}
+
+func (w *WorldMap) HasLand(x int, y int) (*models.Point, error) {
+	var point *models.Point = &models.Point{}
+	err := db.Conn().Where("world_map_id = ?", w.Persistent.ID).Where("x = ?", x).Where("y = ?", y).First(point).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return point, nil
+}
+
+func (w *WorldMap) CoastalPoints() ([]*models.Point, error) {
+	var points []*models.Point
+	err := db.Conn().Where("world_map_id = ?", w.Persistent.ID).Where("coastal = ?", true).Find(&points).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return points, nil
 }

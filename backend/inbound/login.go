@@ -52,10 +52,10 @@ func Login(setGameContext func(snapshot game_context.Snapshot) Connection) Inbou
 			conn.Sender().ShipDocked(s.Persistent.ID, data.Location, true)
 		})
 
-		s.OnMovedDo(func(data ship.ShipMovedEventData) {
-			slog.Info("Ship moved", "id", s.Persistent.ID)
-			conn.Sender().ShipMoved(s.Persistent.ID, data.Location)
-		})
+		// s.OnMovedDo(func(data ship.ShipMovedEventData) {
+		// 	slog.Info("Ship moved", "id", s.Persistent.ID)
+		// 	conn.Sender().ShipMoved(s.Persistent.ID, data.Location)
+		// })
 
 		return LoginResp{
 			Ship:    ShipInfo{ID: s.Persistent.ID, X: s.Persistent.X, Y: s.Persistent.Y},

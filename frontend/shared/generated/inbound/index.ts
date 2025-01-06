@@ -43,6 +43,15 @@ export interface GetWorldMapResp {
 }
 
 //////////
+// source: hire_crew.go
+
+export interface HireCrewReq {
+  size: number /* int */;
+}
+export interface HireCrewResp {
+}
+
+//////////
 // source: inbound.go
 
 export interface Inbound {
@@ -70,6 +79,26 @@ export interface Inbound {
     req: ControlTimeReq;
     resp: ControlTimeResp;
   };
+  Trade: {
+    req: TradeReq;
+    resp: TradeResp;
+  };
+  PlotRoute: {
+    req: PlotRouteReq;
+    resp: PlotRouteResp;
+  };
+  HireCrew: {
+    req: HireCrewReq;
+    resp: HireCrewResp;
+  };
+  RepairShip: {
+    req: RepairShipReq;
+    resp: RepairShipResp;
+  };
+  ManageRoute: {
+    req: ManageRouteReq;
+    resp: ManageRouteResp;
+  };
 }
 export type InboundFunc = any;
 export type Connection = any;
@@ -91,6 +120,20 @@ export interface LoginResp {
 }
 
 //////////
+// source: manage_route.go
+
+export type MangeRouteAction = string;
+export const ManageRouteActionStart: MangeRouteAction = "start";
+export const ManageRouteActionPause: MangeRouteAction = "pause";
+export const ManageRouteActionStop: MangeRouteAction = "cancel";
+export interface ManageRouteReq {
+  ship_id: number /* uint */;
+  action: MangeRouteAction; // start, pause, cancel
+}
+export interface ManageRouteResp {
+}
+
+//////////
 // source: move_ship.go
 
 export interface MoveShipReq {
@@ -100,7 +143,21 @@ export interface MoveShipReq {
 export interface MoveShipResp {
   success: boolean;
 }
-export interface RouteShip {
+
+//////////
+// source: plot_route.go
+
+export interface Coordinate {
+  x: number /* float64 */;
+  y: number /* float64 */;
+}
+export interface PlotRouteReq {
+  coordinate: Coordinate;
+}
+export interface PlotRouteResp {
+  coordinates: Coordinate[];
+  speed: number /* float64 */;
+  duration: number /* float64 */; // in days
 }
 
 //////////
@@ -110,4 +167,31 @@ export interface RegisterReq {
 }
 export interface RegisterResp {
   snapshot: any /* game_context.Snapshot */;
+}
+
+//////////
+// source: repair_ship.go
+
+export interface RepairShipReq {
+  ship_id: number /* uint */;
+}
+export interface RepairShipResp {
+}
+
+//////////
+// source: trade.go
+
+export interface Item {
+  name: string;
+  amount: number /* float32 */;
+}
+export interface TradeAction {
+  item: Item;
+  from: number /* uint */;
+  to: number /* uint */;
+}
+export interface TradeReq {
+  actions: TradeAction[];
+}
+export interface TradeResp {
 }

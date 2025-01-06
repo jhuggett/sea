@@ -3,16 +3,22 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"math"
+	"math/rand"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/jhuggett/sea/constructs"
 	"github.com/jhuggett/sea/db"
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/jsonrpc"
 	"github.com/jhuggett/sea/log"
 	"github.com/jhuggett/sea/models"
+	"github.com/jhuggett/sea/models/crew"
 	"github.com/jhuggett/sea/models/inventory"
+	"github.com/jhuggett/sea/models/port"
+	"github.com/jhuggett/sea/models/producer"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/outbound"
 	"github.com/jhuggett/sea/timeline"
@@ -46,14 +52,17 @@ func main() {
 			},
 			UseColor: true,
 
-			BlockList: []string{},
+			BlockList: []string{"backend/timeline", "backend/utils/callback"},
 			Allowlist: []string{},
+
+			// WriteToFile: "log.txt",
 		})),
 	)
 
 	slog.Debug("Starting server")
 
 	dbConn := db.Conn()
+	// dbConn = dbConn.Debug()
 	dbConn.AutoMigrate(&models.Ship{})
 	dbConn.AutoMigrate(&models.WorldMap{})
 	dbConn.AutoMigrate(&models.Point{})
@@ -62,6 +71,8 @@ func main() {
 	dbConn.AutoMigrate(&models.Crew{})
 	dbConn.AutoMigrate(&models.Inventory{})
 	dbConn.AutoMigrate(&models.Item{})
+	dbConn.AutoMigrate(&models.Producer{})
+	dbConn.AutoMigrate(&models.Population{})
 	defer db.Close()
 
 	http.HandleFunc("/ws", wsHandler)
@@ -123,6 +134,11 @@ func run(conn *websocket.Conn) {
 		rpc.Receive("GetWorldMap", inbound.GetWorldMap(Connection)),
 		rpc.Receive("GetPorts", inbound.GetPorts(Connection)),
 		rpc.Receive("ControlTime", inbound.ControlTime(Connection)),
+		rpc.Receive("Trade", inbound.Trade(Connection)),
+		rpc.Receive("PlotRoute", inbound.PlotRoute(Connection)),
+		rpc.Receive("HireCrew", inbound.HireCrew(Connection)),
+		rpc.Receive("RepairShip", inbound.RepairShip(Connection)),
+		rpc.Receive("ManageRoute", inbound.ManageRoute(Connection)),
 	}
 
 	<-rpc.ClosedChan
@@ -137,9 +153,15 @@ func run(conn *websocket.Conn) {
 func startGame(conn *Connection) {
 	Timeline := conn.Context().Timeline
 
-	Timeline.OnTicksPerCycleChangedDo(func(data timeline.TicksPerCycleChangedEventData) {
-		conn.Sender().TimeChanged(data.CurrentTick, data.NewTicksPerCycle)
-	})
+	// Timeline.OnTicksPerCycleChangedDo(func(data timeline.TicksPerCycleChangedEventData) {
+	// 	conn.Sender().TimeChanged(data.CurrentTick, data.NewTicksPerCycle)
+	// })
+
+	Timeline.Do(func() uint64 {
+		conn.Sender().TimeChanged(Timeline.CurrentTick(), Timeline.TicksPerCycle())
+
+		return timeline.Day
+	}, timeline.Day)
 
 	Timeline.Start()
 
@@ -169,7 +191,7 @@ func startGame(conn *Connection) {
 		}
 
 		err = inventory.RemoveItem(models.Item{
-			Name:   string(models.ItemTypePieceOfEight),
+			Name:   string(constructs.PieceOfEight),
 			Amount: float32(crew.Persistent.Wage),
 		})
 
@@ -177,18 +199,110 @@ func startGame(conn *Connection) {
 			slog.Error("Error removing item", "err", err)
 		}
 
+		// Hand out rations
+
+		rations, err := inventory.Rations()
+		if err != nil {
+			slog.Error("Error getting rations", "err", err)
+			return timeline.Day
+		}
+
+		amountOwed := float64(crew.Persistent.Size) * crew.Persistent.Rations
+		slog.Info("Amount owed", "amountOwed", amountOwed, "rations", rations)
+
+		for _, ration := range rations {
+			slog.Info("Ration", "ration", ration, "amountOwed", amountOwed)
+			if amountOwed <= 0 {
+				break
+			}
+
+			if float64(ration.Persistent.Amount) >= amountOwed { // remove some
+
+				slog.Info("Removing ration", "ration", ration, "amountOwed", float32(amountOwed), "rationAmount", ration.Persistent.Amount)
+
+				err := inventory.RemoveItem(models.Item{
+					Name:   ration.Persistent.Name,
+					Amount: float32(amountOwed),
+				})
+				amountOwed = 0
+
+				if err != nil {
+					slog.Error("Error removing ration", "err", err)
+				}
+			} else { // remove all
+				amountOwed -= float64(ration.Persistent.Amount)
+
+				err := inventory.RemoveItem(models.Item{
+					Name:   ration.Persistent.Name,
+					Amount: float32(ration.Persistent.Amount),
+				})
+
+				if err != nil {
+					slog.Error("Error removing ration", "err", err)
+				}
+			}
+		}
+
+		if amountOwed > 0 {
+			crew.Persistent.Morale = math.Max(0, crew.Persistent.Morale-.1)
+			err := crew.Save()
+			if err != nil {
+				slog.Error("Error saving crew", "err", err)
+			}
+		} else {
+			crew.Persistent.Morale = math.Min(1, crew.Persistent.Morale+.025)
+			err := crew.Save()
+			if err != nil {
+				slog.Error("Error saving crew", "err", err)
+			}
+		}
+
+		// Random ship damage
+
+		s, err = s.Fetch()
+		if err != nil {
+			slog.Error("Error fetching ship", "err", err)
+			return timeline.Day
+		}
+
+		amount := rand.Float64() * 0.01
+		s.Persistent.StateOfRepair = math.Max(0, s.Persistent.StateOfRepair-amount)
+		err = s.Save()
+		if err != nil {
+			slog.Error("Error saving ship", "err", err)
+		}
+
+		err = conn.Sender().CrewInformation()
+		if err != nil {
+			slog.Error("Error sending crew information", "err", err)
+		}
+
+		err = conn.Sender().ShipChanged(s.Persistent.ID)
+		if err != nil {
+			slog.Error("Error sending ship changed", "err", err)
+		}
+
 		return timeline.Day
 	}, timeline.Day)
 
-	Timeline.Do(func() uint64 {
-		conn.Sender().TimeChanged(Timeline.CurrentTick(), Timeline.TicksPerCycle())
+	// Timeline.Do(func() uint64 {
+	// 	conn.Sender().TimeChanged(Timeline.CurrentTick(), Timeline.TicksPerCycle())
 
-		return 1
-	}, 1)
+	// 	return 1
+	// }, 1)
 
 	s.Inventory().OnChangedDo(func(data inventory.OnChangedEventData) {
-		slog.Info("Inventory changed", "id", s.Persistent.ID, "inventory", data.Inventory)
 		conn.Sender().ShipInventoryChanged(s.Persistent.ID, data.Inventory)
+	})
+
+	playerCrew, err := s.Crew()
+	if err != nil {
+		slog.Error("Error getting crew", "err", err)
+		return
+	}
+
+	playerCrew.OnChangedDo(func(data crew.OnChangedEventData) {
+		conn.Sender().CrewInformation()
 	})
 
 	var stopFishing func()
@@ -209,9 +323,19 @@ func startGame(conn *Connection) {
 
 				}
 
+				perishableDate := uint(Timeline.CurrentTick()) + uint(timeline.Day*3)
+
+				crew, err := s.Crew()
+				if err != nil {
+					slog.Error("Error getting crew", "err", err)
+					return timeline.Day
+				}
+
 				err = inventory.AddItem(models.Item{
-					Name:   string(models.ItemTypeFish),
-					Amount: 1,
+					Name:           string(constructs.Fish),
+					Amount:         float32(crew.Persistent.Size) * 2,
+					PerishDate:     &perishableDate, // this doesn't really do anything yet. Need to figure out how this stuff merges
+					MarkedAsRation: true,            // this should be controllable by the player in future
 				})
 
 				if err != nil {
@@ -222,4 +346,44 @@ func startGame(conn *Connection) {
 			}, timeline.Day)
 		}
 	})
+
+	ports, err := port.All(conn.gameCtx.GameMapID())
+	if err != nil {
+		slog.Error("Error getting ports", "err", err)
+		return
+	}
+
+	for _, p := range ports {
+		slog.Info("Port", "id", p.Persistent.ID)
+		producers, err := producer.All(p.Persistent.ID)
+		if err != nil {
+			slog.Error("Error getting producers", "err", err)
+			return
+		}
+		slog.Info("Producers", "producers", producers)
+
+		productionRate := timeline.Day
+
+		for _, pr := range producers {
+			Timeline.Do(func() uint64 {
+				inventory, err := p.Inventory().Fetch()
+				if err != nil {
+					slog.Error("Error fetching inventory", "err", err)
+					return productionRate
+				}
+
+				for _, product := range pr.Products() {
+					err = inventory.AddItem(models.Item{
+						Name:   product,
+						Amount: 1,
+					})
+					if err != nil {
+						slog.Error("Error adding item", "err", err)
+					}
+				}
+
+				return productionRate
+			}, productionRate)
+		}
+	}
 }

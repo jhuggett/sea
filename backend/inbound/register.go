@@ -2,13 +2,17 @@ package inbound
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"strings"
 
+	"github.com/jhuggett/sea/constructs"
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/models"
 	"github.com/jhuggett/sea/models/continent"
 	"github.com/jhuggett/sea/models/crew"
 	"github.com/jhuggett/sea/models/port"
+	"github.com/jhuggett/sea/models/producer"
 	"github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/models/world_map"
 )
@@ -52,24 +56,66 @@ func Register() InboundFunc {
 
 			continent := continent.Continent{Persistent: *c}
 
-			port.Persistent.PointID = continent.GetCoastalPoints()[0].ID
-			_, err = port.Create()
+			coastalPoints, err := continent.CoastalPoints()
 			if err != nil {
 				return nil, err
 			}
+
+			port.Persistent.PointID = coastalPoints[0].ID
+			portID, err := port.Create()
+			if err != nil {
+				return nil, err
+			}
+
+			port, err = port.Fetch()
+
+			err = port.Inventory().AddItem(models.Item{
+				Name:   string(constructs.PieceOfEight),
+				Amount: 1000,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to add item: %w", err)
+			}
+
+			for i := 0; i < 3; i++ {
+				_, err := producer.Create(models.Producer{
+					Products: strings.Join([]string{
+						string(constructs.Grain),
+					}, ""),
+				}, portID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create producer: %w", err)
+				}
+			}
+
 		}
 
 		// create ship
-		ship := ship.New()
-		// ship.Persistent.Coffers = 1000
-		ship.Persistent.WorldMapID = worldMapID
+		shipData := models.Ship{
+			WorldMapID: worldMapID,
+
+			MinimumSafeManning: 2,
+			MaximumSafeManning: 10,
+
+			StateOfRepair: 1.0,
+
+			BaseSpeed: 1.0,
+
+			RecommendedMaxCargoWeightCapacity: 300,
+			MaxCargoSpaceCapacity:             50,
+		}
+
+		ship := &ship.Ship{
+			Persistent: shipData,
+		}
+
 		shipID, err := ship.Create()
 		if err != nil {
 			return nil, err
 		}
 
 		err = ship.Inventory().AddItem(models.Item{
-			Name:   string(models.ItemTypePieceOfEight),
+			Name:   string(constructs.PieceOfEight),
 			Amount: 1000,
 		})
 		if err != nil {

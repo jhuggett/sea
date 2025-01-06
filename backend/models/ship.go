@@ -9,10 +9,23 @@ type Ship struct {
 	X float64
 	Y float64
 
-	CrewCapacity  uint
-	CargoCapacity uint
+	// Crew size range for best operation of the ship
+	MinimumSafeManning uint
+	MaximumSafeManning uint
+
+	// Recommended cargo capacity is how much cargo weight the ship can carry without slowing down
+	RecommendedMaxCargoWeightCapacity uint
+
+	// Max cargo capacity is how much cargo the ship can carry until there just isn't any more space
+	MaxCargoSpaceCapacity uint
+
+	StateOfRepair float64
+
+	// Squares moved per day
+	BaseSpeed float64
 
 	WorldMapID uint
+	WorldMap   *WorldMap `gorm:"foreignKey:WorldMapID"`
 
 	IsDocked bool
 

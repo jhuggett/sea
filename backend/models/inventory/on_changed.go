@@ -17,8 +17,6 @@ func (i *Inventory) OnChangedDo(do func(OnChangedEventData)) func() {
 }
 
 func (i *Inventory) Changed() {
-	slog.Info("Inventory changed event", "id", i.Persistent.ID)
-
 	i, err := i.Fetch()
 
 	if err != nil {

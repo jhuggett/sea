@@ -25,6 +25,16 @@ type Outbound struct {
 		Req  ShipInventoryChangedReq  `json:"req"`
 		Resp ShipInventoryChangedResp `json:"resp"`
 	}
+
+	CrewInformation struct {
+		Req  CrewInformationReq  `json:"req"`
+		Resp CrewInformationResp `json:"resp"`
+	}
+
+	ShipChanged struct {
+		Req  ShipChangedReq  `json:"req"`
+		Resp ShipChangedResp `json:"resp"`
+	}
 }
 
 type Sender struct {

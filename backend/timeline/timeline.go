@@ -31,7 +31,7 @@ func New() *Timeline {
 				select {
 				case <-stop:
 					return
-				case <-time.After(time.Second):
+				case <-time.After(time.Second / 2):
 					cycle()
 				}
 			}
@@ -179,7 +179,7 @@ func (t *Timeline) OnTicksPerCycleChangedDo(do func(TicksPerCycleChangedEventDat
 }
 
 const (
-	Day   uint64 = 2
+	Day   uint64 = 4
 	Week  uint64 = 7 * Day
 	Month uint64 = 30 * Day
 	Year  uint64 = 12 * Month

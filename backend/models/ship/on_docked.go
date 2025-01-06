@@ -17,7 +17,8 @@ func (s *Ship) OnDockedDo(do func(DockedEventData)) func() {
 	return dockedRegistryMap.Register([]any{s.Persistent.ID}, do)
 }
 
-func (s *Ship) Docked() {
+func (s *Ship) Docked(location coordination.Point) {
+	slog.Info("Ship docked", "id", s.Persistent.ID)
 	s.Persistent.IsDocked = true
 	err := s.Save()
 	if err != nil {
@@ -25,6 +26,6 @@ func (s *Ship) Docked() {
 		return
 	}
 	dockedRegistryMap.Invoke([]any{s.Persistent.ID}, DockedEventData{
-		Location: s.Location(),
+		Location: location,
 	})
 }
