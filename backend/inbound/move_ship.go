@@ -5,9 +5,9 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/jhuggett/sea/data/port"
+	ship_model "github.com/jhuggett/sea/data/ship"
 	"github.com/jhuggett/sea/log"
-	"github.com/jhuggett/sea/models/port"
-	ship_model "github.com/jhuggett/sea/models/ship"
 	"github.com/jhuggett/sea/timeline"
 	"github.com/jhuggett/sea/utils/coordination"
 	"gorm.io/gorm"

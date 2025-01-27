@@ -8,5 +8,6 @@ export interface GameContext {
 }
 export interface Snapshot {
   ShipID: number /* uint */;
+  PlayerID: number /* uint */;
   GameMapID: number /* uint */;
 }

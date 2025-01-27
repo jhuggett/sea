@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/jhuggett/sea/models/ship"
+	"github.com/jhuggett/sea/data/ship"
 )
 
 type RepairShipReq struct {

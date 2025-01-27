@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/jhuggett/sea/models"
-	"github.com/jhuggett/sea/models/inventory"
+	"github.com/jhuggett/sea/data"
+	"github.com/jhuggett/sea/data/inventory"
 )
 
 type Item struct {
@@ -47,7 +47,7 @@ func Trade(conn Connection) InboundFunc {
 				return nil, err
 			}
 
-			err = from.RemoveItem(models.Item{
+			err = from.RemoveItem(data.Item{
 				Name:   a.Item.Name,
 				Amount: a.Item.Amount,
 			})
@@ -57,7 +57,7 @@ func Trade(conn Connection) InboundFunc {
 				return nil, fmt.Errorf("failed to remove item from inventory: %w", err)
 			}
 
-			err = to.AddItem(models.Item{
+			err = to.AddItem(data.Item{
 				Name:   a.Item.Name,
 				Amount: a.Item.Amount,
 			})

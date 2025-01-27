@@ -21,10 +21,8 @@ export const TILE_SIZE = 32;
 export let rpc: JSONRPC | undefined = undefined;
 
 export const useStart = ({
-  timeChanged,
   cursorSquareChanged,
 }: {
-  timeChanged?: (req: TimeChangedReq) => void;
   cursorSquareChanged?: (x: number, y: number) => void;
 }) => {
   // const [isDocked, setIsDocked] = useState(false)
@@ -40,6 +38,7 @@ export const useStart = ({
   const [setSail, setSetSail] = useState<() => void>();
   const [playerShipInfo, setPlayerShipInfo] = useState<ShipChangedReq>();
   const [cameraRotation, setCameraRotation] = useState(0);
+  const [timeInformation, setTimeInformation] = useState<TimeChangedReq>();
 
   useEffect(() => {
     (async () => {
@@ -172,7 +171,7 @@ export const useStart = ({
           game.add(actor);
 
           const portName = new ex.Label({
-            text: `Port #${port.id}`,
+            text: port.name,
             x: port.point.X * TILE_SIZE - TILE_SIZE,
             y: port.point.Y * TILE_SIZE - TILE_SIZE,
             z: 2,
@@ -344,11 +343,11 @@ export const useStart = ({
         if (evt.key === ex.Input.Keys.Space) {
           if (paused) {
             rpc?.send("ControlTime", {
-              set_ticks_per_second_to: 1,
+              resume: true,
             });
           } else {
             rpc?.send("ControlTime", {
-              set_ticks_per_second_to: 0,
+              pause: true,
             });
           }
 
@@ -403,7 +402,9 @@ export const useStart = ({
       });
 
       rpc?.receive("TimeChanged", (req) => {
-        timeChanged?.(req);
+        //timeChanged?.(req);
+
+        setTimeInformation(req);
 
         return Promise.resolve({
           result: {},
@@ -472,5 +473,6 @@ export const useStart = ({
     setSail,
     playerShipInfo,
     cameraRotation,
+    timeInformation,
   };
 };

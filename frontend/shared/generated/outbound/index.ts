@@ -3,6 +3,25 @@
 //////////
 // source: crew_information.go
 
+/**
+ * bad name, it's colliding with the person type in inbound, outta pull these types up probably or something
+ */
+export interface OutboundPerson {
+  first_name: string;
+  last_name: string;
+  nick_name: string;
+  age: number /* int */;
+  morale: number /* float64 */;
+}
+export interface EmploymentContract {
+  title: string;
+  start_date: number /* uint */;
+  end_date: number /* uint */;
+}
+export interface CrewMember {
+  person: OutboundPerson;
+  contract: EmploymentContract;
+}
 export interface CrewInformationReq {
   size: number /* int */;
   wage: number /* float64 */;
@@ -10,6 +29,7 @@ export interface CrewInformationReq {
   morale: number /* float64 */;
   minimumSafeManning: number /* uint */;
   maximumSafeManning: number /* uint */;
+  crew_members: CrewMember[];
 }
 export interface CrewInformationResp {
 }
@@ -49,6 +69,11 @@ export interface Sender {
 //////////
 // source: ship_changed.go
 
+export interface ShipSummary {
+  id: number /* uint */;
+  isCapital: boolean;
+  name: string;
+}
 export interface ShipChangedReq {
   id: number /* uint */;
   x: number /* float64 */;
@@ -62,6 +87,7 @@ export interface ShipChangedReq {
   maxCargoSpaceCapacity: number /* uint */;
   currentCargoWeight: number /* float32 */;
   currentCargoSpace: number /* float32 */;
+  fleet: ShipSummary[];
 }
 export interface ShipChangedResp {
 }
@@ -78,6 +104,7 @@ export interface ShipDockedReq {
 export interface Port {
   id?: number /* uint */;
   inventory?: Inventory;
+  item_valuation?: { [key: string]: number /* float64 */};
 }
 export interface Inventory {
   id?: number /* uint */;
@@ -130,6 +157,7 @@ export interface TimeChangedReq {
   ticks_per_second: number /* uint64 */;
   current_day: number /* uint64 */;
   current_year: number /* uint64 */;
+  is_paused: boolean;
 }
 export interface TimeChangedResp {
 }

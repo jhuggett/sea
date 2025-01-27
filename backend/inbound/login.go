@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/jhuggett/sea/data/ship"
 	"github.com/jhuggett/sea/game_context"
-	"github.com/jhuggett/sea/models/ship"
 )
 
 type LoginReq struct {
@@ -16,6 +16,8 @@ type ShipInfo struct {
 	X  float64 `json:"x"`
 	Y  float64 `json:"y"`
 	ID uint    `json:"id"`
+
+	Name string `json:"name"`
 }
 type LoginResp struct {
 	Ship    ShipInfo `json:"ship"`
@@ -42,23 +44,23 @@ func Login(setGameContext func(snapshot game_context.Snapshot) Connection) Inbou
 
 		slog.Info("Ship found", "id", s.Persistent.ID)
 
-		s.OnDockedDo(func(data ship.DockedEventData) {
+		s.OnDockedDo(func(data ship.DockedEvent) {
 			slog.Info("Ship docked", "id", s.Persistent.ID)
 			conn.Sender().ShipDocked(s.Persistent.ID, data.Location, false)
 		})
 
-		s.OnUndockedDo(func(data ship.UnDockedEventData) {
+		s.OnUndockedDo(func(data ship.UnDockedEvent) {
 			slog.Info("Ship undocked", "id", s.Persistent.ID)
 			conn.Sender().ShipDocked(s.Persistent.ID, data.Location, true)
 		})
 
-		// s.OnMovedDo(func(data ship.ShipMovedEventData) {
+		// s.OnMovedDo(func(data. ship.ShipMovedEvent) {
 		// 	slog.Info("Ship moved", "id", s.Persistent.ID)
-		// 	conn.Sender().ShipMoved(s.Persistent.ID, data.Location)
+		// 	conn.Sender().ShipMoved(s.Persistent.ID, data..Location)
 		// })
 
 		return LoginResp{
-			Ship:    ShipInfo{ID: s.Persistent.ID, X: s.Persistent.X, Y: s.Persistent.Y},
+			Ship:    ShipInfo{ID: s.Persistent.ID, X: s.Persistent.X, Y: s.Persistent.Y, Name: s.Persistent.Name},
 			Success: true,
 		}, nil
 	}

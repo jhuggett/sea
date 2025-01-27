@@ -19,6 +19,8 @@ type Timeline struct {
 
 	stop   chan struct{}
 	cycler func(cycle func(), stop chan struct{})
+
+	IsRunning bool
 }
 
 func New() *Timeline {
@@ -31,7 +33,7 @@ func New() *Timeline {
 				select {
 				case <-stop:
 					return
-				case <-time.After(time.Second / 2):
+				case <-time.After(time.Second):
 					cycle()
 				}
 			}
@@ -45,12 +47,20 @@ func New() *Timeline {
 
 // Stop the timeline.
 func (t *Timeline) Stop() {
+	if !t.IsRunning {
+		return
+	}
 	slog.Debug("Stopping timeline", "current", t.current)
 	close(t.stop)
+	t.IsRunning = false
 }
 
 // Start the timeline (will resume if previously stopped).
 func (t *Timeline) Start() {
+	if t.IsRunning {
+		return
+	}
+	t.IsRunning = true
 	t.stop = make(chan struct{})
 
 	slog.Debug("Starting timeline", "current", t.current)
@@ -153,17 +163,17 @@ func (t *Timeline) CurrentTick() uint64 {
 	return t.current
 }
 
-type TicksPerCycleChangedEventData struct {
+type TicksPerCycleChangedEvent struct {
 	PrevTicksPerCycle uint64
 	NewTicksPerCycle  uint64
 	CurrentTick       uint64
 }
 
-var onTicksPerCycleChanged = callback.NewRegistryMap[TicksPerCycleChangedEventData]()
+var onTicksPerCycleChanged = callback.NewRegistryMap[TicksPerCycleChangedEvent]()
 
 func (t *Timeline) SetTicksPerCycle(ticksPerCycle uint64) {
 
-	eventData := TicksPerCycleChangedEventData{
+	Event := TicksPerCycleChangedEvent{
 		PrevTicksPerCycle: t.ticksPerCycle,
 		NewTicksPerCycle:  ticksPerCycle,
 		CurrentTick:       t.current,
@@ -171,15 +181,15 @@ func (t *Timeline) SetTicksPerCycle(ticksPerCycle uint64) {
 
 	t.ticksPerCycle = ticksPerCycle
 
-	onTicksPerCycleChanged.Invoke([]any{t.id()}, eventData)
+	onTicksPerCycleChanged.Invoke([]any{t.id()}, Event)
 }
 
-func (t *Timeline) OnTicksPerCycleChangedDo(do func(TicksPerCycleChangedEventData)) func() {
+func (t *Timeline) OnTicksPerCycleChangedDo(do func(TicksPerCycleChangedEvent)) func() {
 	return onTicksPerCycleChanged.Register([]any{t.id()}, do)
 }
 
 const (
-	Day   uint64 = 4
+	Day   uint64 = 2
 	Week  uint64 = 7 * Day
 	Month uint64 = 30 * Day
 	Year  uint64 = 12 * Month

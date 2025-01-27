@@ -16,6 +16,7 @@ frontend-setup:
 .PHONY: frontend-dev
 frontend-dev:
 	cd ./frontend/web-react; \
+	yarn; \
 	yarn dev; \
 
 .PHONY: generate-types

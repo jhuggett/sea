@@ -1,8 +1,9 @@
 package game_context
 
 import (
-	"github.com/jhuggett/sea/models/ship"
-	"github.com/jhuggett/sea/models/world_map"
+	"github.com/jhuggett/sea/data/person"
+	"github.com/jhuggett/sea/data/ship"
+	"github.com/jhuggett/sea/data/world_map"
 	"github.com/jhuggett/sea/timeline"
 )
 
@@ -13,7 +14,10 @@ type GameContext struct {
 }
 
 type Snapshot struct {
-	ShipID    uint
+	ShipID uint
+
+	PlayerID uint
+
 	GameMapID uint
 
 	// Sign this for auth in future
@@ -33,6 +37,14 @@ func (g *GameContext) GameMapID() uint {
 
 func (g *GameContext) ShipID() uint {
 	return g.snapshot.ShipID
+}
+
+func (g *GameContext) PlayerID() uint {
+	return g.snapshot.PlayerID
+}
+
+func (g *GameContext) Player() (*person.Person, error) {
+	return person.Get(g.snapshot.PlayerID)
 }
 
 func New(snapshot Snapshot) *GameContext {

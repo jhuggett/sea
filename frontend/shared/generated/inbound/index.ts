@@ -6,8 +6,30 @@
 export interface ControlTimeReq {
   set_ticks_per_second_to?: number /* uint64 */;
   set_ticks_per_second_by?: number /* uint64 */;
+  pause?: boolean;
+  resume?: boolean;
 }
 export interface ControlTimeResp {
+}
+
+//////////
+// source: get_hirable_people_at_port.go
+
+export interface GetHirablePeopleAtPortReq {
+  port_id: number /* uint */;
+}
+export interface Person {
+  first_name: string;
+  last_name: string;
+  nick_name: string;
+  age: number /* int */;
+  /**
+   * Not sure what this should be called, basically where they are from
+   */
+  place_of_residence: string;
+}
+export interface GetHirablePeopleAtPortResp {
+  people: Person[];
 }
 
 //////////
@@ -17,7 +39,8 @@ export interface GetPortsReq {
 }
 export interface Port {
   id: number /* uint */;
-  point: any /* models.Point */;
+  point: any /* data.Point */;
+  name: string;
 }
 export interface GetPortsResp {
   ports: Port[];
@@ -37,6 +60,7 @@ export interface Point {
 export interface Continent {
   points: Point[];
   center: any /* coordination.Point */;
+  name: string;
 }
 export interface GetWorldMapResp {
   continents: (Continent | undefined)[];
@@ -46,7 +70,7 @@ export interface GetWorldMapResp {
 // source: hire_crew.go
 
 export interface HireCrewReq {
-  size: number /* int */;
+  people: Person[];
 }
 export interface HireCrewResp {
 }
@@ -99,6 +123,10 @@ export interface Inbound {
     req: ManageRouteReq;
     resp: ManageRouteResp;
   };
+  GetHirablePeopleAtPort: {
+    req: GetHirablePeopleAtPortReq;
+    resp: GetHirablePeopleAtPortResp;
+  };
 }
 export type InboundFunc = any;
 export type Connection = any;
@@ -113,6 +141,7 @@ export interface ShipInfo {
   x: number /* float64 */;
   y: number /* float64 */;
   id: number /* uint */;
+  name: string;
 }
 export interface LoginResp {
   ship: ShipInfo;

@@ -20,7 +20,7 @@ func Conn() *gorm.DB {
 
 	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		panic("failed to connect data.base")
 	}
 
 	// // Create

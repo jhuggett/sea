@@ -62,6 +62,11 @@ type Inbound struct {
 		Req  ManageRouteReq  `json:"req"`
 		Resp ManageRouteResp `json:"resp"`
 	}
+
+	GetHirablePeopleAtPort struct {
+		Req  GetHirablePeopleAtPortReq  `json:"req"`
+		Resp GetHirablePeopleAtPortResp `json:"resp"`
+	}
 }
 
 type InboundFunc func(req json.RawMessage) (interface{}, error)

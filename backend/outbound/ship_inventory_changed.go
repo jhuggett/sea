@@ -1,6 +1,6 @@
 package outbound
 
-import "github.com/jhuggett/sea/models/inventory"
+import "github.com/jhuggett/sea/data/inventory"
 
 type Item struct {
 	ID     uint    `json:"id"`

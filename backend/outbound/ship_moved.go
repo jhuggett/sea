@@ -3,7 +3,7 @@ package outbound
 import (
 	"fmt"
 
-	ship_model "github.com/jhuggett/sea/models/ship"
+	ship_model "github.com/jhuggett/sea/data/ship"
 	"github.com/jhuggett/sea/timeline"
 	"github.com/jhuggett/sea/utils/coordination"
 )

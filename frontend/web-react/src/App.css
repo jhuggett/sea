@@ -40,3 +40,13 @@
 .read-the-docs {
   color: #888;
 }
+
+@font-face {
+  font-family: "IMFellPica";
+  src: url("IM_Fell_DW_Pica/IMFellDWPica-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "IMFellPicaItalic";
+  src: url("IM_Fell_DW_Pica/IMFellDWPica-Italic.ttf") format("truetype");
+}

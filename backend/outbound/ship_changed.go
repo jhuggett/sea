@@ -1,6 +1,19 @@
 package outbound
 
-import "github.com/jhuggett/sea/models/ship"
+import (
+	"fmt"
+	"log/slog"
+
+	"github.com/jhuggett/sea/data/fleet"
+	"github.com/jhuggett/sea/data/ship"
+)
+
+type ShipSummary struct {
+	ID        uint `json:"id"`
+	IsCapital bool `json:"isCapital"`
+
+	Name string `json:"name"`
+}
 
 type ShipChangedReq struct {
 	ID uint `json:"id"`
@@ -22,6 +35,8 @@ type ShipChangedReq struct {
 
 	CurrentCargoWeight float32 `json:"currentCargoWeight"`
 	CurrentCargoSpace  float32 `json:"currentCargoSpace"`
+
+	Fleet []ShipSummary `json:"fleet"`
 }
 
 type ShipChangedResp struct{}
@@ -32,6 +47,22 @@ func (s *Sender) ShipChanged(shipID uint) error {
 	if err != nil {
 		return err
 	}
+
+	fleet, err := fleet.GetFleetByShipID(shipID)
+	if err != nil {
+		return fmt.Errorf("failed to get fleet for ship %d: %w", shipID, err)
+	}
+
+	var fleetSummary []ShipSummary
+	for _, s := range fleet.Persistent.Ships {
+		fleetSummary = append(fleetSummary, ShipSummary{
+			ID:        s.ID,
+			IsCapital: fleet.Persistent.CapitalShipID == s.ID,
+			Name:      s.Name,
+		})
+	}
+
+	slog.Warn("fleetSummary:", "fleet", fleet, "fleetSummary", fleetSummary)
 
 	inventory := ship.Inventory()
 
@@ -57,6 +88,8 @@ func (s *Sender) ShipChanged(shipID uint) error {
 		MaxCargoSpaceCapacity:             ship.Persistent.MaxCargoSpaceCapacity,
 		CurrentCargoWeight:                totalCargoWeight,
 		CurrentCargoSpace:                 totalUsedSpace,
+
+		Fleet: fleetSummary,
 	})
 	if err != nil {
 		return err

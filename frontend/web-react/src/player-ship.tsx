@@ -23,6 +23,16 @@ export const PlayerShip = ({ ship }: { ship: ShipChangedReq }) => {
           {ship.recommendedMaxCargoWeightCapacity}
         </Copy>
         <Copy>{ship.isDocked ? "Docked" : "At sea"}</Copy>
+        <div>
+          {ship?.fleet?.map((fleetShip) => (
+            <>
+              <Copy>
+                Ship: {fleetShip.id}, {fleetShip.name}{" "}
+                {fleetShip.isCapital && " (Capitol)"}
+              </Copy>
+            </>
+          ))}
+        </div>
       </div>
     </Tablet>
   );

@@ -3,7 +3,7 @@ package inbound
 import (
 	"encoding/json"
 
-	ship_model "github.com/jhuggett/sea/models/ship"
+	ship_model "github.com/jhuggett/sea/data/ship"
 )
 
 type MangeRouteAction string

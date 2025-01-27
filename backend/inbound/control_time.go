@@ -8,6 +8,9 @@ import (
 type ControlTimeReq struct {
 	SetTicksPerSecondTo *uint64 `json:"set_ticks_per_second_to,omitempty"`
 	SetTicksPerSecondBy *uint64 `json:"set_ticks_per_second_by,omitempty"`
+
+	Pause  bool `json:"pause,omitempty"`
+	Resume bool `json:"resume,omitempty"`
 }
 
 type ControlTimeResp struct {
@@ -26,7 +29,15 @@ func ControlTime(conn Connection) InboundFunc {
 		} else if reqObj.SetTicksPerSecondBy != nil {
 			slog.Info("SetTicksPerSecondBy", "by", *reqObj.SetTicksPerSecondBy)
 			conn.Context().Timeline.SetTicksPerCycle(conn.Context().Timeline.TicksPerCycle() + *reqObj.SetTicksPerSecondBy)
+		} else if reqObj.Pause {
+			slog.Info("Pause")
+			conn.Context().Timeline.Stop()
+		} else if reqObj.Resume {
+			slog.Info("Resume")
+			conn.Context().Timeline.Start()
 		}
+
+		conn.Sender().TimeChanged()
 
 		respObj := ControlTimeResp{}
 

@@ -9,10 +9,12 @@ const TradeSquareItem = ({
   item,
   onAdd,
   onRemove,
+  normalizedValue,
 }: {
   item: Item;
   onAdd?: (item: Item, amount: number) => void;
   onRemove?: (item: Item, amount: number) => void;
+  normalizedValue?: number;
 }) => {
   const [range, setRange] = useState(0);
 
@@ -20,7 +22,7 @@ const TradeSquareItem = ({
     <div className="flex gap-2 justify-between bg-orange-800  p-2 rounded-lg">
       <div key={item.id}>
         <Copy>
-          {item.name}: {item.amount}
+          {item.name}: {item.amount} {`{${normalizedValue}}`}
         </Copy>
         <div>
           <input
@@ -68,11 +70,13 @@ export const TradeSquare = ({
   title,
   onAdd,
   onRemove,
+  port,
 }: {
   title: ReactNode;
   items: Item[];
   onAdd?: (item: Item, amount: number) => void;
   onRemove?: (item: Item, amount: number) => void;
+  port: Port;
 }) => {
   return (
     <div className=" p-4 m-4 basis-[100%] flex flex-col text-left">
@@ -84,6 +88,7 @@ export const TradeSquare = ({
             item={item}
             onAdd={onAdd}
             onRemove={onRemove}
+            normalizedValue={port?.item_valuation?.[item.name]}
           />
         ))}
       </div>
@@ -103,7 +108,7 @@ export const Trade = ({
 
   const [buyables, setBuyables] = useState<Item[]>(port.inventory?.items || []);
   const [sellables, setSellables] = useState<Item[]>(
-    playerInventory.items || []
+    playerInventory?.items || []
   );
 
   return (
@@ -113,6 +118,7 @@ export const Trade = ({
           <span>Trade</span>
           <div className="flex ">
             <TradeSquare
+              port={port}
               title={<Copy>Your stuff</Copy>}
               items={sellables}
               onRemove={(item, amount) => {
@@ -147,6 +153,7 @@ export const Trade = ({
               }}
             />
             <TradeSquare
+              port={port}
               title={<Copy>Their stuff (ID: {port.inventory?.id})</Copy>}
               items={buyables}
               onAdd={(item, amount) => {
@@ -183,7 +190,17 @@ export const Trade = ({
           </div>
           <div className="flex ">
             <TradeSquare
-              title={<Copy>Selling</Copy>}
+              port={port}
+              title={
+                <Copy>
+                  Selling{" "}
+                  {selling.reduce(
+                    (acc, item) =>
+                      acc + item.amount * port.item_valuation![item.name],
+                    0
+                  )}
+                </Copy>
+              }
               items={selling}
               onRemove={(item, amount) => {
                 setSelling((prev) => {
@@ -217,7 +234,17 @@ export const Trade = ({
               }}
             />
             <TradeSquare
-              title={<Copy>Buying</Copy>}
+              port={port}
+              title={
+                <Copy>
+                  Buying{" "}
+                  {buying.reduce(
+                    (acc, item) =>
+                      acc + item.amount * port.item_valuation![item.name],
+                    0
+                  )}
+                </Copy>
+              }
               items={buying}
               onRemove={(item, amount) => {
                 setBuying((prev) => {
@@ -253,6 +280,18 @@ export const Trade = ({
           </div>
         </div>
         <Button
+          disabled={
+            buying.reduce(
+              (acc, item) =>
+                acc + item.amount * port.item_valuation![item.name],
+              0
+            ) >
+            selling.reduce(
+              (acc, item) =>
+                acc + item.amount * port.item_valuation![item.name],
+              0
+            )
+          }
           onClick={() => {
             const portInventoryID = port.inventory?.id;
             if (!portInventoryID) {
