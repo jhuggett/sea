@@ -5,11 +5,11 @@ import (
 )
 
 type TimeChangedReq struct {
-	CurrentTick    uint64 `json:"current_tick"`
-	TicksPerSecond uint64 `json:"ticks_per_second"`
+	CurrentTick    timeline.Tick `json:"current_tick"`
+	TicksPerSecond timeline.Tick `json:"ticks_per_second"`
 
-	CurrentDay  uint64 `json:"current_day"`
-	CurrentYear uint64 `json:"current_year"`
+	CurrentDay  timeline.Tick `json:"current_day"`
+	CurrentYear timeline.Tick `json:"current_year"`
 
 	IsPaused bool `json:"is_paused"`
 }

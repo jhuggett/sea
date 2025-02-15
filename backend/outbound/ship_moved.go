@@ -13,7 +13,7 @@ type RouteInfo struct {
 	TilesInRoute       int  `json:"tiles_in_route"`
 	ReachedDestination bool `json:"reached_destination"`
 
-	EstimatedTimeLeft uint64 `json:"estimated_time_left"` // in days
+	EstimatedTimeLeft timeline.Tick `json:"estimated_time_left"` // in days
 
 	Trajectory []coordination.Point `json:"trajectory"`
 

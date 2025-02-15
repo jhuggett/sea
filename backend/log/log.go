@@ -77,6 +77,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("Custom slog handler panicked:", err)
+			fmt.Println(r)
 		}
 	}()
 
@@ -248,4 +249,16 @@ func RandID() string {
 
 func Package(name string) *slog.Logger {
 	return slog.With("package", name)
+}
+
+func UnderTest() {
+	slog.SetDefault(
+		slog.New(NewHandler(&HandlerOptions{
+			HandlerOptions: slog.HandlerOptions{
+				AddSource: true,
+				Level:     OptInDebug,
+			},
+			UseColor: true,
+		})),
+	)
 }

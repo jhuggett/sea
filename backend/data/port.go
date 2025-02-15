@@ -7,8 +7,8 @@ import (
 type Port struct {
 	gorm.Model
 
-	WorldMapID uint
-	WorldMap   WorldMap `gorm:"foreignKey:WorldMapID"`
+	// WorldMapID uint
+	// WorldMap   WorldMap `gorm:"foreignKey:WorldMapID"`
 
 	PointID uint
 	Point   *Point `gorm:"foreignKey:PointID"`
@@ -17,8 +17,8 @@ type Port struct {
 	InventoryID uint
 	Inventory   Inventory `gorm:"foreignKey:InventoryID"`
 
-	PopulationID uint
-	Population   Population `gorm:"foreignKey:PopulationID"`
+	// PopulationID uint
+	// Population   Population `gorm:"foreignKey:PopulationID"`
 
 	Name string
 }

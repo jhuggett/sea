@@ -3,11 +3,13 @@ package inbound
 import (
 	"encoding/json"
 	"log/slog"
+
+	"github.com/jhuggett/sea/timeline"
 )
 
 type ControlTimeReq struct {
-	SetTicksPerSecondTo *uint64 `json:"set_ticks_per_second_to,omitempty"`
-	SetTicksPerSecondBy *uint64 `json:"set_ticks_per_second_by,omitempty"`
+	SetTicksPerSecondTo *timeline.Tick `json:"set_ticks_per_second_to,omitempty"`
+	SetTicksPerSecondBy *timeline.Tick `json:"set_ticks_per_second_by,omitempty"`
 
 	Pause  bool `json:"pause,omitempty"`
 	Resume bool `json:"resume,omitempty"`

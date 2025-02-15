@@ -27,8 +27,10 @@ type RouteShip struct {
 	Ship  *Ship
 	Route []coordination.Point
 
-	ticks          uint64
+	ticks          timeline.Tick
 	lastTilesMoved int
+
+	progress float64
 
 	started bool
 
@@ -45,6 +47,10 @@ func (e *RouteShip) CurrentSpeed() (float64, error) {
 }
 
 func (e *RouteShip) TilesMoved() (int, error) {
+
+	return int(e.progress * float64(len(e.Route))), nil
+
+	//
 	speed, err := e.CurrentSpeed()
 	if err != nil {
 		slog.Error("RouteShip failed to get speed", "id", e.Ship.Persistent.ID, "err", err)
@@ -60,7 +66,7 @@ func (e *RouteShip) TilesMoved() (int, error) {
 	return tilesMoved, nil
 }
 
-func (e *RouteShip) EstimatedTimeLeft() (uint64, error) {
+func (e *RouteShip) EstimatedTimeLeft() (timeline.Tick, error) {
 	speed, err := e.CurrentSpeed()
 	if err != nil {
 		slog.Error("RouteShip failed to get speed", "id", e.Ship.Persistent.ID, "err", err)
@@ -77,10 +83,10 @@ func (e *RouteShip) EstimatedTimeLeft() (uint64, error) {
 		return 0, err
 	}
 
-	return uint64((float64(len(e.Route) - tilesMoved)) / speed), nil
+	return timeline.Tick((float64(len(e.Route) - tilesMoved)) / speed), nil
 }
 
-func (e *RouteShip) Do(ticks uint64) (stop bool) {
+func (e *RouteShip) Do(ticks timeline.Tick) (stop bool) {
 	if e.cancelled {
 		return true
 	}
@@ -97,6 +103,16 @@ func (e *RouteShip) Do(ticks uint64) (stop bool) {
 	e.ticks += ticks
 
 	// slog.Debug("RouteShip", "speed", speed, "id", e.Ship.Persistent.ID, "ticks", e.ticks, "route", len(e.Route), "travelled", float64(e.ticks)*speed)
+
+	speed, err := e.CurrentSpeed()
+	if err != nil {
+		slog.Error("RouteShip failed to get speed", "id", e.Ship.Persistent.ID, "err", err)
+		return true
+	}
+
+	newTilesMoved := float64(ticks) * (speed / float64(timeline.Day))
+
+	e.progress = min(1, e.progress+(float64(newTilesMoved)/float64(len(e.Route))))
 
 	tilesMoved, err := e.TilesMoved()
 	if err != nil {

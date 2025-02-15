@@ -5,8 +5,12 @@ import "github.com/jhuggett/sea/timeline"
 type Uses string
 
 const (
-	EdibleGrain Uses = "edible_grain"
-	EdibleMeat  Uses = "edible_meat"
+	// EdibleGrain Uses = "edible_grain"
+	// EdibleMeat  Uses = "edible_meat"
+
+	Food Uses = "food"
+
+	Fuel Uses = "fuel"
 
 	Currency Uses = "currency"
 )
@@ -45,6 +49,8 @@ const (
 	Fish         ItemType = "fish"
 	Grain        ItemType = "grain"
 	Silver       ItemType = "silver"
+
+	Wood ItemType = "wood"
 )
 
 /*
@@ -57,6 +63,19 @@ per item which allows the weight to be calculated based on the composition and s
 */
 
 var itemConstructs = map[ItemType]Item{
+	Wood: {
+		Name:          "Wood",
+		SpacePerItem:  1,
+		WeightPerItem: 1,
+		RationValue:   0,
+
+		BaseTimeToProduce: float64(timeline.Day) / 3,
+		WorkTimeToProduce: float64(timeline.Week * 2),
+
+		Uses: map[Uses]float64{
+			Fuel: 1,
+		},
+	},
 	Silver: {
 		Name:          "Silver",
 		SpacePerItem:  1,
@@ -78,7 +97,7 @@ var itemConstructs = map[ItemType]Item{
 			Silver: 1,
 		},
 
-		BaseTimeToProduce: 0,
+		BaseTimeToProduce: float64(timeline.Day) / 1,
 		WorkTimeToProduce: float64(timeline.Day) / 100,
 
 		Uses: map[Uses]float64{
@@ -91,11 +110,11 @@ var itemConstructs = map[ItemType]Item{
 		WeightPerItem: 1,
 		RationValue:   1,
 
-		BaseTimeToProduce: float64(timeline.Day) / 4,
+		BaseTimeToProduce: float64(timeline.Day) / 2,
 		WorkTimeToProduce: 0,
 
 		Uses: map[Uses]float64{
-			EdibleMeat: 1,
+			Food: 1,
 		},
 	},
 	Grain: {
@@ -104,11 +123,11 @@ var itemConstructs = map[ItemType]Item{
 		WeightPerItem: 1,
 		RationValue:   .5,
 
-		BaseTimeToProduce: float64(timeline.Month * 6),
+		BaseTimeToProduce: float64(timeline.Day) / 3,
 		WorkTimeToProduce: float64(timeline.Week * 2),
 
 		Uses: map[Uses]float64{
-			EdibleGrain: 1,
+			Food: 1,
 		},
 	},
 }

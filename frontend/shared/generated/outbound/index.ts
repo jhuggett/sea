@@ -135,7 +135,7 @@ export interface RouteInfo {
   total_tiles_moved: number /* int */;
   tiles_in_route: number /* int */;
   reached_destination: boolean;
-  estimated_time_left: number /* uint64 */; // in days
+  estimated_time_left: any /* timeline.Tick */; // in days
   trajectory: any /* coordination.Point */[];
   is_paused: boolean;
   is_cancelled: boolean;
@@ -153,10 +153,10 @@ export interface ShipMovedResp {
 // source: time_changed.go
 
 export interface TimeChangedReq {
-  current_tick: number /* uint64 */;
-  ticks_per_second: number /* uint64 */;
-  current_day: number /* uint64 */;
-  current_year: number /* uint64 */;
+  current_tick: any /* timeline.Tick */;
+  ticks_per_second: any /* timeline.Tick */;
+  current_day: any /* timeline.Tick */;
+  current_year: any /* timeline.Tick */;
   is_paused: boolean;
 }
 export interface TimeChangedResp {

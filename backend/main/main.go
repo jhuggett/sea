@@ -59,23 +59,8 @@ func main() {
 
 	slog.Debug("Starting server")
 
-	dbConn := db.Conn()
-	// dbConn = dbConn.Debug()
-	dbConn.AutoMigrate(&data.Ship{})
-	dbConn.AutoMigrate(&data.WorldMap{})
-	dbConn.AutoMigrate(&data.Point{})
-	dbConn.AutoMigrate(&data.Continent{})
-	dbConn.AutoMigrate(&data.Port{})
-	dbConn.AutoMigrate(&data.Crew{})
-	dbConn.AutoMigrate(&data.Inventory{})
-	dbConn.AutoMigrate(&data.Item{})
-	dbConn.AutoMigrate(&data.Population{})
-	dbConn.AutoMigrate(&data.Industry{})
-	dbConn.AutoMigrate(&data.Person{})
-	dbConn.AutoMigrate(&data.EmploymentTerms{})
-	dbConn.AutoMigrate(&data.Contract{})
-	dbConn.AutoMigrate(&data.Fleet{})
-	dbConn.AutoMigrate(&data.Deed{})
+	db.Conn()
+	db.Migrate()
 	defer db.Close()
 
 	http.HandleFunc("/ws", wsHandler)
@@ -169,7 +154,7 @@ func startGame(conn *Connection) func() {
 	// 	conn.Sender().TimeChanged(data..CurrentTick, data..NewTicksPerCycle)
 	// })
 
-	bitsToCleanUp = append(bitsToCleanUp, Timeline.Do(func() uint64 {
+	bitsToCleanUp = append(bitsToCleanUp, Timeline.Do(func() timeline.Tick {
 		conn.Sender().TimeChanged()
 
 		return timeline.Day
@@ -184,7 +169,7 @@ func startGame(conn *Connection) func() {
 	}
 
 	bitsToCleanUp = append(bitsToCleanUp,
-		Timeline.Do(func() uint64 {
+		Timeline.Do(func() timeline.Tick {
 			slog.Info("A day has passed")
 
 			// Pay wages (probably should be payed in a different way later)
@@ -328,7 +313,7 @@ func startGame(conn *Connection) func() {
 
 	bitsToCleanUp = append(bitsToCleanUp, s.OnAnchorLoweredDo(func(e ship.AnchorLoweredEvent) {
 		if e.Location == ship.AnchorLoweredLocationOpenSea {
-			stopFishing = Timeline.Do(func() uint64 {
+			stopFishing = Timeline.Do(func() timeline.Tick {
 				inventory, err := s.Inventory().Fetch()
 				if err != nil {
 					slog.Error("Error fetching inventory", "err", err)

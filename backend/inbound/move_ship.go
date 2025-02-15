@@ -151,7 +151,7 @@ func MoveShip(conn Connection) InboundFunc {
 		conn.Context().Timeline.Do(func(routeShipEvent *ship_model.RouteShip) timeline.EventDo {
 			lastTickTimestamp := conn.Context().Timeline.CurrentTick()
 
-			return func() uint64 {
+			return func() timeline.Tick {
 				elapsedTicks := conn.Context().Timeline.CurrentTick() - lastTickTimestamp
 				stop := routeShipEvent.Do(elapsedTicks)
 

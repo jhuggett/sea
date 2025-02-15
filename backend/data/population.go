@@ -5,15 +5,16 @@ import "gorm.io/gorm"
 type Population struct {
 	gorm.Model
 
-	WorldMapID uint
-	WorldMap   WorldMap `gorm:"foreignKey:WorldMapID"`
+	// WorldMapID uint
+	// WorldMap   WorldMap `gorm:"foreignKey:WorldMapID"`
 
-	ContinentID uint
-	Continent   Continent `gorm:"foreignKey:ContinentID"`
+	// ContinentID uint
+	// Continent   Continent `gorm:"foreignKey:ContinentID"`
+
+	EconomyID uint
+	Economy   Economy `gorm:"foreignKey:EconomyID"`
 
 	Size uint
-
-	Industries []Industry
 }
 
 /*

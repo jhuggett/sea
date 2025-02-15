@@ -4,8 +4,8 @@
 // source: control_time.go
 
 export interface ControlTimeReq {
-  set_ticks_per_second_to?: number /* uint64 */;
-  set_ticks_per_second_by?: number /* uint64 */;
+  set_ticks_per_second_to?: any /* timeline.Tick */;
+  set_ticks_per_second_by?: any /* timeline.Tick */;
   pause?: boolean;
   resume?: boolean;
 }

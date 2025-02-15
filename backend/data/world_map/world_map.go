@@ -227,16 +227,16 @@ func (w *WorldMap) generateContinent(points map[coordination.Point]*Point) error
 		return fmt.Errorf("error creating continent: %w", err)
 	}
 
-	population := data.Population{
-		WorldMapID:  w.Persistent.ID,
-		ContinentID: continent.Persistent.ID,
-		Size:        1000,
-	}
+	// population := data.Population{
+	// 	WorldMapID:  w.Persistent.ID,
+	// 	ContinentID: continent.Persistent.ID,
+	// 	Size:        1000,
+	// }
 
-	err = db.Conn().Create(&population).Error
-	if err != nil {
-		return fmt.Errorf("error creating population: %w", err)
-	}
+	// err = db.Conn().Create(&population).Error
+	// if err != nil {
+	// 	return fmt.Errorf("error creating population: %w", err)
+	// }
 
 	pointsToCreate := []*data.Point{}
 

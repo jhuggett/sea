@@ -11,9 +11,9 @@ import (
 )
 
 type Timeline struct {
-	current uint64
+	current Tick
 
-	ticksPerCycle uint64
+	ticksPerCycle Tick
 
 	queue *priority_queue.PriorityQueue[Event]
 
@@ -74,11 +74,11 @@ func (t *Timeline) Start() {
 }
 
 // Should return how many ticks to wait until it is invoke again. 0 means it will not be invoked again.
-type EventDo func() uint64
+type EventDo func() Tick
 
 type Event struct {
-	Target   uint64  // The tick when the event should be invoked.
-	Enqueued uint64  // The tick when the event was enqueued.
+	Target   Tick    // The tick when the event should be invoked.
+	Enqueued Tick    // The tick when the event was enqueued.
 	Do       EventDo // The function to invoke.
 
 	uid string
@@ -108,7 +108,7 @@ func (t *Timeline) processQueue() {
 		if inTicks > 0 {
 			slog.Debug("Re-enqueued event", "event", event)
 			t.queue.PushIt(Event{
-				Target:   event.Target + uint64(inTicks),
+				Target:   event.Target + inTicks,
 				Do:       event.Do,
 				Enqueued: event.Target,
 				uid:      event.uid,
@@ -131,7 +131,7 @@ func generateUID() string {
 }
 
 // Do will invoke the do function after inTicks.
-func (t *Timeline) Do(do EventDo, afterTicks uint64) func() {
+func (t *Timeline) Do(do EventDo, afterTicks Tick) func() {
 	slog.Debug("Enqueuing event", "current", t.current, "afterTicks", afterTicks)
 
 	e := Event{
@@ -155,23 +155,23 @@ func (t *Timeline) id() int {
 	return 0
 }
 
-func (t *Timeline) TicksPerCycle() uint64 {
+func (t *Timeline) TicksPerCycle() Tick {
 	return t.ticksPerCycle
 }
 
-func (t *Timeline) CurrentTick() uint64 {
+func (t *Timeline) CurrentTick() Tick {
 	return t.current
 }
 
 type TicksPerCycleChangedEvent struct {
-	PrevTicksPerCycle uint64
-	NewTicksPerCycle  uint64
-	CurrentTick       uint64
+	PrevTicksPerCycle Tick
+	NewTicksPerCycle  Tick
+	CurrentTick       Tick
 }
 
 var onTicksPerCycleChanged = callback.NewRegistryMap[TicksPerCycleChangedEvent]()
 
-func (t *Timeline) SetTicksPerCycle(ticksPerCycle uint64) {
+func (t *Timeline) SetTicksPerCycle(ticksPerCycle Tick) {
 
 	Event := TicksPerCycleChangedEvent{
 		PrevTicksPerCycle: t.ticksPerCycle,
@@ -188,9 +188,11 @@ func (t *Timeline) OnTicksPerCycleChangedDo(do func(TicksPerCycleChangedEvent)) 
 	return onTicksPerCycleChanged.Register([]any{t.id()}, do)
 }
 
+type Tick uint64
+
 const (
-	Day   uint64 = 2
-	Week  uint64 = 7 * Day
-	Month uint64 = 30 * Day
-	Year  uint64 = 12 * Month
+	Day   Tick = 2
+	Week  Tick = 7 * Day
+	Month Tick = 30 * Day
+	Year  Tick = 12 * Month
 )

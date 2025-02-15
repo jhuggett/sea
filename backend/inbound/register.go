@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/jhuggett/sea/constructs/items"
 	"github.com/jhuggett/sea/data"
 	"github.com/jhuggett/sea/data/continent"
 	"github.com/jhuggett/sea/data/crew"
 	"github.com/jhuggett/sea/data/fleet"
-	"github.com/jhuggett/sea/data/population"
 	"github.com/jhuggett/sea/data/port"
 	"github.com/jhuggett/sea/data/ship"
 	"github.com/jhuggett/sea/data/world_map"
@@ -54,21 +54,21 @@ func Register() InboundFunc {
 
 			continentModel := continent.Using(*continentData)
 
-			popData, err := continentModel.Population()
-			if err != nil {
-				return nil, err
-			}
+			// popData, err := continentModel.Population()
+			// if err != nil {
+			// 	return nil, err
+			// }
 
-			popModel := population.Using(popData)
+			// popModel := population.Using(popData)
 
 			// create ports
 			port := &port.Port{
 				Persistent: data.Port{
-					Name:         "Port of " + continentModel.Persistent.Name,
-					PopulationID: popModel.Persistent.ID,
+					Name: "Port of " + continentModel.Persistent.Name,
+					// PopulationID: popModel.Persistent.ID,
 				},
 			}
-			port.Persistent.WorldMapID = worldMapID
+			// port.Persistent.WorldMapID = worldMapID
 
 			coastalPoints, err := continentModel.CoastalPoints()
 			if err != nil {
@@ -83,13 +83,13 @@ func Register() InboundFunc {
 
 			port, err = port.Fetch()
 
-			// err = port.Inventory().AddItem(data..Item{
-			// 	Name:   string(constructs.PieceOfEight),
-			// 	Amount: 1000,
-			// })
-			// if err != nil {
-			// 	return nil, fmt.Errorf("failed to add item: %w", err)
-			// }
+			err = port.Inventory().AddItem(data.Item{
+				Name:   string(items.PieceOfEight),
+				Amount: 1000,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to add item: %w", err)
+			}
 
 			// for i := 0; i < 3; i++ {
 			// 	_, err := producer.Create(data..Producer{

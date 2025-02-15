@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/jhuggett/sea/data"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -23,16 +24,6 @@ func Conn() *gorm.DB {
 		panic("failed to connect data.base")
 	}
 
-	// // Create
-	// db.Create(&Product{Code: "D42", Price: 100})
-
-	// // Read
-	// var product Product
-	// db.First(&product, 1)                 // find product with integer primary key
-	// db.First(&product, "code = ?", "D42") // find product with code D42
-
-	// slog.Info("Product: ", product)
-
 	persisted_db = db
 	return persisted_db
 }
@@ -46,3 +37,41 @@ func Close() {
 		db.Close()
 	}
 }
+
+func Migrate() {
+	db := Conn()
+
+	db.AutoMigrate(&data.Ship{})
+	db.AutoMigrate(&data.WorldMap{})
+	db.AutoMigrate(&data.Point{})
+	db.AutoMigrate(&data.Continent{})
+	db.AutoMigrate(&data.Port{})
+	db.AutoMigrate(&data.Crew{})
+	db.AutoMigrate(&data.Inventory{})
+	db.AutoMigrate(&data.Item{})
+	db.AutoMigrate(&data.Population{})
+	db.AutoMigrate(&data.Industry{})
+	db.AutoMigrate(&data.Person{})
+	db.AutoMigrate(&data.EmploymentTerms{})
+	db.AutoMigrate(&data.Contract{})
+	db.AutoMigrate(&data.Fleet{})
+	db.AutoMigrate(&data.Deed{})
+	db.AutoMigrate(&data.Economy{})
+	db.AutoMigrate(&data.Market{})
+
+}
+
+func SetupInMemDB() {
+	persisted_db = nil
+
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect data.base")
+	}
+
+	persisted_db = db
+
+	Migrate()
+}
+
+type Scope func(db *gorm.DB) *gorm.DB
