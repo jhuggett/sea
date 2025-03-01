@@ -43,10 +43,12 @@ func (c *Camera) worldMatrix() ebiten.GeoM {
 }
 
 func (c *Camera) Render(world, screen *ebiten.Image) {
+	op := &ebiten.DrawImageOptions{
+		GeoM: c.worldMatrix(),
+	}
 	screen.DrawImage(
-		world, &ebiten.DrawImageOptions{
-			GeoM: c.worldMatrix(),
-		},
+		world,
+		op,
 	)
 }
 
@@ -85,61 +87,91 @@ func (c *Camera) Reset() {
 // 	return x, y
 // }
 
+func (w *WorldMapPage) CanvasTranslateTo(x, y float64) *ebiten.DrawImageOptions {
+	op := &ebiten.DrawImageOptions{}
+
+	op.GeoM.Translate(x+float64(-w.SmallestPointX)*w.TileSize, y+float64(-w.SmallestPointY)*w.TileSize)
+
+	return op
+}
+
+func (w *WorldMapPage) CanvasTranslateFrom(x, y float64) (float64, float64) {
+	return x - float64(-w.SmallestPointX)*w.TileSize, y - float64(-w.SmallestPointY)*w.TileSize
+}
+
 func (w *WorldMapPage) Draw(screen *ebiten.Image) {
 
-	op := &ebiten.DrawImageOptions{}
 	// op.GeoM.Translate(float64(w.SmallestPointX)*w.TileSize, float64(w.SmallestPointY)*w.TileSize)
 	// op.GeoM.Translate(-w.Camera.X, -w.Camera.Y)
-	op.GeoM.Translate(float64(w.SmallestPointX)*w.TileSize, float64(w.SmallestPointY)*w.TileSize)
-	w.Canvas.DrawImage(w.MapImage, op)
+	// op.GeoM.Translate(float64(w.SmallestPointX)*w.TileSize, float64(w.SmallestPointY)*w.TileSize)
+	w.Canvas.DrawImage(
+		w.MapImage,
+		w.CanvasTranslateTo(float64(w.SmallestPointX)*w.TileSize, float64(w.SmallestPointY)*w.TileSize),
+	)
 
 	for _, continent := range w.Continents {
-		op := &ebiten.DrawImageOptions{}
+		// op := &ebiten.DrawImageOptions{}
 
 		// op.GeoM.Translate(float64(continent.OriginX)*w.TileSize, float64(continent.OriginY)*w.TileSize)
 		// op.GeoM.Translate(-w.Camera.X, -w.Camera.Y)
 		// op.GeoM.Translate(w.TranslatedTileOrigin(continent.OriginX, continent.OriginY))
-		op.GeoM.Translate(float64(continent.OriginX)*w.TileSize, float64(continent.OriginY)*w.TileSize)
+		// op.GeoM.Translate(float64(continent.OriginX)*w.TileSize, float64(continent.OriginY)*w.TileSize)
 		// op.GeoM.Scale(w.Camera.Zoom, w.Camera.Zoom)
 
-		w.Canvas.DrawImage(continent.Image, op)
+		w.Canvas.DrawImage(
+			continent.Image,
+			w.CanvasTranslateTo(float64(continent.OriginX)*w.TileSize, float64(continent.OriginY)*w.TileSize),
+		)
 	}
 
 	for _, port := range w.Ports {
-		op := &ebiten.DrawImageOptions{}
+		// op := &ebiten.DrawImageOptions{}
 
 		// op.GeoM.Translate(float64(port.X)*w.TileSize, float64(port.Y)*w.TileSize)
 		// op.GeoM.Translate(-w.Camera.X, -w.Camera.Y)
-		op.GeoM.Translate(float64(port.X)*w.TileSize, float64(port.Y)*w.TileSize)
+		// op.GeoM.Translate(float64(port.X)*w.TileSize, float64(port.Y)*w.TileSize)
 		// op.GeoM.Scale(w.Camera.Zoom, w.Camera.Zoom)
 
-		w.Canvas.DrawImage(port.Image, op)
+		w.Canvas.DrawImage(
+			port.Image,
+			w.CanvasTranslateTo(float64(port.X)*w.TileSize, float64(port.Y)*w.TileSize),
+		)
 	}
 
 	if w.PlottedRoute.Image != nil {
-		op := &ebiten.DrawImageOptions{}
+		// op := &ebiten.DrawImageOptions{}
 		// op.GeoM.Translate(-w.Camera.X, -w.Camera.Y)
 		// op.GeoM.Translate(float64(w.PlottedRoute.OriginX)*w.TileSize, float64(w.PlottedRoute.OriginY)*w.TileSize)
-		op.GeoM.Translate(float64(w.PlottedRoute.OriginX)*w.TileSize, float64(w.PlottedRoute.OriginY)*w.TileSize)
+		// op.GeoM.Translate(float64(w.PlottedRoute.OriginX)*w.TileSize, float64(w.PlottedRoute.OriginY)*w.TileSize)
 		// op.GeoM.Scale(w.Camera.Zoom, w.Camera.Zoom)
-		w.Canvas.DrawImage(w.PlottedRoute.Image, op)
+		w.Canvas.DrawImage(
+			w.PlottedRoute.Image,
+			w.CanvasTranslateTo(float64(w.PlottedRoute.OriginX)*w.TileSize, float64(w.PlottedRoute.OriginY)*w.TileSize),
+		)
 	}
 
 	worldX, worldY := w.Camera.ScreenToWorld(ebiten.CursorPosition())
+	translatedX, translatedY := w.CanvasTranslateFrom(float64(worldX), float64(worldY))
 
 	if w.CursorImage != nil {
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(math.Floor(worldX/w.TileSize)*w.TileSize, math.Floor(worldY/w.TileSize)*w.TileSize)
-		w.Canvas.DrawImage(w.CursorImage, op)
+		// op := &ebiten.DrawImageOptions{}
+		// op.GeoM.Translate(math.Floor(worldX/w.TileSize)*w.TileSize, math.Floor(worldY/w.TileSize)*w.TileSize)
+		w.Canvas.DrawImage(
+			w.CursorImage,
+			w.CanvasTranslateTo(math.Floor(translatedX/w.TileSize)*w.TileSize, math.Floor(translatedY/w.TileSize)*w.TileSize),
+		)
 	}
 
-	op = &ebiten.DrawImageOptions{}
+	// op := &ebiten.DrawImageOptions{}
 	// op.GeoM.Translate(w.Ship.X*w.TileSize, w.Ship.Y*w.TileSize)
 	// op.GeoM.Translate(-w.Camera.X, -w.Camera.Y)
 	// op.GeoM.Translate(w.TranslatedTileOrigin(int(w.Ship.X), int(w.Ship.Y)))
 	// op.GeoM.Scale(w.Camera.Zoom, w.Camera.Zoom)
-	op.GeoM.Translate(w.Ship.X*w.TileSize, w.Ship.Y*w.TileSize)
-	w.Canvas.DrawImage(w.Ship.Image, op)
+	// op.GeoM.Translate(w.Ship.X*w.TileSize, w.Ship.Y*w.TileSize)
+	w.Canvas.DrawImage(
+		w.Ship.Image,
+		w.CanvasTranslateTo(w.Ship.X*w.TileSize, w.Ship.Y*w.TileSize),
+	)
 
 	// ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.ActualTPS(), ebiten.ActualFPS()))
 	// ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Mouse: %d, %d", w.MouseLocationX, w.MouseLocationY), 0, 30)
@@ -163,7 +195,7 @@ func (w *WorldMapPage) Draw(screen *ebiten.Image) {
 		screen,
 		fmt.Sprintf("%s\nCursor World Pos: %.2f,%.2f",
 			w.Camera.String(),
-			worldX, worldY),
+			translatedX, translatedY),
 		0, w.Height-32,
 	)
 }

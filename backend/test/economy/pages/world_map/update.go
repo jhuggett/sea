@@ -80,9 +80,10 @@ func (w *WorldMapPage) Update() error {
 				slog.Info("Click", "x", w.Press.X, "y", w.Press.Y)
 				if w.OnTileClicked != nil {
 					worldX, worldY := w.Camera.ScreenToWorld(ebiten.CursorPosition())
+					translatedX, translatedY := w.CanvasTranslateFrom(float64(worldX), float64(worldY))
 					w.OnTileClicked(
-						int(worldX/float64(w.TileSize)),
-						int(worldY/float64(w.TileSize)),
+						int(translatedX/float64(w.TileSize)),
+						int(translatedY/float64(w.TileSize)),
 					)
 				}
 			}
