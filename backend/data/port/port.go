@@ -45,7 +45,13 @@ func Get(id uint) (*Port, error) {
 
 func All(worldMapID uint) ([]*Port, error) {
 	var portData []data.Port
-	err := db.Conn().Preload("Point").Preload("Inventory").Preload("Inventory.Items").Where("world_map_id = ?", worldMapID).Find(&portData).Error
+	err := db.Conn().
+		Preload("Point").
+		Preload("Inventory").
+		Preload("Inventory.Items").
+		Joins("join continents on continents.id=ports.continent_id").
+		Where("continents.world_map_id = ?", worldMapID).
+		Find(&portData).Error
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +68,12 @@ func All(worldMapID uint) ([]*Port, error) {
 
 func Find(point data.Point) (*Port, error) {
 	var port data.Port
-	err := db.Conn().Debug().Preload("Point").Preload("Inventory").Preload("Inventory.Items").Where("point_id = ?", point.ID).First(&port).Error
+	err := db.Conn().Debug().
+		Preload("Point").
+		Preload("Inventory").
+		Preload("Inventory.Items").
+		Where("point_id = ?", point.ID).
+		First(&port).Error
 	if err != nil {
 		return nil, err
 	}

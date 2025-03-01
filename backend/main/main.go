@@ -89,7 +89,7 @@ func (c *Connection) Context() *game_context.GameContext {
 }
 
 func (c *Connection) Sender() *outbound.Sender {
-	return outbound.NewSender(c.RPC, c.gameCtx)
+	return outbound.NewSender(c.gameCtx, *outbound.NewRPCReceiver(c.RPC))
 }
 
 func run(conn *websocket.Conn) {
@@ -110,7 +110,7 @@ func run(conn *websocket.Conn) {
 	var cleanUpGame func() = nil
 
 	receivers := []func(){
-		rpc.Receive("Login", inbound.Login(func(snapshot game_context.Snapshot) inbound.Connection {
+		rpc.Receive("Login", inbound.WSLogin(func(snapshot game_context.Snapshot) inbound.Connection {
 			slog.Info("Setting game context")
 			Connection.gameCtx = game_context.New(snapshot)
 			Connection.gameCtx.Timeline = Timeline
@@ -120,9 +120,9 @@ func run(conn *websocket.Conn) {
 			return Connection
 		})),
 		rpc.Receive("MoveShip", inbound.MoveShip(Connection)),
-		rpc.Receive("Register", inbound.Register()),
-		rpc.Receive("GetWorldMap", inbound.GetWorldMap(Connection)),
-		rpc.Receive("GetPorts", inbound.GetPorts(Connection)),
+		rpc.Receive("Register", inbound.WSRegister()),
+		rpc.Receive("GetWorldMap", inbound.WSGetWorldMap(Connection)),
+		rpc.Receive("GetPorts", inbound.WSGetPorts(Connection)),
 		rpc.Receive("ControlTime", inbound.ControlTime(Connection)),
 		rpc.Receive("Trade", inbound.Trade(Connection)),
 		rpc.Receive("PlotRoute", inbound.PlotRoute(Connection)),

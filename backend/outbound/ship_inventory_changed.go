@@ -28,7 +28,7 @@ func (s *Sender) ShipInventoryChanged(shipId uint, inventory inventory.Inventory
 		})
 	}
 
-	_, err := s.rpc.Send("ShipInventoryChanged", ShipInventoryChangedReq{
+	_, err := s.Receiver.OnShipInventoryChanged(ShipInventoryChangedReq{
 		ShipID: shipId,
 		Inventory: Inventory{
 			ID:    inventory.Persistent.ID,

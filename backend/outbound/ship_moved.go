@@ -57,10 +57,9 @@ func (s *Sender) ShipMoved(shipId uint) error {
 		return err
 	}
 
-	_, err = s.rpc.Send("ShipMoved", ShipMovedReq{
+	_, err = s.Receiver.OnShipMoved(ShipMovedReq{
 		ShipID:   shipId,
 		Location: ship.Location(),
-
 		RouteInfo: RouteInfo{
 			TotalTilesMoved:    totalTilesMoved,
 			TilesInRoute:       len(route.Route),

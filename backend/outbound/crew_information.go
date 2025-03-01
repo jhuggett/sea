@@ -81,7 +81,7 @@ func (s *Sender) CrewInformation() error {
 		})
 	}
 
-	_, err = s.rpc.Send("CrewInformation", CrewInformationReq{
+	_, err = s.Receiver.OnCrewInformation(CrewInformationReq{
 		// Size:               crew.Persistent.Size,
 		// Wage:               crew.Persistent.Wage,
 		// Rations:            crew.Persistent.Rations,

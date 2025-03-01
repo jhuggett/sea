@@ -124,7 +124,7 @@ func (s *Sender) ShipDocked(shipId uint, location coordination.Point, undocked b
 
 		slog.Info("ShipDocked", "items", itemSummaries, "port", port, "point", point)
 
-		_, err = s.rpc.Send("ShipDocked", ShipDockedReq{
+		_, err = s.Receiver.OnShipDocked(ShipDockedReq{
 			ShipID:   shipId,
 			Location: location,
 			Undocked: undocked,
@@ -134,7 +134,6 @@ func (s *Sender) ShipDocked(shipId uint, location coordination.Point, undocked b
 					ID:    port.Persistent.InventoryID,
 					Items: itemSummaries,
 				},
-				// ItemValuation: valueMap,
 			},
 		})
 		if err != nil {
@@ -142,7 +141,7 @@ func (s *Sender) ShipDocked(shipId uint, location coordination.Point, undocked b
 		}
 	} else {
 		slog.Info("rpc.ShipDocked", "shipId", shipId, "location", location, "undocked", undocked)
-		_, err := s.rpc.Send("ShipDocked", ShipDockedReq{
+		_, err := s.Receiver.OnShipDocked(ShipDockedReq{
 			ShipID:   shipId,
 			Location: location,
 			Undocked: undocked,

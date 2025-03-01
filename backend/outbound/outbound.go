@@ -37,14 +37,52 @@ type Outbound struct {
 	}
 }
 
-type Sender struct {
-	rpc         jsonrpc.JSONRPC
-	gameContext *game_context.GameContext
+type Receiver struct {
+	OnShipMoved            func(ShipMovedReq) (ShipMovedResp, error)
+	OnShipDocked           func(ShipDockedReq) (ShipDockedResp, error)
+	OnTimeChanged          func(TimeChangedReq) (TimeChangedResp, error)
+	OnShipInventoryChanged func(ShipInventoryChangedReq) (ShipInventoryChangedResp, error)
+	OnCrewInformation      func(CrewInformationReq) (CrewInformationResp, error)
+	OnShipChanged          func(ShipChangedReq) (ShipChangedResp, error)
 }
 
-func NewSender(rpc jsonrpc.JSONRPC, gameContext *game_context.GameContext) *Sender {
+type Sender struct {
+	gameContext *game_context.GameContext
+	Receiver    Receiver
+}
+
+func NewRPCReceiver(rpc jsonrpc.JSONRPC) *Receiver {
+	return &Receiver{
+		OnShipMoved: func(req ShipMovedReq) (ShipMovedResp, error) {
+			_, err := rpc.Send("ShipMoved", req)
+			return ShipMovedResp{}, err
+		},
+		OnShipDocked: func(req ShipDockedReq) (ShipDockedResp, error) {
+			_, err := rpc.Send("ShipDocked", req)
+			return ShipDockedResp{}, err
+		},
+		OnTimeChanged: func(req TimeChangedReq) (TimeChangedResp, error) {
+			_, err := rpc.Send("TimeChanged", req)
+			return TimeChangedResp{}, err
+		},
+		OnShipInventoryChanged: func(req ShipInventoryChangedReq) (ShipInventoryChangedResp, error) {
+			_, err := rpc.Send("ShipInventoryChanged", req)
+			return ShipInventoryChangedResp{}, err
+		},
+		OnCrewInformation: func(req CrewInformationReq) (CrewInformationResp, error) {
+			_, err := rpc.Send("CrewInformation", req)
+			return CrewInformationResp{}, err
+		},
+		OnShipChanged: func(req ShipChangedReq) (ShipChangedResp, error) {
+			_, err := rpc.Send("ShipChanged", req)
+			return ShipChangedResp{}, err
+		},
+	}
+}
+
+func NewSender(gameContext *game_context.GameContext, receiver Receiver) *Sender {
 	return &Sender{
-		rpc:         rpc,
 		gameContext: gameContext,
+		Receiver:    receiver,
 	}
 }

@@ -11,3 +11,6 @@ https://en.wikipedia.org/wiki/Brig
 A collection of logbooks analyzed by historian Stuart Sherman contains details of “castaways, mutinies, desertions, floggings, women stowaways, drunkenness, illicit shore leave experiences, scurvy, fever, collisions, fire at sea, stove boats, drownings, hurricanes, earthquakes, tidal waves, shipwrecks, ships struck by lightning, men falling from the masthead, hostile natives, barratry [fraud by a captain or crew at the expense of the shipowners], brutal skippers, escape from Confederate raiders, hard luck voyages and ships crushed by ice.”
 
 https://www.whalingmuseum.org/learn/research-topics/whaling-history/life-aboard/
+
+On tolls and imports:
+https://memp.ace.fordham.edu/sources/local-port-tolls/

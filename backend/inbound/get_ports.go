@@ -22,32 +22,35 @@ type GetPortsResp struct {
 	Ports []Port `json:"ports"`
 }
 
-func GetPorts(conn Connection) InboundFunc {
+func GetPorts(r GetPortsReq, gameMapID uint) (GetPortsResp, error) {
+	ports, err := port.All(gameMapID)
+	if err != nil {
+		return GetPortsResp{}, err
+	}
+
+	resp := GetPortsResp{
+		Ports: []Port{},
+	}
+
+	for _, p := range ports {
+		port := Port{}
+
+		port.ID = p.Persistent.ID
+		port.Point = *p.Persistent.Point
+		port.Name = p.Persistent.Name
+
+		resp.Ports = append(resp.Ports, port)
+	}
+
+	return resp, nil
+}
+
+func WSGetPorts(conn Connection) InboundFunc {
 	return func(req json.RawMessage) (interface{}, error) {
 		var r GetPortsReq
 		if err := json.Unmarshal(req, &r); err != nil {
 			return nil, err
 		}
-
-		ports, err := port.All(conn.Context().GameMapID())
-		if err != nil {
-			return nil, err
-		}
-
-		resp := GetPortsResp{
-			Ports: []Port{},
-		}
-
-		for _, p := range ports {
-			port := Port{}
-
-			port.ID = p.Persistent.ID
-			port.Point = *p.Persistent.Point
-			port.Name = p.Persistent.Name
-
-			resp.Ports = append(resp.Ports, port)
-		}
-
-		return resp, nil
+		return GetPorts(r, conn.Context().GameMapID())
 	}
 }

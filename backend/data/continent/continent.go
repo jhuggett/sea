@@ -54,6 +54,16 @@ func (c *Continent) CoastalPoints() ([]*data.Point, error) {
 	return points, nil
 }
 
+func (c *Continent) LoadPoints() ([]*data.Point, error) {
+	points := []*data.Point{}
+	err := db.Conn().Where("continent_id = ?", c.Persistent.ID).Find(&points).Error
+	if err != nil {
+		return nil, err
+	}
+	c.Persistent.Points = points
+	return points, nil
+}
+
 func (c *Continent) Population() (data.Population, error) {
 	var p data.Population
 	err := db.Conn().Where("continent_id = ?", c.Persistent.ID).First(&p).Error

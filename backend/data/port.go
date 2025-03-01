@@ -20,5 +20,8 @@ type Port struct {
 	// PopulationID uint
 	// Population   Population `gorm:"foreignKey:PopulationID"`
 
+	ContinentID uint
+	Continent   Continent `gorm:"foreignKey:ContinentID"`
+
 	Name string
 }

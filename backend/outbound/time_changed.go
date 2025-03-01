@@ -21,7 +21,7 @@ func (s *Sender) TimeChanged() error {
 	currentTimeline := s.gameContext.Timeline
 	currentTick := currentTimeline.CurrentTick()
 
-	_, err := s.rpc.Send("TimeChanged", TimeChangedReq{
+	_, err := s.Receiver.OnTimeChanged(TimeChangedReq{
 		CurrentTick:    currentTick,
 		TicksPerSecond: currentTimeline.TicksPerCycle(),
 		CurrentDay:     currentTick / timeline.Day,

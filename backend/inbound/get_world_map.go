@@ -30,47 +30,61 @@ type GetWorldMapResp struct {
 	Continents []*Continent `json:"continents"`
 }
 
-func GetWorldMap(conn Connection) InboundFunc {
-	return func(req json.RawMessage) (interface{}, error) {
+func GetWorldMap(r GetWorldMapReq, gameMapID uint) (GetWorldMapResp, error) {
+	worldMap, err := world_map.Get(gameMapID)
+	if err != nil {
+		return GetWorldMapResp{}, err
+	}
 
-		worldMap, err := world_map.Get(conn.Context().GameMapID())
+	continents := []*Continent{}
+
+	for _, continentData := range worldMap.Persistent.Continents {
+		c := &Continent{
+			Points: []Point{},
+			Name:   continentData.Name,
+		}
+
+		continentModel := continent.Using(*continentData)
+
+		_, err := continentModel.LoadPoints()
+		if err != nil {
+			return GetWorldMapResp{}, err
+		}
+
+		coastalPoints, err := continentModel.CoastalPoints()
+		if err != nil {
+			return GetWorldMapResp{}, err
+		}
+
+		center, _ := coordination.Sort(coastalPoints)
+
+		for _, point := range continentModel.Persistent.Points {
+			c.Points = append(c.Points, Point{
+				X:         point.X,
+				Y:         point.Y,
+				Coastal:   point.Coastal,
+				Elevation: point.Elevation,
+			})
+		}
+
+		c.Center = center
+
+		continents = append(continents, c)
+	}
+
+	return GetWorldMapResp{
+		Continents: continents,
+	}, nil
+}
+
+func WSGetWorldMap(conn Connection) InboundFunc {
+	return func(req json.RawMessage) (interface{}, error) {
+		var r GetWorldMapReq
+		err := json.Unmarshal(req, &r)
 		if err != nil {
 			return nil, err
 		}
 
-		continents := []*Continent{}
-
-		for _, continentData := range worldMap.Persistent.Continents {
-			c := &Continent{
-				Points: []Point{},
-				Name:   continentData.Name,
-			}
-
-			continentModel := continent.Using(*continentData)
-
-			coastalPoints, err := continentModel.CoastalPoints()
-			if err != nil {
-				return nil, err
-			}
-
-			center, _ := coordination.Sort(coastalPoints)
-
-			for _, point := range coastalPoints {
-				c.Points = append(c.Points, Point{
-					X:         point.X,
-					Y:         point.Y,
-					Coastal:   point.Coastal,
-					Elevation: point.Elevation,
-				})
-			}
-
-			c.Center = center
-
-			continents = append(continents, c)
-		}
-
-		return GetWorldMapResp{
-			Continents: continents,
-		}, nil
+		return GetWorldMap(r, conn.Context().GameMapID())
 	}
 }

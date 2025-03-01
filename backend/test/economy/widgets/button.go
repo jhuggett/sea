@@ -12,7 +12,8 @@ import (
 )
 
 type Button struct {
-	Text string
+	Text    string
+	OnClick func()
 }
 
 func (b *Button) Update() {
@@ -99,6 +100,9 @@ func (b *Button) Setup(root *widget.Container) {
 		// add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 			println("button clicked")
+			if b.OnClick != nil {
+				b.OnClick()
+			}
 		}),
 
 		// add a handler that reacts to entering the button with the cursor

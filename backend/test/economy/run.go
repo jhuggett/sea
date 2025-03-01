@@ -1,92 +1,60 @@
 package main
 
 import (
-	"bytes"
-	"log"
 	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"golang.org/x/image/font/gofont/goregular"
+	"github.com/jhuggett/sea/db"
 
-	"github.com/ebitenui/ebitenui"
-	"github.com/ebitenui/ebitenui/widget"
+	"github.com/jhuggett/sea/log"
+
+	"github.com/jhuggett/sea/test/economy/page"
+	"github.com/jhuggett/sea/test/economy/pages/main_menu"
 )
 
-type Camera struct {
-	X, Y float64
-	Zoom float64
-}
-
-var tiles = [][]int{
-	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{0, 0, 1, 1, 1, 1, 0, 0, 0, 0},
-	{0, 0, 1, 0, 0, 1, 0, 0, 0, 0},
-	{0, 1, 0, 0, 0, 0, 1, 0, 0, 0},
-	{0, 0, 1, 0, 1, 1, 1, 0, 0, 0},
-	{0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-}
-
 type Game struct {
-	ui *ebitenui.UI
+	CurrentPage page.Page
+}
 
-	Camera Camera
+func (g *Game) Push(page page.Page) {
+	g.CurrentPage = page
+}
 
-	BackgroundImage *ebiten.Image
-
-	ExampleImage *ebiten.Image
+func (g *Game) Pop() {
+	// TODO: Implement
 }
 
 func (g *Game) Update() error {
-	g.ui.Update()
 
-	if ebiten.IsKeyPressed(ebiten.KeyW) {
-		g.Camera.Y -= 4 / (1 + g.Camera.Zoom)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyS) {
-		g.Camera.Y += 4 / (1 + g.Camera.Zoom)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyA) {
-		g.Camera.X -= 4 / (1 + g.Camera.Zoom)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		g.Camera.X += 4 / (1 + g.Camera.Zoom)
-	}
+	// 	x, y := ebiten.CursorPosition()
+	// 	if g.dragStartX == 0 && g.dragStartY == 0 {
+	// 		g.dragStartX = x
+	// 		g.dragStartY = y
+	// 	} else {
+	// 		g.Camera.X += float64(g.dragStartX-x) / g.Camera.Zoom
+	// 		g.Camera.Y += float64(g.dragStartY-y) / g.Camera.Zoom
+	// 		g.dragStartX = x
+	// 		g.dragStartY = y
+	// 	}
+	// } else {
+	// 	g.dragStartX = 0
+	// 	g.dragStartY = 0
+	//}
 
-	_, yoff := ebiten.Wheel()
-	if yoff > 0 {
-		slog.Info("Zooming in", "zoom", g.Camera.Zoom)
-		g.Camera.Zoom -= .25
-	}
-	if yoff < 0 {
-		slog.Info("Zooming out", "zoom", g.Camera.Zoom)
-		g.Camera.Zoom += .25
+	if err := g.CurrentPage.Update(); err != nil {
+		slog.Error("Error updating page", "error", err)
 	}
 
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	for y, row := range tiles {
-		for x, tile := range row {
-			if tile == 1 {
-				op := &ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(x*8), float64(y*8))
-				op.GeoM.Translate(-g.Camera.X, -g.Camera.Y)
-				op.GeoM.Scale(1+g.Camera.Zoom, 1+g.Camera.Zoom)
-				screen.DrawImage(g.ExampleImage, op)
-			}
-		}
-	}
-
-	g.ui.Draw(screen)
+	g.CurrentPage.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return ebiten.WindowSize()
+	g.CurrentPage.SetWidthAndHeight(outsideWidth, outsideHeight)
+	return outsideWidth, outsideHeight
 }
 
 func run() {
@@ -94,65 +62,37 @@ func run() {
 	ebiten.SetWindowTitle("Ships Colonies Commerce")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-	// This creates the root container for this UI.
-	// All other UI elements must be added to this container.
-	rootContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			// widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(30)),
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-		)),
-	)
+	runGame()
+	defer db.Close()
 
-	// This adds the root container to the UI, so that it will be rendered.
-	eui := &ebitenui.UI{
-		Container: rootContainer,
-	}
+	game := &Game{}
 
-	// popSize, graph := do()
-
-	_, err := text.NewGoTextFaceSource(bytes.NewReader(goregular.TTF))
+	firstPage, err := main_menu.New(game)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	// fontFace := &text.GoTextFace{
-	// 	Source: s,
-	// 	Size:   32,
-	// }
-	// This creates a text widget that says "Hello World!"
-	// helloWorldLabel := widget.NewText(
-	// 	widget.TextOpts.Text("Hello World!", fontFace, color.White),
-	// 	widget.TextOpts.MaxWidth(20),
-	// )
-
-	// (&widgets.Button{
-	// 	Text: fmt.Sprintf("Population: %d", popSize),
-	// }).Setup(rootContainer)
-
-	// (&widgets.TextArea{
-	// 	Contents: graph,
-	// }).Setup(rootContainer)
-
-	// To display the text widget, we have to add it to the root container.
-	//rootContainer.AddChild(helloWorldLabel)
-
-	game := &Game{
-		ui: eui,
-	}
-
-	exampleImage, _, err := ebitenutil.NewImageFromFile("./assets/images/tile_0006.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	game.ExampleImage = exampleImage
-
-	backendImage, _, err := ebitenutil.NewImageFromFile("./assets/images/parchmentBasic.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	game.BackgroundImage = backendImage
+	game.Push(firstPage)
 
 	if err := ebiten.RunGame(game); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
+}
+
+func runGame() {
+	slog.SetDefault(
+		slog.New(log.NewHandler(&log.HandlerOptions{
+			HandlerOptions: slog.HandlerOptions{
+				AddSource: true,
+				Level:     log.OptInDebug,
+			},
+			UseColor: true,
+
+			BlockList: []string{"backend/timeline", "backend/utils/callback"},
+			Allowlist: []string{},
+		})),
+	)
+
+	db.Conn()
+	db.Migrate()
 }

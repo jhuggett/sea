@@ -75,7 +75,7 @@ func (s *Sender) ShipChanged(shipID uint) error {
 		return err
 	}
 
-	_, err = s.rpc.Send("ShipChanged", ShipChangedReq{
+	_, err = s.Receiver.OnShipChanged(ShipChangedReq{
 		ID:                                shipID,
 		X:                                 ship.Persistent.X,
 		Y:                                 ship.Persistent.Y,

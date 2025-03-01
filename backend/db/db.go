@@ -58,7 +58,7 @@ func Migrate() {
 	db.AutoMigrate(&data.Deed{})
 	db.AutoMigrate(&data.Economy{})
 	db.AutoMigrate(&data.Market{})
-
+	db.AutoMigrate(&data.Session{})
 }
 
 func SetupInMemDB() {
