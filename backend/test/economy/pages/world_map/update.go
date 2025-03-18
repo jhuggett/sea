@@ -5,11 +5,16 @@ import (
 	"math"
 	"time"
 
+	"github.com/ebitenui/ebitenui/input"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func (w *WorldMapPage) Update() error {
 	w.ui.Update()
+
+	if input.UIHovered {
+		return nil
+	}
 
 	x, y := ebiten.CursorPosition()
 
@@ -36,19 +41,15 @@ func (w *WorldMapPage) Update() error {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		// w.Camera.X = (w.Ship.X*(w.TileSize*w.Camera.Zoom) - float64(w.Width)/2/w.Camera.Zoom)
-		// w.Camera.Y = (w.Ship.Y*(w.TileSize*w.Camera.Zoom) - float64(w.Height)/2/w.Camera.Zoom)
+		// center on ship
+		w.CanvasTranslateTo(w.Ship.X, w.Ship.Y)
 	}
 
 	_, yoff := ebiten.Wheel()
 	if yoff > 0 {
-		// slog.Info("Zooming in", "zoom", w.Camera.Zoom)
-		// w.Camera.Zoom /= 1.125
 		w.Camera.ZoomFactor += 5
 	}
 	if yoff < 0 {
-		// slog.Info("Zooming out", "zoom", w.Camera.Zoom)
-		// w.Camera.Zoom *= 1.125
 		w.Camera.ZoomFactor -= 5
 	}
 
@@ -65,8 +66,6 @@ func (w *WorldMapPage) Update() error {
 		}
 
 		if time.Since(w.Press.TimeStart) > 100*time.Millisecond || (math.Abs(float64(w.Press.StartX-x)) > 25 || math.Abs(float64(w.Press.StartY-y)) > 25) {
-			// w.Camera.X += float64(w.Press.X-x) / w.Camera.Zoom
-			// w.Camera.Y += float64(w.Press.Y-y) / w.Camera.Zoom
 			w.Camera.Position[0] += float64(w.Press.X-x) / math.Pow(1.01, float64(w.Camera.ZoomFactor))
 			w.Camera.Position[1] += float64(w.Press.Y-y) / math.Pow(1.01, float64(w.Camera.ZoomFactor))
 		}

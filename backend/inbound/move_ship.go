@@ -104,71 +104,78 @@ func Plot(start coordination.Point, end coordination.Point, conn Connection) ([]
 	return route, portToDockTo, nil
 }
 
-func MoveShip(conn Connection) InboundFunc {
-	return func(req json.RawMessage) (interface{}, error) {
-		slog := slog.With("rid", log.RandID())
+func MoveShip(r MoveShipReq, conn Connection) (*MoveShipResp, error) {
 
-		var r MoveShipReq
-		if err := json.Unmarshal(req, &r); err != nil {
-			return nil, err
-		}
+	slog := slog.With("rid", log.RandID())
 
-		slog = slog.With("x", r.X, "y", r.Y)
+	slog = slog.With("x", r.X, "y", r.Y)
 
-		slog.Debug("MoveShip called")
+	slog.Debug("MoveShip called")
 
-		ship, err := conn.Context().Ship()
-		if err != nil {
-			return nil, err
-		}
+	ship, err := conn.Context().Ship()
+	if err != nil {
+		return nil, err
+	}
 
-		shipRouter := ship_model.RouteShip{}
+	shipRouter := ship_model.RouteShip{}
 
-		route, portToDockTo, err := Plot(
-			ship.Location(),
-			coordination.Point{
-				X: int(r.X),
-				Y: int(r.Y),
-			},
-			conn,
+	route, portToDockTo, err := Plot(
+		ship.Location(),
+		coordination.Point{
+			X: int(r.X),
+			Y: int(r.Y),
+		},
+		conn,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	shipRouter.PortToDockTo = portToDockTo
+
+	shipRouter.Ship = ship
+	shipRouter.Route = route
+	// shipRouter.conn = conn
+
+	shipRouter.Broadcast = func(routeShipEvent *ship_model.RouteShip) {
+		conn.Sender().ShipMoved(
+			ship.Persistent.ID,
 		)
-		if err != nil {
+	}
+
+	conn.Context().Timeline.Do(func(routeShipEvent *ship_model.RouteShip) timeline.EventDo {
+		slog.Debug("Enqueuing event", "conn", conn.Context())
+		lastTickTimestamp := conn.Context().Timeline.CurrentTick()
+
+		return func() timeline.Tick {
+			elapsedTicks := conn.Context().Timeline.CurrentTick() - lastTickTimestamp
+			stop := routeShipEvent.Do(elapsedTicks)
+
+			if stop {
+				return 0
+			}
+
+			lastTickTimestamp = conn.Context().Timeline.CurrentTick()
+
+			return conn.Context().Timeline.TicksPerCycle()
+		}
+	}(&shipRouter), 0)
+
+	ship_model.RegisterRoute(&shipRouter)
+
+	return &MoveShipResp{
+		Success: true,
+	}, nil
+
+}
+
+func WSMoveShip(conn Connection) InboundFunc {
+	return func(req json.RawMessage) (interface{}, error) {
+		var reqObj MoveShipReq
+		if err := json.Unmarshal(req, &reqObj); err != nil {
 			return nil, err
 		}
 
-		shipRouter.PortToDockTo = portToDockTo
-
-		shipRouter.Ship = ship
-		shipRouter.Route = route
-		// shipRouter.conn = conn
-
-		shipRouter.Broadcast = func(routeShipEvent *ship_model.RouteShip) {
-			conn.Sender().ShipMoved(
-				ship.Persistent.ID,
-			)
-		}
-
-		conn.Context().Timeline.Do(func(routeShipEvent *ship_model.RouteShip) timeline.EventDo {
-			lastTickTimestamp := conn.Context().Timeline.CurrentTick()
-
-			return func() timeline.Tick {
-				elapsedTicks := conn.Context().Timeline.CurrentTick() - lastTickTimestamp
-				stop := routeShipEvent.Do(elapsedTicks)
-
-				if stop {
-					return 0
-				}
-
-				lastTickTimestamp = conn.Context().Timeline.CurrentTick()
-
-				return conn.Context().Timeline.TicksPerCycle()
-			}
-		}(&shipRouter), 0)
-
-		ship_model.RegisterRoute(&shipRouter)
-
-		return MoveShipResp{
-			Success: true,
-		}, nil
+		return MoveShip(reqObj, conn)
 	}
 }

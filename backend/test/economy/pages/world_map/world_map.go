@@ -1,7 +1,6 @@
 package world_map
 
 import (
-	"bytes"
 	"image/color"
 	"log/slog"
 	"time"
@@ -10,17 +9,20 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/outbound"
-	"golang.org/x/image/font/gofont/goregular"
+	"github.com/jhuggett/sea/start"
+	"github.com/jhuggett/sea/test/economy/widgets"
+	"github.com/jhuggett/sea/timeline"
 	"golang.org/x/image/math/f64"
 )
 
 type PlottedRoute struct {
 	Points []inbound.Coordinate
+
+	EndTileX, EndTileY int
 
 	EstimatedSailingSpeed float64
 	EstimatedDuration     float64 // in days
@@ -104,21 +106,21 @@ type Ship struct {
 	Image *ebiten.Image
 }
 
-type Connection struct {
-	Receiver outbound.Receiver
-	gameCtx  *game_context.GameContext
-}
+// type Connection struct {
+// 	Receiver outbound.Receiver
+// 	gameCtx  *game_context.GameContext
+// }
 
-func (c *Connection) Context() *game_context.GameContext {
-	return c.gameCtx
-}
+// func (c *Connection) Context() *game_context.GameContext {
+// 	return c.gameCtx
+// }
 
-func (c *Connection) Sender() *outbound.Sender {
-	return outbound.NewSender(c.gameCtx, c.Receiver)
-}
+// func (c *Connection) Sender() *outbound.Sender {
+// 	return outbound.NewSender(c.gameCtx, c.Receiver)
+// }
 
 type WorldMapPage struct {
-	Conn *Connection
+	Conn *start.Connection
 
 	PlottedRoute PlottedRoute
 
@@ -164,12 +166,10 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 		Container: rootContainer,
 	}
 
-	// popSize, graph := do()
-
-	_, err := text.NewGoTextFaceSource(bytes.NewReader(goregular.TTF))
-	if err != nil {
-		return nil, err
-	}
+	// s, err := text.NewGoTextFaceSource(bytes.NewReader(goregular.TTF))
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// fontFace := &text.GoTextFace{
 	// 	Source: s,
@@ -181,30 +181,51 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 	// 	widget.TextOpts.MaxWidth(20),
 	// )
 
-	// (&widgets.Button{
-	// 	Text: fmt.Sprintf("Population: %d", popSize),
-	// }).Setup(rootContainer)
-
-	// (&widgets.TextArea{
-	// 	Contents: graph,
-	// }).Setup(rootContainer)
-
 	// To display the text widget, we have to add it to the root container.
-	//rootContainer.AddChild(helloWorldLabel)
+	// rootContainer.AddChild(helloWorldLabel)
 
 	page := &WorldMapPage{
 		Camera: Camera{
-
 			ViewPort: f64.Vec2{800, 500},
+			TileSize: 32,
 		},
 		TileSize: 32,
 
 		ui: eui,
 	}
 
-	conn := &Connection{
-		Receiver: outbound.Receiver{},
-		gameCtx:  &game_context.GameContext{},
+	conn := &start.Connection{
+		Receiver: &outbound.Receiver{
+			OnCrewInformation: func(cir outbound.CrewInformationReq) (outbound.CrewInformationResp, error) {
+				slog.Info("CrewInformation called", "req", cir)
+				return outbound.CrewInformationResp{}, nil
+			},
+			OnShipMoved: func(smr outbound.ShipMovedReq) (outbound.ShipMovedResp, error) {
+				slog.Info("ShipMoved called", "req", smr)
+
+				page.Ship.X = float64(smr.Location.X)
+				page.Ship.Y = float64(smr.Location.Y)
+
+				return outbound.ShipMovedResp{}, nil
+			},
+			OnShipDocked: func(sdr outbound.ShipDockedReq) (outbound.ShipDockedResp, error) {
+				slog.Info("ShipDocked called", "req", sdr)
+				return outbound.ShipDockedResp{}, nil
+			},
+			OnTimeChanged: func(tcr outbound.TimeChangedReq) (outbound.TimeChangedResp, error) {
+				slog.Info("TimeChanged called", "req", tcr)
+				return outbound.TimeChangedResp{}, nil
+			},
+			OnShipInventoryChanged: func(sicr outbound.ShipInventoryChangedReq) (outbound.ShipInventoryChangedResp, error) {
+				slog.Info("ShipInventoryChanged called", "req", sicr)
+				return outbound.ShipInventoryChangedResp{}, nil
+			},
+			OnShipChanged: func(scr outbound.ShipChangedReq) (outbound.ShipChangedResp, error) {
+				slog.Info("ShipChanged called", "req", scr)
+				return outbound.ShipChangedResp{}, nil
+			},
+		},
+		GameCtx: &game_context.GameContext{},
 	}
 
 	exampleImage, _, err := ebitenutil.NewImageFromFile("./assets/images/tile_0006.png")
@@ -224,7 +245,7 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 		slog.Info("Register response", "resp", resp)
 	}
 
-	conn.gameCtx = game_context.New(*snapshot)
+	conn.GameCtx = game_context.New(*snapshot)
 
 	loginResp, err := inbound.Login(inbound.LoginReq{
 		Snapshot: *snapshot,
@@ -234,6 +255,10 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 	}
 
 	slog.Info("Login response", "loginResp", loginResp)
+
+	conn.GameCtx.Timeline = timeline.New()
+
+	start.Game(conn)
 
 	page.Ship = Ship{
 		X:     loginResp.Ship.X,
@@ -421,6 +446,8 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 			Points:                resp.Coordinates,
 			EstimatedSailingSpeed: resp.EstimatedSailingSpeed,
 			EstimatedDuration:     resp.EstimatedDuration,
+			EndTileX:              x,
+			EndTileY:              y,
 			IsActive:              false,
 		}
 		page.PlottedRoute.RenderImage(page.TileSize)
@@ -448,6 +475,29 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 		int(float64(page.LargestPointX-page.SmallestPointX+1)*page.TileSize),
 		int(float64(page.LargestPointY-page.SmallestPointY+1)*page.TileSize),
 	)
+
+	button := (&widgets.Button{
+		Text: "Set Sail",
+		OnClick: func() {
+			slog.Info("Button clicked")
+
+			slog.Info("MoveShip called", "conn", conn.Context())
+
+			resp, err := inbound.MoveShip(inbound.MoveShipReq{
+				X: float64(page.PlottedRoute.EndTileX),
+				Y: float64(page.PlottedRoute.EndTileY),
+			}, conn)
+
+			if err != nil {
+				slog.Error("Failed to move ship", "error", err)
+				return
+			}
+
+			slog.Info("MoveShip response", "resp", resp)
+		},
+	})
+
+	button.Setup(rootContainer)
 
 	return page, nil
 }
