@@ -144,7 +144,7 @@ func (s *Crew) AverageMorale() (float64, error) {
 
 func members(crew *Crew) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		return db.Debug().
+		return db.
 			Joins("join contracts on contracts.offeree_id=people.id").
 			Where("contracts.offeror_id=?", crew.Persistent.ID).
 			Where("contracts.offeror_kind=?", data.CrewContractParty)

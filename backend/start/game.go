@@ -11,13 +11,11 @@ import (
 	"github.com/jhuggett/sea/data/inventory"
 	"github.com/jhuggett/sea/data/ship"
 	"github.com/jhuggett/sea/game_context"
-	"github.com/jhuggett/sea/jsonrpc"
 	"github.com/jhuggett/sea/outbound"
 	"github.com/jhuggett/sea/timeline"
 )
 
 type Connection struct {
-	RPC      jsonrpc.JSONRPC
 	Receiver *outbound.Receiver
 	GameCtx  *game_context.GameContext
 }
@@ -27,11 +25,7 @@ func (c *Connection) Context() *game_context.GameContext {
 }
 
 func (c *Connection) Sender() *outbound.Sender {
-	if c.Receiver == nil {
-		return outbound.NewSender(c.GameCtx, *outbound.NewRPCReceiver(c.RPC))
-	} else {
-		return outbound.NewSender(c.GameCtx, *c.Receiver)
-	}
+	return outbound.NewSender(c.GameCtx, *c.Receiver)
 }
 
 func Game(conn *Connection) func() {

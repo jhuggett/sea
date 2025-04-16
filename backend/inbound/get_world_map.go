@@ -1,8 +1,6 @@
 package inbound
 
 import (
-	"encoding/json"
-
 	"github.com/jhuggett/sea/data/continent"
 	"github.com/jhuggett/sea/data/world_map"
 	"github.com/jhuggett/sea/utils/coordination"
@@ -24,6 +22,8 @@ type Continent struct {
 	Center coordination.Point `json:"center"`
 
 	Name string `json:"name"`
+
+	ID uint `json:"id"`
 }
 
 type GetWorldMapResp struct {
@@ -42,6 +42,7 @@ func GetWorldMap(r GetWorldMapReq, gameMapID uint) (GetWorldMapResp, error) {
 		c := &Continent{
 			Points: []Point{},
 			Name:   continentData.Name,
+			ID:     continentData.ID,
 		}
 
 		continentModel := continent.Using(*continentData)
@@ -75,16 +76,4 @@ func GetWorldMap(r GetWorldMapReq, gameMapID uint) (GetWorldMapResp, error) {
 	return GetWorldMapResp{
 		Continents: continents,
 	}, nil
-}
-
-func WSGetWorldMap(conn Connection) InboundFunc {
-	return func(req json.RawMessage) (interface{}, error) {
-		var r GetWorldMapReq
-		err := json.Unmarshal(req, &r)
-		if err != nil {
-			return nil, err
-		}
-
-		return GetWorldMap(r, conn.Context().GameMapID())
-	}
 }

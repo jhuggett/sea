@@ -16,6 +16,8 @@ type Port struct {
 	Point data.Point `json:"point"`
 
 	Name string `json:"name"`
+
+	ContinentID uint `json:"continent_id"`
 }
 
 type GetPortsResp struct {
@@ -33,11 +35,14 @@ func GetPorts(r GetPortsReq, gameMapID uint) (GetPortsResp, error) {
 	}
 
 	for _, p := range ports {
+
 		port := Port{}
 
 		port.ID = p.Persistent.ID
 		port.Point = *p.Persistent.Point
 		port.Name = p.Persistent.Name
+
+		port.ContinentID = p.Persistent.ContinentID
 
 		resp.Ports = append(resp.Ports, port)
 	}
