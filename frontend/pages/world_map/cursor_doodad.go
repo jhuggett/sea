@@ -14,6 +14,8 @@ type CursorDoodad struct {
 	Gesturer doodad.Gesturer
 
 	img *ebiten.Image
+
+	Hidden bool
 }
 
 func (w *CursorDoodad) Update() error {
@@ -21,21 +23,9 @@ func (w *CursorDoodad) Update() error {
 }
 
 func (w *CursorDoodad) Draw(screen *ebiten.Image) {
-	// originX, originY := w.Origin()
-	// scaleX, scaleY := w.Scale()
-
-	// op := &ebiten.DrawImageOptions{}
-	// op.GeoM.Translate(
-	// 	float64(mouseX-w.TileSize/2-originX),
-	// 	float64(mouseY-w.TileSize/2-originY),
-	// )
-
-	// // the act of scaling changes the origin
-
-	// op.GeoM.Scale(
-	// 	scaleX,
-	// 	scaleY,
-	// )
+	if w.Hidden {
+		return
+	}
 
 	op := &ebiten.DrawImageOptions{}
 
@@ -66,11 +56,11 @@ func (w *CursorDoodad) Setup() error {
 	w.img = ebiten.NewImage(int(width), int(height))
 	w.img.Fill(color.Black)
 
-	w.Gesturer.OnMouseMove(func(x, y int) bool {
+	w.Gesturer.OnMouseMove(func(x, y int) error {
 		w.MouseX = x
 		w.MouseY = y
 
-		return false
+		return nil
 	})
 
 	return nil

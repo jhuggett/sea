@@ -1,6 +1,7 @@
 package doodad
 
 import (
+	"errors"
 	"log/slog"
 	"math"
 	"time"
@@ -8,12 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
 )
-
-type Press struct {
-	StartX, StartY int
-	X, Y           int
-	TimeStart      time.Time
-}
 
 type CallbackRegistryRecord[T any] struct {
 	Callback T
@@ -39,11 +34,20 @@ func (r *CallbackRegistry[T]) Remove(uuid string) {
 	}
 }
 
-func (r *CallbackRegistry[T]) Call(do func(T) (stop bool)) {
+var ErrStopPropagation = errors.New("stop propagation")
+var ErrUnregister = errors.New("unregister")
+
+func (r *CallbackRegistry[T]) InvokeEndToStart(do func(T) error) {
 	for i := len(r.callbacks) - 1; i >= 0; i-- {
 		cb := r.callbacks[i]
-		if do(cb.Callback) {
-			return
+		err := do(cb.Callback)
+		if err != nil {
+			if errors.Is(err, ErrStopPropagation) {
+				return
+			}
+			if errors.Is(err, ErrUnregister) {
+				r.Remove(cb.UUID)
+			}
 		}
 	}
 }
@@ -55,14 +59,26 @@ func (r *CallbackRegistry[T]) Register(callback T) func() {
 	}
 }
 
+type Press struct {
+	StartX, StartY int
+	X, Y           int
+	TimeStart      time.Time
+	Button         ebiten.MouseButton
+}
+
+type MouseUpEvent struct {
+	X, Y   int
+	Button ebiten.MouseButton
+}
+
 // Return indicates whether the event should continue to propagate
-type OnMouseUpFunc func(x, y int) bool
+type OnMouseUpFunc func(MouseUpEvent) error
 
-type OnMouseDragFunc func(lastX, lastY, currentX, currentY int) bool
+type OnMouseDragFunc func(lastX, lastY, currentX, currentY int) error
 
-type OnMouseWheelFunc func(offset float64) bool
+type OnMouseWheelFunc func(offset float64) error
 
-type OnMouseMoveFunc func(x, y int) bool
+type OnMouseMoveFunc func(x, y int) error
 
 type Gesturer interface {
 	OnMouseUp(OnMouseUpFunc) func()
@@ -70,6 +86,9 @@ type Gesturer interface {
 	OnMouseWheel(OnMouseWheelFunc) func()
 	OnMouseMove(OnMouseMoveFunc) func()
 	Update()
+
+	Parent() Gesturer
+	CreateChild() Gesturer
 }
 
 type gesturer struct {
@@ -82,6 +101,8 @@ type gesturer struct {
 	MouseY int
 
 	Press *Press
+
+	parent Gesturer
 }
 
 func NewGesturer() *gesturer {
@@ -92,6 +113,21 @@ func NewGesturer() *gesturer {
 		OnMouseMoveCallbacks:  CallbackRegistry[OnMouseMoveFunc]{},
 	}
 }
+
+func (g *gesturer) Parent() Gesturer {
+	if g.parent == nil {
+		return nil
+	}
+	return g.parent
+}
+
+func (g *gesturer) CreateChild() Gesturer {
+	child := NewGesturer()
+	child.parent = g
+	return child
+}
+
+// Register callbacks
 
 func (g *gesturer) OnMouseUp(callback OnMouseUpFunc) func() {
 	return g.OnMouseUpCallbacks.Register(callback)
@@ -109,12 +145,14 @@ func (g *gesturer) OnMouseMove(callback OnMouseMoveFunc) func() {
 	return g.OnMouseMoveCallbacks.Register(callback)
 }
 
+// Update logic
+
 func (g *gesturer) Update() {
 	x, y := ebiten.CursorPosition()
 
 	if x != g.MouseX || y != g.MouseY {
-		g.OnMouseMoveCallbacks.Call(func(ocf OnMouseMoveFunc) (stop bool) {
-			return ocf(x, y)
+		g.OnMouseMoveCallbacks.InvokeEndToStart(func(ommf OnMouseMoveFunc) error {
+			return ommf(x, y)
 		})
 	}
 
@@ -122,30 +160,22 @@ func (g *gesturer) Update() {
 	g.MouseY = y
 
 	_, yoff := ebiten.Wheel()
-	// if yoff > 0 {
-
-	// 	// need a zoom callback
-
-	// 	// w.Camera.ZoomFactor += .1
-	// 	// slog.Debug("Zooming in", "zoom", w.Camera.ZoomFactor)
-	// }
-	// if yoff < 0 {
-	// 	// w.Camera.ZoomFactor -= .1
-
-	// 	// if w.Camera.ZoomFactor < 0.1 {
-	// 	// 	w.Camera.ZoomFactor = 0.1
-	// 	// }
-
-	// 	// slog.Debug("Zooming out", "zoom", w.Camera.ZoomFactor)
-	// }
-
 	if yoff != 0 {
-		g.OnMouseWheelCallbacks.Call(func(ocf OnMouseWheelFunc) (stop bool) {
-			return ocf(yoff)
+		g.OnMouseWheelCallbacks.InvokeEndToStart(func(omwf OnMouseWheelFunc) error {
+			return omwf(yoff)
 		})
 	}
 
+	var pressedMouseButton ebiten.MouseButton = -1
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		pressedMouseButton = ebiten.MouseButtonLeft
+	} else if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
+		pressedMouseButton = ebiten.MouseButtonRight
+	} else if ebiten.IsMouseButtonPressed(ebiten.MouseButtonMiddle) {
+		pressedMouseButton = ebiten.MouseButtonMiddle
+	}
+
+	if pressedMouseButton != -1 {
 		if g.Press == nil {
 			g.Press = &Press{
 				StartX:    x,
@@ -153,17 +183,14 @@ func (g *gesturer) Update() {
 				X:         x,
 				Y:         y,
 				TimeStart: time.Now(),
+				Button:    pressedMouseButton,
 			}
 		}
 
-		// need drag callback
-
 		if time.Since(g.Press.TimeStart) > 100*time.Millisecond || (math.Abs(float64(g.Press.StartX-x)) > 25 || math.Abs(float64(g.Press.StartY-y)) > 25) {
-			g.OnMouseDragCallbacks.Call(func(ocf OnMouseDragFunc) (stop bool) {
-				return ocf(g.Press.X, g.Press.Y, x, y)
+			g.OnMouseDragCallbacks.InvokeEndToStart(func(omdf OnMouseDragFunc) error {
+				return omdf(g.Press.X, g.Press.Y, x, y)
 			})
-			// 	w.Camera.Position[0] += float64(w.Press.X-x) / w.Camera.ZoomFactor
-			// 	w.Camera.Position[1] += float64(w.Press.Y-y) / w.Camera.ZoomFactor
 		}
 
 		g.Press.X = x
@@ -173,8 +200,12 @@ func (g *gesturer) Update() {
 		if g.Press != nil {
 			if time.Since(g.Press.TimeStart) < 100*time.Millisecond || (math.Abs(float64(g.Press.StartX-g.Press.X)) < 8 && math.Abs(float64(g.Press.StartY-g.Press.Y)) < 8) {
 				slog.Info("Click", "x", g.Press.X, "y", g.Press.Y)
-				g.OnMouseUpCallbacks.Call(func(ocf OnMouseUpFunc) (stop bool) {
-					return ocf(g.Press.X, g.Press.Y)
+				g.OnMouseUpCallbacks.InvokeEndToStart(func(omuf OnMouseUpFunc) error {
+					return omuf(MouseUpEvent{
+						X:      g.Press.X,
+						Y:      g.Press.Y,
+						Button: g.Press.Button,
+					})
 				})
 			}
 			g.Press = nil

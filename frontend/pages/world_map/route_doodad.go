@@ -57,8 +57,12 @@ func (w *RouteDoodad) Draw(screen *ebiten.Image) {
 
 func (w *RouteDoodad) Setup() error {
 
-	w.Gesturer.OnMouseUp(func(x, y int) bool {
+	w.Gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
+		if event.Button != ebiten.MouseButtonLeft {
+			return nil
+		}
 
+		x, y := event.X, event.Y
 		fmt.Println("RouteDoodad.OnClick", x, y)
 
 		worldX, worldY := w.SpaceTranslator.FromScreenToWorld(
@@ -74,7 +78,7 @@ func (w *RouteDoodad) Setup() error {
 		route, err := w.Ship.PlotRoute(int(dataX), int(dataY))
 		if err != nil {
 			slog.Error("RouteDoodad.OnClick", "error", err)
-			return false
+			return nil
 		}
 
 		scale, _ := w.SpaceTranslator.TileSize()
@@ -118,7 +122,7 @@ func (w *RouteDoodad) Setup() error {
 			)
 		}
 
-		return false
+		return nil
 	})
 
 	setSailButton := doodad.NewButton(
@@ -134,9 +138,11 @@ func (w *RouteDoodad) Setup() error {
 		w.Gesturer,
 	)
 
-	setSailButton.SetPosition(doodad.Position{
-		X: 0,
-		Y: 0,
+	setSailButton.SetPosition(func() doodad.Position {
+		return doodad.Position{
+			X: 0,
+			Y: 0,
+		}
 	})
 
 	w.Doodads = append(w.Doodads, setSailButton)

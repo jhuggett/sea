@@ -28,6 +28,8 @@ func (w *LoadingDoodad) Setup() error {
 
 	w.label = doodad.NewLabel()
 
+	w.label.Setup()
+
 	w.hidden = true
 
 	return nil

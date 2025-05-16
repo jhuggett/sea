@@ -1,5 +1,10 @@
 package doodad
 
+type Position struct {
+	X int
+	Y int
+}
+
 type PositionedRectangle interface {
 	Positioned
 	Rectangular

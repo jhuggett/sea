@@ -42,7 +42,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func run() {
-	ebiten.SetWindowSize(2000, 800)
+	ebiten.SetWindowSize(1200, 800)
 	ebiten.SetWindowTitle("Ships Colonies Commerce")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
@@ -70,8 +70,7 @@ func runGame() {
 				AddSource: true,
 				Level:     log.OptInDebug,
 			},
-			UseColor: true,
-
+			UseColor:  true,
 			BlockList: []string{},
 			Allowlist: []string{},
 		})),

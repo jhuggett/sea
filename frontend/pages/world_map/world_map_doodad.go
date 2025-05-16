@@ -17,6 +17,7 @@ type WorldMapDoodad struct {
 	Background *ebiten.Image
 
 	SpaceTranslator SpaceTranslator
+	Gesturer        doodad.Gesturer
 
 	SmallestContinentPointX int
 	SmallestContinentPointY int

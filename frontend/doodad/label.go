@@ -13,7 +13,16 @@ import (
 
 func NewLabel() *Label {
 	label := &Label{}
-	label.Setup()
+	label.SetPosition(func() Position {
+		return Position{
+			X: 0,
+			Y: 0,
+		}
+	})
+	label.FontSize = 16
+	label.BackgroundColor = color.RGBA{0, 0, 0, 0}
+	label.ForegroundColor = color.White
+
 	return label
 }
 
@@ -21,10 +30,15 @@ type Label struct {
 	background *ebiten.Image
 	fontSource *text.GoTextFaceSource
 
+	BackgroundColor color.Color
+	ForegroundColor color.Color
+
 	message string
 
-	position   Position
+	position   func() Position
 	dimensions Rectangle
+
+	FontSize int
 }
 
 func (w *Label) Update() error {
@@ -33,7 +47,7 @@ func (w *Label) Update() error {
 
 func (w *Label) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(w.position.X), float64(w.position.Y))
+	op.GeoM.Translate(float64(w.position().X), float64(w.position().Y))
 	screen.DrawImage(w.background, op)
 }
 
@@ -52,7 +66,7 @@ func (w *Label) SetMessage(message string) {
 
 	textFace := &text.GoTextFace{
 		Source: w.fontSource,
-		Size:   48,
+		Size:   float64(w.FontSize),
 	}
 
 	width, height := text.Measure(
@@ -67,14 +81,12 @@ func (w *Label) SetMessage(message string) {
 	slog.Debug("Label dimensions", "width", w.dimensions.Width, "height", w.dimensions.Height)
 
 	w.background = ebiten.NewImage(int(width), int(height))
-	w.background.Fill(color.RGBA{
-		R: 56,
-		G: 0,
-		B: 23,
-		A: 255,
-	})
+	w.background.Fill(w.BackgroundColor)
 
 	op := &text.DrawOptions{}
+	colorScale := (&ebiten.ColorScale{})
+	colorScale.ScaleWithColor(w.ForegroundColor)
+	op.ColorScale = *colorScale
 	op.GeoM.Translate(0, 0)
 	text.Draw(w.background, w.message, &text.GoTextFace{
 		Source: textFace.Source,
@@ -82,12 +94,12 @@ func (w *Label) SetMessage(message string) {
 	}, op)
 }
 
-func (w *Label) SetPosition(position Position) {
+func (w *Label) SetPosition(position func() Position) {
 	w.position = position
 }
 
 func (w *Label) Position() Position {
-	return w.position
+	return w.position()
 }
 
 func (w *Label) Dimensions() Rectangle {

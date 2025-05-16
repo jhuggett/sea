@@ -46,6 +46,7 @@ func New(pageControls doodad.PageControls) (*MainMenuPage, error) {
 	}
 
 	titleLabel := doodad.NewLabel()
+	titleLabel.Setup()
 	titleLabel.SetMessage("Ships Colonies Commerce: Main Menu")
 	page.Doodads = append(page.Doodads, titleLabel)
 
@@ -61,7 +62,9 @@ func New(pageControls doodad.PageControls) (*MainMenuPage, error) {
 		page.Gesturer,
 	)
 
-	newGameButton.SetPosition(doodad.Below(titleLabel))
+	newGameButton.SetPosition(func() doodad.Position {
+		return doodad.Below(titleLabel)
+	})
 
 	page.Doodads = append(page.Doodads, newGameButton)
 
@@ -90,7 +93,9 @@ func New(pageControls doodad.PageControls) (*MainMenuPage, error) {
 		lastDoodad := page.Doodads[len(page.Doodads)-1]
 
 		if d, ok := lastDoodad.(*doodad.Button); ok {
-			loadGameButton.SetPosition(doodad.Below(d))
+			loadGameButton.SetPosition(func() doodad.Position {
+				return doodad.Below(d)
+			})
 		}
 
 		page.Doodads = append(page.Doodads, loadGameButton)

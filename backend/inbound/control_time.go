@@ -1,7 +1,6 @@
 package inbound
 
 import (
-	"encoding/json"
 	"log/slog"
 
 	"github.com/jhuggett/sea/timeline"
@@ -18,31 +17,26 @@ type ControlTimeReq struct {
 type ControlTimeResp struct {
 }
 
-func ControlTime(conn Connection) InboundFunc {
-	return func(req json.RawMessage) (interface{}, error) {
-		var reqObj ControlTimeReq
-		if err := json.Unmarshal(req, &reqObj); err != nil {
-			return nil, err
-		}
+func ControlTime(conn Connection, req ControlTimeReq) (ControlTimeResp, error) {
 
-		if reqObj.SetTicksPerSecondTo != nil {
-			slog.Info("SetTicksPerSecondTo", "to", *reqObj.SetTicksPerSecondTo)
-			conn.Context().Timeline.SetTicksPerCycle(*reqObj.SetTicksPerSecondTo)
-		} else if reqObj.SetTicksPerSecondBy != nil {
-			slog.Info("SetTicksPerSecondBy", "by", *reqObj.SetTicksPerSecondBy)
-			conn.Context().Timeline.SetTicksPerCycle(conn.Context().Timeline.TicksPerCycle() + *reqObj.SetTicksPerSecondBy)
-		} else if reqObj.Pause {
-			slog.Info("Pause")
-			conn.Context().Timeline.Stop()
-		} else if reqObj.Resume {
-			slog.Info("Resume")
-			conn.Context().Timeline.Start()
-		}
-
-		conn.Sender().TimeChanged()
-
-		respObj := ControlTimeResp{}
-
-		return respObj, nil
+	if req.SetTicksPerSecondTo != nil {
+		slog.Info("SetTicksPerSecondTo", "to", *req.SetTicksPerSecondTo)
+		conn.Context().Timeline.SetTicksPerCycle(*req.SetTicksPerSecondTo)
+	} else if req.SetTicksPerSecondBy != nil {
+		slog.Info("SetTicksPerSecondBy", "by", *req.SetTicksPerSecondBy)
+		conn.Context().Timeline.SetTicksPerCycle(conn.Context().Timeline.TicksPerCycle() + *req.SetTicksPerSecondBy)
+	} else if req.Pause {
+		slog.Info("Pause")
+		conn.Context().Timeline.Stop()
+	} else if req.Resume {
+		slog.Info("Resume")
+		conn.Context().Timeline.Start()
 	}
+
+	conn.Sender().TimeChanged()
+
+	respObj := ControlTimeResp{}
+
+	return respObj, nil
+
 }

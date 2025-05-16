@@ -2,8 +2,10 @@ package doodad
 
 import (
 	"fmt"
+	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/jhuggett/frontend/utils/callback"
 )
 
 func NewButton(
@@ -30,36 +32,13 @@ type Button struct {
 
 	Gesturer Gesturer
 
-	position   Position
+	position   func() Position
 	dimensions Rectangle
 
 	hovered bool
 }
 
 func (w *Button) Update() error {
-
-	// // Get mouse position
-	// mouseX, mouseY := ebiten.CursorPosition()
-	// if mouseX >= w.position.X && mouseX <= w.position.X+w.dimensions.Width &&
-	// 	mouseY >= w.position.Y && mouseY <= w.position.Y+w.dimensions.Height {
-
-	// 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-	// 		if w.OnClick != nil {
-	// 			w.OnClick()
-	// 		}
-	// 	} else {
-	// 		if !w.hovered {
-	// 			w.hovered = true
-	// 			w.hovering()
-	// 		}
-	// 	}
-	// } else {
-	// 	if w.hovered {
-	// 		w.hovered = false
-	// 		w.stoppedHovering()
-	// 	}
-	// }
-
 	return nil
 }
 
@@ -72,39 +51,46 @@ func (w *Button) Draw(screen *ebiten.Image) {
 }
 
 func (w *Button) Setup() error {
-
 	w.nonHoveredLabel = NewLabel()
+	w.nonHoveredLabel.Setup()
 	w.nonHoveredLabel.SetMessage(w.message)
 
 	w.dimensions = w.nonHoveredLabel.Dimensions()
 
 	w.hoveredLabel = NewLabel()
-	w.hoveredLabel.SetMessage("Click me!")
+	w.hoveredLabel.FontSize = w.nonHoveredLabel.FontSize + 1
+	w.hoveredLabel.BackgroundColor = color.RGBA{20, 10, 2, 50}
+	w.hoveredLabel.Setup()
+	w.hoveredLabel.SetMessage(w.message)
 
 	withinBounds := func(x, y int) bool {
-		return x >= w.position.X && x <= w.position.X+w.dimensions.Width &&
-			y >= w.position.Y && y <= w.position.Y+w.dimensions.Height
+		return x >= w.position().X && x <= w.position().X+w.dimensions.Width &&
+			y >= w.position().Y && y <= w.position().Y+w.dimensions.Height
 	}
 
-	w.Gesturer.OnMouseMove(func(x, y int) bool {
+	w.Gesturer.OnMouseMove(func(x, y int) error {
 		if withinBounds(x, y) {
 			w.hovering()
-			// return true
+			return callback.ErrStopPropagation
 		} else {
 			w.stoppedHovering()
 		}
-		return false
+		return nil
 	})
 
-	w.Gesturer.OnMouseUp(func(x, y int) bool {
+	w.Gesturer.OnMouseUp(func(event MouseUpEvent) error {
+		if event.Button != ebiten.MouseButtonLeft {
+			return nil
+		}
+		x, y := event.X, event.Y
 		fmt.Println("Button.OnClick", x, y)
 		if withinBounds(x, y) {
 			if w.OnClick != nil {
 				w.OnClick()
 			}
-			return true
+			return callback.ErrStopPropagation
 		}
-		return false
+		return nil
 	})
 
 	return nil
@@ -116,14 +102,14 @@ func (w *Button) SetMessage(message string) {
 	w.dimensions = w.nonHoveredLabel.Dimensions()
 }
 
-func (w *Button) SetPosition(position Position) {
+func (w *Button) SetPosition(position func() Position) {
 	w.position = position
 	w.nonHoveredLabel.SetPosition(position)
 	w.hoveredLabel.SetPosition(position)
 }
 
 func (w *Button) Position() Position {
-	return w.position
+	return w.position()
 }
 
 func (w *Button) Dimensions() Rectangle {

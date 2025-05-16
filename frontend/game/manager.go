@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/jhuggett/frontend/utils/callback"
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/outbound"
 	"github.com/jhuggett/sea/start"
 	"github.com/jhuggett/sea/timeline"
 )
+
+type OnTimeChangedCallback func(outbound.TimeChangedReq) error
 
 type Manager struct {
 	PlayerShip *Ship
@@ -19,11 +22,15 @@ type Manager struct {
 	Conn     *start.Connection
 
 	tileSize int
+
+	OnTimeChangedCallback callback.CallbackRegistry[OnTimeChangedCallback]
+	LastTimeChangedReq    outbound.TimeChangedReq
 }
 
 func NewManager(snapshot *game_context.Snapshot) *Manager {
 	return &Manager{
-		Snapshot: snapshot,
+		Snapshot:              snapshot,
+		OnTimeChangedCallback: callback.CallbackRegistry[OnTimeChangedCallback]{},
 	}
 }
 
@@ -49,6 +56,13 @@ func (m *Manager) Start() error {
 			},
 			OnTimeChanged: func(tcr outbound.TimeChangedReq) (outbound.TimeChangedResp, error) {
 				slog.Info("TimeChanged called", "req", tcr)
+
+				m.LastTimeChangedReq = tcr
+
+				m.OnTimeChangedCallback.InvokeEndToStart(func(otcc OnTimeChangedCallback) error {
+					return otcc(tcr)
+				})
+
 				return outbound.TimeChangedResp{}, nil
 			},
 			OnShipInventoryChanged: func(sicr outbound.ShipInventoryChangedReq) (outbound.ShipInventoryChangedResp, error) {
@@ -126,6 +140,10 @@ func (s *Manager) PlotRoute(x, y int) (*inbound.PlotRouteResp, error) {
 	}
 
 	return &resp, nil
+}
+
+func (s *Manager) ControlTime(req inbound.ControlTimeReq) (inbound.ControlTimeResp, error) {
+	return inbound.ControlTime(s.Conn, req)
 }
 
 /*

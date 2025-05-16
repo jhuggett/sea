@@ -255,6 +255,7 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 
 	worldMapDoodad := &WorldMapDoodad{
 		SpaceTranslator: p.SpaceTranslator,
+		Gesturer:        p.Gesturer,
 	}
 
 	loadingDoodad := &LoadingDoodad{}
@@ -267,14 +268,14 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 	loadingDoodad.SetMessage("Loading world map...")
 	loadingDoodad.Show()
 
-	p.Gesturer.OnMouseDrag(func(lastX, lastY, currentX, currentY int) bool {
+	p.Gesturer.OnMouseDrag(func(lastX, lastY, currentX, currentY int) error {
 		p.Camera.Position[0] += float64(lastX-currentX) / p.Camera.ZoomFactor
 		p.Camera.Position[1] += float64(lastY-currentY) / p.Camera.ZoomFactor
 
-		return false
+		return nil
 	})
 
-	p.Gesturer.OnMouseWheel(func(offset float64) bool {
+	p.Gesturer.OnMouseWheel(func(offset float64) error {
 		if offset > 0 {
 			p.Camera.ZoomFactor += 0.1
 		} else {
@@ -284,7 +285,7 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 			}
 		}
 
-		return false
+		return nil
 	})
 
 	go func() {
@@ -356,6 +357,43 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 			return
 		}
 		p.Doodads = append(p.Doodads, cursorDoodad)
+
+		timeControlDoodad := &TimeControlDoodad{
+			Gesturer: p.Gesturer,
+			Manager:  gameManager,
+			Position: func() doodad.Position {
+				return doodad.Position{
+					X: p.Width - 200,
+					Y: p.Height - 200,
+				}
+			},
+		}
+		err = timeControlDoodad.Setup()
+		if err != nil {
+			slog.Error("Failed to setup time control doodad", "error", err)
+			loadingDoodad.SetMessage("Failed to load world map")
+			return
+		}
+		p.Doodads = append(p.Doodads, timeControlDoodad)
+
+		tileInfoDoodad := &TileInformationDoodad{
+			SpaceTranslator: p.SpaceTranslator,
+			Gesturer:        p.Gesturer,
+
+			HideTileCursor: func() {
+				cursorDoodad.Hidden = true
+			},
+			ShowTileCursor: func() {
+				cursorDoodad.Hidden = false
+			},
+		}
+		err = tileInfoDoodad.Setup()
+		if err != nil {
+			slog.Error("Failed to setup tile info doodad", "error", err)
+			loadingDoodad.SetMessage("Failed to load world map")
+			return
+		}
+		p.Doodads = append(p.Doodads, tileInfoDoodad)
 	}()
 
 	return p, nil

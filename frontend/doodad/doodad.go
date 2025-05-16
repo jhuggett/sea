@@ -2,11 +2,6 @@ package doodad
 
 import "github.com/hajimehoshi/ebiten/v2"
 
-type Position struct {
-	X int
-	Y int
-}
-
 type Rectangle struct {
 	Width  int
 	Height int
