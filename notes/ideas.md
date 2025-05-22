@@ -14,3 +14,5 @@ https://www.whalingmuseum.org/learn/research-topics/whaling-history/life-aboard/
 
 On tolls and imports:
 https://memp.ace.fordham.edu/sources/local-port-tolls/
+
+wrote this line on my ipad.
