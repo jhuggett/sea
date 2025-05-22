@@ -37,7 +37,7 @@ func (w *TileInformationDoodad) Setup() error {
 
 	w.Hidden = true
 
-	infoPanel := doodad.NewPanel()
+	infoPanel := doodad.NewPanel(w.Gesturer)
 	infoPanel.SetPosition(func() doodad.Position {
 		return doodad.Position{
 			X: 0,

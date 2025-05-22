@@ -32,7 +32,7 @@ func (w *TimeControlDoodad) Draw(screen *ebiten.Image) {
 
 func (w *TimeControlDoodad) Setup() error {
 
-	panelDoodad := doodad.NewPanel()
+	panelDoodad := doodad.NewPanel(w.Gesturer)
 	panelDoodad.SetPosition(func() doodad.Position {
 		return w.Position()
 	})

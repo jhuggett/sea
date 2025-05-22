@@ -71,6 +71,9 @@ func (m *Manager) Start() error {
 			},
 			OnShipChanged: func(scr outbound.ShipChangedReq) (outbound.ShipChangedResp, error) {
 				slog.Info("ShipChanged called", "req", scr)
+
+				// add a panel for this
+
 				return outbound.ShipChangedResp{}, nil
 			},
 		},

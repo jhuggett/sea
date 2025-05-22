@@ -6,8 +6,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func NewPanel() *Panel {
-	panel := &Panel{}
+func NewPanel(gesturer Gesturer) *Panel {
+	panel := &Panel{
+		Gesturer: gesturer,
+	}
 	panel.Setup()
 	return panel
 }
@@ -15,6 +17,8 @@ func NewPanel() *Panel {
 type Panel struct {
 	position   func() Position
 	dimensions Rectangle
+
+	Gesturer Gesturer
 
 	bg *ebiten.Image
 }
@@ -37,6 +41,14 @@ func (w *Panel) Setup() error {
 		Width:  200,
 		Height: 200,
 	}
+
+	w.Gesturer.OnMouseMove(func(x, y int) error {
+		if x >= w.position().X && x <= w.position().X+w.dimensions.Width &&
+			y >= w.position().Y && y <= w.position().Y+w.dimensions.Height {
+			return ErrStopPropagation
+		}
+		return nil
+	})
 
 	return nil
 }

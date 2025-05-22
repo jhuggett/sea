@@ -1,5 +1,10 @@
 package main
 
+import "log/slog"
+
 func main() {
-	run()
+	game := &Game{}
+	game.Start()
+
+	slog.Info("Game over.")
 }

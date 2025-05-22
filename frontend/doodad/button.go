@@ -88,7 +88,7 @@ func (w *Button) Setup() error {
 			if w.OnClick != nil {
 				w.OnClick()
 			}
-			return callback.ErrStopPropagation
+			return ErrStopPropagation
 		}
 		return nil
 	})

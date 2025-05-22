@@ -271,7 +271,6 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 	p.Gesturer.OnMouseDrag(func(lastX, lastY, currentX, currentY int) error {
 		p.Camera.Position[0] += float64(lastX-currentX) / p.Camera.ZoomFactor
 		p.Camera.Position[1] += float64(lastY-currentY) / p.Camera.ZoomFactor
-
 		return nil
 	})
 
@@ -284,7 +283,6 @@ func New(snapshot *game_context.Snapshot) (*WorldMapPage, error) {
 				p.Camera.ZoomFactor = 0.1
 			}
 		}
-
 		return nil
 	})
 

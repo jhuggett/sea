@@ -2,6 +2,7 @@ package doodad
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"math"
 	"time"
@@ -42,6 +43,8 @@ func (r *CallbackRegistry[T]) InvokeEndToStart(do func(T) error) {
 		cb := r.callbacks[i]
 		err := do(cb.Callback)
 		if err != nil {
+			fmt.Printf("err: %T %v\n", err, err)
+			fmt.Printf("ErrStopPropagation: %T %v\n", ErrStopPropagation, ErrStopPropagation)
 			if errors.Is(err, ErrStopPropagation) {
 				return
 			}
