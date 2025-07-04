@@ -13,7 +13,7 @@ import (
 )
 
 type OnTimeChangedCallback func(outbound.TimeChangedReq) error
-
+type OnShipChangedCallback func(outbound.ShipChangedReq) error
 type Manager struct {
 	PlayerShip *Ship
 	WorldMap   *WorldMap
@@ -24,7 +24,9 @@ type Manager struct {
 	tileSize int
 
 	OnTimeChangedCallback callback.CallbackRegistry[OnTimeChangedCallback]
-	LastTimeChangedReq    outbound.TimeChangedReq
+	OnShipChangedCallback callback.CallbackRegistry[OnShipChangedCallback]
+
+	LastTimeChangedReq outbound.TimeChangedReq
 }
 
 func NewManager(snapshot *game_context.Snapshot) *Manager {
@@ -73,6 +75,10 @@ func (m *Manager) Start() error {
 				slog.Info("ShipChanged called", "req", scr)
 
 				// add a panel for this
+
+				m.OnShipChangedCallback.InvokeEndToStart(func(otcc OnShipChangedCallback) error {
+					return otcc(scr)
+				})
 
 				return outbound.ShipChangedResp{}, nil
 			},

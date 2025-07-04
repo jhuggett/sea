@@ -58,3 +58,13 @@ func (s *Ship) SetSail() (*inbound.MoveShipResp, error) {
 
 	return resp, nil
 }
+
+func (s *Ship) Repair() (inbound.RepairShipResp, error) {
+	resp, err := inbound.RepairShip(inbound.RepairShipReq{
+		ShipID: s.RawData.ID,
+	})
+	if err != nil {
+		return inbound.RepairShipResp{}, fmt.Errorf("failed to repair ship: %w", err)
+	}
+	return resp, nil
+}

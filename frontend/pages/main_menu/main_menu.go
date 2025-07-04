@@ -1,104 +1,137 @@
 package main_menu
 
 import (
+	design_library "design-library"
+	"design-library/button"
+	"design-library/doodad"
+	"design-library/label"
+	"design-library/position"
+	"fmt"
+	"image/color"
+
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/jhuggett/frontend/doodad"
-	"github.com/jhuggett/frontend/pages/world_map"
 	"github.com/jhuggett/sea/data/session"
-	"github.com/jhuggett/sea/game_context"
 )
 
 type MainMenuPage struct {
-	Width, Height int
+	PageControls design_library.PageControls
 
-	PageControls doodad.PageControls
-	Gesturer     doodad.Gesturer
-
-	Doodads []doodad.Doodad
+	doodad.Default
 }
 
 func (m *MainMenuPage) Update() error {
-
-	for _, widget := range m.Doodads {
-		widget.Update()
-	}
-
 	m.Gesturer.Update()
-
 	return nil
 }
 
 func (m *MainMenuPage) Draw(screen *ebiten.Image) {
-	for _, widget := range m.Doodads {
-		widget.Draw(screen)
-	}
+	m.Children.Draw(screen)
 }
 
 func (m *MainMenuPage) SetWidthAndHeight(width, height int) {
-	m.Width, m.Height = width, height
+	m.Box.SetDimensions(func(previousWidth, previousHeight int) (int, int) {
+		return width, height
+	})
 }
 
-func New(pageControls doodad.PageControls) (*MainMenuPage, error) {
+func New(pageControls design_library.PageControls) (*MainMenuPage, error) {
 	page := &MainMenuPage{
 		PageControls: pageControls,
-		Doodads:      []doodad.Doodad{},
-		Gesturer:     doodad.NewGesturer(),
+		Default: doodad.Default{
+			Children: doodad.Children{},
+			Gesturer: doodad.NewGesturer(),
+			Box:      position.NewBox(position.BoxConfig{}),
+		},
 	}
 
-	titleLabel := doodad.NewLabel()
-	titleLabel.Setup()
-	titleLabel.SetMessage("Ships Colonies Commerce: Main Menu")
-	page.Doodads = append(page.Doodads, titleLabel)
-
-	newGameButton := doodad.NewButton(
-		"New Game",
-		func() {
-			newPage, err := world_map.New(nil)
-			if err != nil {
-				panic(err)
-			}
-			page.PageControls.Push(newPage)
+	titleLabel, err := label.New(label.Config{
+		Message: "Ships Colonies & Commerce",
+		Layout: position.NewBox(position.BoxConfig{}).Computed(func(b *position.Box) *position.Box {
+			return b
+		}),
+		FontSize: 48,
+		Padding: label.Padding{
+			Top:    20,
+			Bottom: 20,
+			Left:   20,
+			Right:  20,
 		},
-		page.Gesturer,
-	)
-
-	newGameButton.SetPosition(func() doodad.Position {
-		return doodad.Below(titleLabel)
+		ForegroundColor: color.RGBA{
+			A: 255,
+			R: 255,
+			G: 155,
+			B: 105,
+		},
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create title label: %w", err)
+	}
+	page.Children.Add(titleLabel)
 
-	page.Doodads = append(page.Doodads, newGameButton)
+	newGameButton, err := button.New(button.Config{
+		OnClick: func() {
+			// newPage, err := world_map.New(nil)
+			// if err != nil {
+			// 	panic(err)
+			// }
+			// page.PageControls.Push(newPage)
+		},
+		Gesturer: page.Gesturer,
+		Config: label.Config{
+			Message: "New Game",
+			Layout: position.NewBox(position.BoxConfig{}).Computed(func(b *position.Box) *position.Box {
+				return b.MoveAbove(titleLabel.Box)
+			}),
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new game button: %w", err)
+	}
+	page.Children.Add(newGameButton)
 
 	sessions, err := session.All()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve game sessions: %w", err)
 	}
 
+	var previousButton *button.Button
+
 	for _, gameSession := range sessions {
-		loadGameButton := doodad.NewButton(
-			"Load Game",
-			func() {
-				newPage, err := world_map.New(&game_context.Snapshot{
-					ShipID:    gameSession.ShipID,
-					PlayerID:  gameSession.PlayerID,
-					GameMapID: gameSession.GameMapID,
-				})
-				if err != nil {
-					panic(err)
-				}
-				page.PageControls.Push(newPage)
+
+		previousButtonReferenceCopy := previousButton
+
+		loadGameButton, err := button.New(button.Config{
+			Config: label.Config{
+				Message: fmt.Sprintf("Load Game: %s", gameSession.UpdatedAt.Format("2006-01-02 15:04:05")),
+				Layout: position.NewBox(position.BoxConfig{}).Computed(func(b *position.Box) *position.Box {
+					if previousButtonReferenceCopy == nil {
+						return b.MoveBelow(titleLabel.Box)
+					}
+					return b.MoveBelow(previousButtonReferenceCopy.Box)
+				}),
+				Padding: label.Padding{
+					Left: 20,
+				},
 			},
-			page.Gesturer,
-		)
-
-		lastDoodad := page.Doodads[len(page.Doodads)-1]
-
-		if d, ok := lastDoodad.(*doodad.Button); ok {
-			loadGameButton.SetPosition(func() doodad.Position {
-				return doodad.Below(d)
-			})
+			OnClick: func() {
+				// newPage, err := world_map.New(&game_context.Snapshot{
+				// 	ShipID:    gameSession.ShipID,
+				// 	PlayerID:  gameSession.PlayerID,
+				// 	GameMapID: gameSession.GameMapID,
+				// })
+				// if err != nil {
+				// 	panic(err)
+				// }
+				// page.PageControls.Push(newPage)
+			},
+			Gesturer: page.Gesturer,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create load game button: %w", err)
 		}
 
-		page.Doodads = append(page.Doodads, loadGameButton)
+		page.Children.Add(loadGameButton)
+		previousButton = loadGameButton
 	}
 
 	return page, nil
