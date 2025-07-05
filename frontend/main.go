@@ -19,6 +19,7 @@ func main() {
 		ebiten.SetWindowSize(1200, 800)
 		ebiten.SetWindowTitle("Ships Colonies Commerce")
 		ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+		ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
 		slog.SetDefault(
 			slog.New(log.NewHandler(&log.HandlerOptions{
@@ -37,10 +38,7 @@ func main() {
 
 		defer db.Close()
 
-		firstPage, err := main_menu.New(app)
-		if err != nil {
-			panic(err)
-		}
+		firstPage := main_menu.New(app)
 
 		app.Push(firstPage)
 

@@ -30,6 +30,18 @@ type Children struct {
 	Doodads []Doodad
 }
 
+func NewChildren(children ...[]Doodad) *Children {
+	c := &Children{
+		Doodads: []Doodad{},
+	}
+	for _, childGroup := range children {
+		for _, doodad := range childGroup {
+			c.add(doodad)
+		}
+	}
+	return c
+}
+
 func (c *Children) Boxes() []*box.Box {
 	boxes := make([]*box.Box, len(c.Doodads))
 	for i, doodad := range c.Doodads {
@@ -50,7 +62,7 @@ func (c *Children) Setup() {
 	}
 }
 
-func (c *Children) Add(doodad Doodad) {
+func (c *Children) add(doodad Doodad) {
 	c.Doodads = append(c.Doodads, doodad)
 }
 
@@ -102,6 +114,6 @@ func (t *Default) AddChild(doodad Doodad) {
 	if t.Children == nil {
 		t.Children = &Children{}
 	}
-	t.Children.Add(doodad)
+	t.Children.add(doodad)
 	t.Layout().AddDependent(doodad.Layout())
 }

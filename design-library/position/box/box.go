@@ -1,5 +1,7 @@
 package box
 
+import "log/slog"
+
 type Box struct {
 	x int
 	y int
@@ -43,7 +45,9 @@ func (b *Box) Recalculate() *Box {
 
 func (b *Box) AddDependent(dependent *Box) {
 	if b == dependent {
-		panic("A Box cannot depend on itself")
+		// panic("A Box cannot depend on itself")
+		slog.Warn("A Box cannot depend on itself, ignoring dependency", "box", b)
+		return
 	}
 	if dependent == nil {
 		panic("Cannot add a nil Box as a dependent")
@@ -207,7 +211,7 @@ func (b *Box) SetOrigin(x, y int) *Box {
 
 func (b *Box) CenterVerticallyWithin(other *Box) *Box {
 	otherCenterY := other.Y() + other.Height()/2
-	y := otherCenterY - b.height
+	y := otherCenterY - b.height/2
 
 	b.SetOrigin(b.x, y)
 
@@ -216,7 +220,7 @@ func (b *Box) CenterVerticallyWithin(other *Box) *Box {
 
 func (b *Box) CenterHorizontallyWithin(other *Box) *Box {
 	otherCenterX := other.X() + other.Width()/2
-	x := otherCenterX - b.width
+	x := otherCenterX - b.width/2
 
 	b.SetOrigin(x, b.y)
 
@@ -280,6 +284,8 @@ func Bounding(boxes []*Box) *Box {
 		if i == 0 {
 			boundingBox.SetX(box.X())
 			boundingBox.SetY(box.Y())
+			boundingBox.SetWidth(box.Width())
+			boundingBox.SetHeight(box.Height())
 			continue
 		}
 
@@ -296,11 +302,11 @@ func Bounding(boxes []*Box) *Box {
 		boundingBoxWidth, boundingBoxHeight := boundingBox.Width(), boundingBox.Height()
 		childX, childY, childWidth, childHeight := box.X(), box.Y(), box.Width(), box.Height()
 
-		if childX+childWidth > boundingBoxWidth-boundingBox.X() {
+		if childX+childWidth > boundingBoxWidth+boundingBox.X() {
 			boundingBox.SetWidth(childX + childWidth - boundingBox.X())
 		}
 
-		if childY+childHeight > boundingBoxHeight-boundingBox.Y() {
+		if childY+childHeight > boundingBoxHeight+boundingBox.Y() {
 			boundingBox.SetHeight(childY + childHeight - boundingBox.Y())
 		}
 
@@ -347,5 +353,25 @@ func (b *Box) MoveLeft(amount int) *Box {
 
 func (b *Box) MoveRight(amount int) *Box {
 	b.SetX(b.X() + amount)
+	return b
+}
+
+func (b *Box) IncreaseWidth(amount int) *Box {
+	b.SetWidth(b.Width() + amount)
+	return b
+}
+
+func (b *Box) IncreaseHeight(amount int) *Box {
+	b.SetHeight(b.Height() + amount)
+	return b
+}
+
+func (b *Box) DecreaseWidth(amount int) *Box {
+	b.SetWidth(b.Width() - amount)
+	return b
+}
+
+func (b *Box) DecreaseHeight(amount int) *Box {
+	b.SetHeight(b.Height() - amount)
 	return b
 }

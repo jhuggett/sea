@@ -10,7 +10,7 @@ import (
 	"log/slog"
 )
 
-func NewFirstPage() (*firstPage, error) {
+func NewFirstPage() *firstPage {
 	page := &firstPage{
 		Default: doodad.Default{
 			Gesturer: doodad.NewGesturer(),
@@ -21,7 +21,7 @@ func NewFirstPage() (*firstPage, error) {
 
 	page.Setup()
 
-	return page, nil
+	return page
 }
 
 type firstPage struct {
@@ -47,7 +47,7 @@ func (p *firstPage) Setup() {
 		BackgroundColor: color.RGBA{
 			R: 255,
 			G: 100,
-			A: 20,
+			A: 250,
 		},
 		ForegroundColor: color.RGBA{
 			G: 255,
@@ -70,7 +70,7 @@ func (p *firstPage) Setup() {
 			Layout:  box.Zeroed(),
 			BackgroundColor: color.RGBA{
 				R: 50,
-				A: 255,
+				A: 100,
 			},
 			Padding: label.Padding{
 				Left:   10,
@@ -80,7 +80,6 @@ func (p *firstPage) Setup() {
 			},
 		},
 	})
-	// p.Children.Add(exampleButton)
 
 	exampleButton2 := button.New(button.Config{
 		OnClick: func() {
@@ -92,7 +91,7 @@ func (p *firstPage) Setup() {
 			Layout:  box.Zeroed(),
 			BackgroundColor: color.RGBA{
 				R: 50,
-				A: 255,
+				A: 100,
 			},
 			Padding: label.Padding{
 				Left:   10,
@@ -103,13 +102,23 @@ func (p *firstPage) Setup() {
 		},
 	})
 
-	// mainPanel.Children.Add(mainStack)
+	anotherLabel := label.New(label.Config{
+		Message: "This is another label",
+		Layout:  box.Zeroed(),
+	})
+
+	yetAnotherLabel := label.New(label.Config{
+		Message: "This is yet another label",
+		Layout:  box.Zeroed(),
+	})
 
 	mainStackChildren := &doodad.Children{
 		Doodads: []doodad.Doodad{
 			titleLabel,
 			exampleButton,
 			exampleButton2,
+			anotherLabel,
+			yetAnotherLabel,
 		},
 	}
 
@@ -121,35 +130,13 @@ func (p *firstPage) Setup() {
 		}),
 		Children:     mainStackChildren,
 		SpaceBetween: 10,
+		Padding: stack.Padding{
+			Top:    20,
+			Right:  20,
+			Bottom: 20,
+			Left:   20,
+		},
 	})
-
-	// mainPanel.Children.Add(mainStack)
-	// mainPanel.Layout().AddDependent(mainStack.Layout())
-
-	// mainStack.Layout().Computed(func(b *box.Box) *box.Box {
-	// 	return b.CenterWithin(p.Box)
-	// })
-
-	// mainStack.Children.DependOnLayout(mainStack.Layout())
-	// mainStack.Layout().Recalculate()
-
-	// mainPanel := panel.New(panel.Config{
-	// 	Gesturer: p.Gesturer,
-	// 	Layout: box.Computed(func(b *box.Box) *box.Box {
-	// 		return b.SetDimensions(400, 300)
-	// 	}),
-	// 	Children: &doodad.Children{
-	// 		Doodads: []doodad.Doodad{
-	// 			mainStack,
-	// 		},
-	// 	},
-	// })
-
-	// mainPanel.Layout().Computed(func(b *box.Box) *box.Box {
-	// 	return b.CenterWithin(p.Box)
-	// })
-
-	// p.Children.Add(mainPanel)
 
 	p.AddChild(mainStack)
 	p.Children.Setup()

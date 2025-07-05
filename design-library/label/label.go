@@ -80,9 +80,23 @@ type Label struct {
 	padding Padding
 
 	doodad.Default
+
+	Hidden bool
+}
+
+func (w *Label) Hide() {
+	w.Hidden = true
+}
+
+func (w *Label) Show() {
+	w.Hidden = false
 }
 
 func (w *Label) Draw(screen *ebiten.Image) {
+	if w.Hidden {
+		return
+	}
+
 	op := &ebiten.DrawImageOptions{}
 	// op.GeoM.Translate(float64(w.position().X), float64(w.position().Y))
 	op.GeoM.Translate(float64(w.Box.X()), float64(w.Box.Y()))

@@ -19,11 +19,7 @@ func main() {
 		// ebiten.SetWindowIcon([]*ebiten.Image{})
 		ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
-		firstPage, err := NewFirstPage()
-		if err != nil {
-			slog.Error("Failed to create first page", "error", err)
-			return
-		}
+		firstPage := NewFirstPage()
 
 		app.Push(firstPage)
 

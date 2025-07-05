@@ -5,6 +5,7 @@ import (
 	"design-library/label"
 	"design-library/position/box"
 	"fmt"
+	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -40,9 +41,6 @@ type Button struct {
 
 	onSetMessage func(message string)
 
-	nonHoveredChildren doodad.Children
-	hoveredChildren    doodad.Children
-
 	OnClick func()
 
 	Gesturer doodad.Gesturer
@@ -50,28 +48,53 @@ type Button struct {
 	hovered bool
 
 	doodad.Default
+
+	showHoveringLabel   func()
+	showNonHoveredLabel func()
 }
 
 func (w *Button) Update() error {
 	return nil
 }
 
-func (w *Button) Draw(screen *ebiten.Image) {
-	if w.hovered {
-		w.hoveredChildren.Draw(screen)
-	} else {
-		w.nonHoveredChildren.Draw(screen)
-	}
-}
-
 func (w *Button) Setup() {
-	nonHoveredLabel := label.New(w.labelConfig)
+	nonHoveredLabel := label.New(label.Config{
+		BackgroundColor: w.labelConfig.BackgroundColor,
+		ForegroundColor: w.labelConfig.ForegroundColor,
+		Message:         w.message,
+		FontSize:        w.labelConfig.FontSize,
+		Padding:         w.labelConfig.Padding,
+		Layout:          w.Box,
+	})
 	nonHoveredLabel.Setup()
-	w.nonHoveredChildren.Add(nonHoveredLabel)
+	w.AddChild(nonHoveredLabel)
 
-	hoveredLabel := label.New(w.labelConfig)
+	hoveredLabel := label.New(label.Config{
+		BackgroundColor: w.labelConfig.BackgroundColor,
+		ForegroundColor: color.RGBA{
+			R: 255,
+			G: 0,
+			B: 100,
+			A: 255,
+		},
+		Message:  w.message,
+		FontSize: w.labelConfig.FontSize,
+		Padding:  w.labelConfig.Padding,
+		Layout:   w.Box,
+	})
 	hoveredLabel.Setup()
-	w.hoveredChildren.Add(hoveredLabel)
+	w.AddChild(hoveredLabel)
+
+	w.showHoveringLabel = func() {
+		hoveredLabel.Show()
+		nonHoveredLabel.Hide()
+	}
+	w.showNonHoveredLabel = func() {
+		hoveredLabel.Hide()
+		nonHoveredLabel.Show()
+	}
+
+	w.hovered = true // so that it'll trigger the non-hovered event first
 
 	withinBounds := func(x, y int) bool {
 		return x >= w.Box.X() && x <= w.Box.X()+w.Box.Width() &&
@@ -127,13 +150,9 @@ func (w *Button) Teardown() error {
 
 	// TODO: Implement button teardown logic
 
-	err := w.hoveredChildren.Teardown()
+	err := w.Teardown()
 	if err != nil {
-		return fmt.Errorf("failed to teardown hovered children: %w", err)
-	}
-	err = w.nonHoveredChildren.Teardown()
-	if err != nil {
-		return fmt.Errorf("failed to teardown non-hovered children: %w", err)
+		return fmt.Errorf("failed to teardown button: %w", err)
 	}
 
 	return nil
@@ -148,9 +167,22 @@ func (w *Button) Teardown() error {
 // }
 
 func (w *Button) hovering() {
+	if w.hovered {
+		return
+	}
+
 	w.hovered = true
+	w.showHoveringLabel()
+
+	ebiten.SetCursorShape(ebiten.CursorShapePointer) // Change cursor to text mode when hovering over the button
 }
 
 func (w *Button) stoppedHovering() {
+	if !w.hovered {
+		return
+	}
+
 	w.hovered = false
+	w.showNonHoveredLabel()
+	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 }
