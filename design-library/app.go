@@ -45,6 +45,12 @@ func (g *App) Update() error {
 }
 
 func (g *App) Draw(screen *ebiten.Image) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("Recovered from panic in Draw", "error", r)
+		}
+	}()
+
 	g.CurrentPage.Draw(screen)
 }
 

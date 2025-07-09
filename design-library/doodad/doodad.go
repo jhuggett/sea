@@ -117,3 +117,11 @@ func (t *Default) AddChild(doodad Doodad) {
 	t.Children.add(doodad)
 	t.Layout().AddDependent(doodad.Layout())
 }
+
+func NewDefault() *Default {
+	return &Default{
+		Children: NewChildren(),
+		Gesturer: NewGesturer(),
+		Box:      box.Zeroed(),
+	}
+}

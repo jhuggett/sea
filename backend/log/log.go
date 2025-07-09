@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -168,6 +169,11 @@ Allowed:
 		h.colorize(darkGray, fmt.Sprintf("(%s:%v %s)", source["file"], source["line"], source["function"])),
 		h.colorize(darkGray, string(bytes)),
 	)
+
+	if level == h.colorize(red, "🟥 ERR") {
+		// log stack trace
+		debug.PrintStack()
+	}
 
 	return nil
 }

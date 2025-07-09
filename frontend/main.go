@@ -1,6 +1,7 @@
 package main
 
 import (
+	"design-library/sound"
 	"log/slog"
 
 	design_library "design-library"
@@ -15,11 +16,20 @@ func main() {
 	// game := &Game{}
 	// game.Start()
 
+	go func() {
+		sound.Setup()
+		_, err := sound.Play("../assets/audio/IMG_0960.mp3")
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	app := design_library.NewApp(func(app *design_library.App) {
 		ebiten.SetWindowSize(1200, 800)
 		ebiten.SetWindowTitle("Ships Colonies Commerce")
 		ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 		ebiten.SetCursorMode(ebiten.CursorModeVisible)
+		ebiten.SetScreenClearedEveryFrame(true)
 
 		slog.SetDefault(
 			slog.New(log.NewHandler(&log.HandlerOptions{

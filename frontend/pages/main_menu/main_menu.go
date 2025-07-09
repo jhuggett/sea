@@ -11,7 +11,9 @@ import (
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/jhuggett/frontend/pages/world_map"
 	"github.com/jhuggett/sea/data/session"
+	"github.com/jhuggett/sea/game_context"
 )
 
 type MainMenuPage struct {
@@ -54,7 +56,14 @@ func (m *MainMenuPage) Setup() {
 
 	for _, gameSession := range sessions {
 		loadGameButton := button.New(button.Config{
-			OnClick:  func() {},
+			OnClick: func() {
+				newPage := world_map.New(&game_context.Snapshot{
+					ShipID:    gameSession.ShipID,
+					PlayerID:  gameSession.PlayerID,
+					GameMapID: gameSession.GameMapID,
+				})
+				m.PageControls.Push(newPage)
+			},
 			Gesturer: m.Gesturer,
 			Config: label.Config{
 				Message: fmt.Sprintf("Load Game: %s", gameSession.UpdatedAt.Format("2006-01-02 15:04:05")),
@@ -65,7 +74,10 @@ func (m *MainMenuPage) Setup() {
 	}
 
 	newGameButton := button.New(button.Config{
-		OnClick:  func() {},
+		OnClick: func() {
+			newPage := world_map.New(nil)
+			m.PageControls.Push(newPage)
+		},
 		Gesturer: m.Gesturer,
 		Config: label.Config{
 			Message: "New Game",
