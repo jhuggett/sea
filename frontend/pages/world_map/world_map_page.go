@@ -12,6 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jhuggett/frontend/game"
 	"github.com/jhuggett/frontend/pages/world_map/camera"
+	"github.com/jhuggett/frontend/pages/world_map/pause_menu"
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/inbound"
 	"golang.org/x/image/math/f64"
@@ -218,27 +219,10 @@ func (w *WorldMapPage) SetupMainScreen() {
 	// Need to preload the things we need before we get to this method
 	// then we can just render
 
-	timeControlDoodad := NewTimeControlDoodad(
-		w.GameManager,
-		w.Gesturer,
-	)
-	timeControlDoodad.Layout().Computed(func(b *box.Box) *box.Box {
-		return b.Copy(w.Box)
-	})
-	w.AddChild(timeControlDoodad)
-
 	w.AddChild(NewPlayerShipDoodad(
 		w.GameManager,
 		w.Camera,
 	))
-
-	bottomBar := NewBottomBar(
-		w.Gesturer,
-		box.Computed(func(b *box.Box) *box.Box {
-			return b.Copy(w.Box)
-		}),
-	)
-	w.AddChild(bottomBar)
 
 	w.AddChild(NewCursorDoodad(
 		w.Gesturer,
@@ -250,6 +234,47 @@ func (w *WorldMapPage) SetupMainScreen() {
 		w.SpaceTranslator,
 		w.GameManager.PlayerShip,
 	))
+
+	timeControlDoodad := NewTimeControlDoodad(
+		w.GameManager,
+		w.Gesturer,
+	)
+	timeControlDoodad.Layout().Computed(func(b *box.Box) *box.Box {
+		return b.Copy(w.Box)
+	})
+	w.AddChild(timeControlDoodad)
+
+	bottomBar := NewBottomBar(
+		w.Gesturer,
+	)
+	w.AddChild(bottomBar)
+	w.AddChild(NewRouteInformationDoodad(
+		w.GameManager.PlayerShip,
+		w.SpaceTranslator,
+		w.Gesturer,
+		func(b *box.Box) *box.Box {
+			return b.MoveAbove(bottomBar.Box).MoveUp(20).CenterHorizontallyWithin(w.Box)
+		},
+	))
+
+	pauseMenu := pause_menu.NewPauseMenu(
+		w.Gesturer,
+	)
+	pauseMenu.Layout().Computed(func(b *box.Box) *box.Box {
+		return b.Copy(w.Box)
+	})
+	w.AddChild(pauseMenu)
+
+	w.Gesturer.OnKeyDown(func(key ebiten.Key) error {
+		if key == ebiten.KeyEscape {
+			if pauseMenu.IsHidden() {
+				pauseMenu.Show()
+			} else {
+				pauseMenu.Hide()
+			}
+		}
+		return nil
+	})
 
 	w.Children.Setup()
 }

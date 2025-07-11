@@ -11,16 +11,12 @@ import (
 
 func NewBottomBar(
 	doodadGesturer doodad.Gesturer,
-	layout *box.Box,
 ) *BottomBar {
 	bottomBar := &BottomBar{
 		Default: *doodad.NewDefault(),
 	}
 
 	bottomBar.Gesturer = doodadGesturer
-	if layout != nil {
-		bottomBar.Box = layout
-	}
 
 	return bottomBar
 }
@@ -30,6 +26,9 @@ type BottomBar struct {
 }
 
 func (b *BottomBar) Setup() {
+	b.Box.Computed(func(bb *box.Box) *box.Box {
+		return bb.SetWidth(b.Parent().Layout().Width()).SetHeight(50).SetY(b.Parent().Layout().Height() - 50)
+	})
 
 	exampleLabel := label.New(label.Config{
 		Message: "Bottom Bar",
@@ -43,7 +42,7 @@ func (b *BottomBar) Setup() {
 			},
 		},
 		Layout: box.Computed(func(bb *box.Box) *box.Box {
-			return bb.SetWidth(b.Box.Width()).SetHeight(50).SetY(b.Box.Height() - 50)
+			return bb.Copy(b.Box)
 		}),
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
 	})

@@ -97,22 +97,18 @@ func (b *Box) MoveBelow(other *Box) *Box {
 }
 
 func (b *Box) MoveAbove(other *Box) *Box {
-	b.x = other.X()
 	b.y = other.Y() - b.height
-
 	return b
 }
 
 func (b *Box) MoveLeftOf(other *Box) *Box {
 	b.x = other.X() - b.width
-	b.y = other.Y()
 
 	return b
 }
 
 func (b *Box) MoveRightOf(other *Box) *Box {
 	b.x = other.X() + other.Width()
-	b.y = other.Y()
 
 	return b
 }

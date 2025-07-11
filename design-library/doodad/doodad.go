@@ -24,6 +24,9 @@ type Doodad interface {
 	Layout() *box.Box
 
 	AddChild(doodad Doodad)
+
+	Parent() Doodad
+	SetParent(parent Doodad)
 }
 
 type Children struct {
@@ -91,6 +94,8 @@ type Default struct {
 	Children *Children
 	Gesturer Gesturer
 	Box      *box.Box
+
+	parent Doodad
 }
 
 func (t *Default) Update() error {
@@ -116,6 +121,7 @@ func (t *Default) AddChild(doodad Doodad) {
 	}
 	t.Children.add(doodad)
 	t.Layout().AddDependent(doodad.Layout())
+	doodad.SetParent(t)
 }
 
 func NewDefault() *Default {
@@ -124,4 +130,14 @@ func NewDefault() *Default {
 		Gesturer: NewGesturer(),
 		Box:      box.Zeroed(),
 	}
+}
+
+func (t *Default) Setup() {}
+
+func (t *Default) Parent() Doodad {
+	return t.parent
+}
+
+func (t *Default) SetParent(parent Doodad) {
+	t.parent = parent
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"design-library/sound"
 	"log/slog"
 
@@ -16,13 +17,18 @@ func main() {
 	// game := &Game{}
 	// game.Start()
 
-	go func() {
-		sound.Setup()
-		_, err := sound.Play("../assets/audio/IMG_0960.mp3")
-		if err != nil {
-			panic(err)
-		}
-	}()
+	sound.Setup()
+
+	backgroundMusic := sound.NewBackgroundMusic(
+		[]string{
+			"../assets/audio/IMG_0948.mp3",
+			"../assets/audio/IMG_0960.mp3",
+			"../assets/audio/IMG_0961.mp3",
+			"../assets/audio/IMG_0962.mp3",
+		},
+	)
+
+	go backgroundMusic.Run(context.Background())
 
 	app := design_library.NewApp(func(app *design_library.App) {
 		ebiten.SetWindowSize(1200, 800)

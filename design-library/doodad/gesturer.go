@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type CallbackRegistryRecord[T any] struct {
@@ -79,11 +80,14 @@ type OnMouseWheelFunc func(offset float64) error
 
 type OnMouseMoveFunc func(x, y int) error
 
+type OnKeyDownFunc func(key ebiten.Key) error
+
 type Gesturer interface {
 	OnMouseUp(OnMouseUpFunc) func()
 	OnMouseDrag(OnMouseDragFunc) func()
 	OnMouseWheel(OnMouseWheelFunc) func()
 	OnMouseMove(OnMouseMoveFunc) func()
+	OnKeyDown(OnKeyDownFunc) func()
 	Update()
 
 	Parent() Gesturer
@@ -95,6 +99,7 @@ type gesturer struct {
 	OnMouseDragCallbacks  CallbackRegistry[OnMouseDragFunc]
 	OnMouseWheelCallbacks CallbackRegistry[OnMouseWheelFunc]
 	OnMouseMoveCallbacks  CallbackRegistry[OnMouseMoveFunc]
+	OnKeyDownCallbacks    CallbackRegistry[OnKeyDownFunc]
 
 	MouseX int
 	MouseY int
@@ -110,6 +115,7 @@ func NewGesturer() *gesturer {
 		OnMouseDragCallbacks:  CallbackRegistry[OnMouseDragFunc]{},
 		OnMouseWheelCallbacks: CallbackRegistry[OnMouseWheelFunc]{},
 		OnMouseMoveCallbacks:  CallbackRegistry[OnMouseMoveFunc]{},
+		OnKeyDownCallbacks:    CallbackRegistry[OnKeyDownFunc]{},
 	}
 }
 
@@ -144,10 +150,21 @@ func (g *gesturer) OnMouseMove(callback OnMouseMoveFunc) func() {
 	return g.OnMouseMoveCallbacks.Register(callback)
 }
 
+func (g *gesturer) OnKeyDown(callback OnKeyDownFunc) func() {
+	return g.OnKeyDownCallbacks.Register(callback)
+}
+
 // Update logic
 
 func (g *gesturer) Update() {
 	x, y := ebiten.CursorPosition()
+
+	// Keydown events
+	for _, key := range inpututil.AppendJustPressedKeys(nil) {
+		g.OnKeyDownCallbacks.InvokeEndToStart(func(okdf OnKeyDownFunc) error {
+			return okdf(key)
+		})
+	}
 
 	if x != g.MouseX || y != g.MouseY {
 		g.OnMouseMoveCallbacks.InvokeEndToStart(func(ommf OnMouseMoveFunc) error {
