@@ -1,15 +1,13 @@
 package design_library
 
-import "github.com/hajimehoshi/ebiten/v2"
+// type Page interface {
+// 	Update() error
+// 	Draw(screen *ebiten.Image)
 
-type Page interface {
-	Update() error
-	Draw(screen *ebiten.Image)
+// 	// SetWidthAndHeight(width, height int)
+// }
 
-	SetWidthAndHeight(width, height int)
-}
-
-type PageControls interface {
-	Push(Page)
-	Pop()
-}
+// type PageControls interface {
+// 	Push(Page)
+// 	Pop()
+// }

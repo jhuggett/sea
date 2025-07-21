@@ -24,6 +24,10 @@ type ShipRoute struct {
 	Points []inbound.Coordinate
 }
 
+func (s *Ship) HasRoute() bool {
+	return s.route != nil && len(s.route.Points) > 0
+}
+
 func (s *Ship) PlotRoute(x, y int) (*ShipRoute, error) {
 	resp, err := s.Manager.PlotRoute(x, y)
 	if err != nil {

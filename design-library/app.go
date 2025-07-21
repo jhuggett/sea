@@ -1,6 +1,9 @@
 package design_library
 
 import (
+	"design-library/doodad"
+	"design-library/position/box"
+	"fmt"
 	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -9,27 +12,52 @@ import (
 func NewApp(startup func(*App)) *App {
 	app := &App{
 		startup: startup,
+		Default: *doodad.NewDefault(nil),
 	}
 
-	if startup != nil {
-		startup(app)
-	}
+	app.Children().Parent = &app.Default
+	app.SetGesturer(doodad.NewGesturer())
+	app.SetLayout(box.Zeroed())
+
+	slog.Info("App initialized", "app", app, "layout", fmt.Sprintf("%p", app.Default.Layout()))
+
+	app.Gesturer().OnKeyDown(func(key ebiten.Key) error {
+		if key == ebiten.KeyD {
+			app.Children().PrettyPrint(0)
+			fmt.Printf("App layout: %s\n", app.Default.Layout().String())
+		}
+		return nil
+	})
 
 	return app
 }
 
 type App struct {
-	CurrentPage Page
+	CurrentPage doodad.Doodad
 
 	startup func(*App)
+
+	doodad.Default
 }
 
 func (g *App) Start() {
 	g.startup(g)
 }
 
-func (g *App) Push(page Page) {
-	g.CurrentPage = page
+func (g *App) Push(page doodad.Doodad) {
+	// g.CurrentPage = page
+	g.AddChild(page)
+	g.Children().Setup()
+}
+
+func (g *App) Replace(page doodad.Doodad) {
+	// g.CurrentPage = page
+	g.Children().Clear()
+	g.AddChild(page)
+
+	g.Children().Setup()
+
+	g.Box.Recalculate()
 }
 
 func (g *App) Pop() {
@@ -37,9 +65,11 @@ func (g *App) Pop() {
 }
 
 func (g *App) Update() error {
-	if err := g.CurrentPage.Update(); err != nil {
-		slog.Error("Error updating page", "error", err)
-	}
+	// if err := g.CurrentPage.Update(); err != nil {
+	// 	slog.Error("Error updating page", "error", err)
+	// }
+
+	g.Gesturer().Update()
 
 	return nil
 }
@@ -51,10 +81,18 @@ func (g *App) Draw(screen *ebiten.Image) {
 		}
 	}()
 
-	g.CurrentPage.Draw(screen)
+	// g.CurrentPage.Draw(screen)
+
+	g.Children().Draw(screen)
 }
 
 func (g *App) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	g.CurrentPage.SetWidthAndHeight(outsideWidth, outsideHeight)
+	// g.CurrentPage.SetWidthAndHeight(outsideWidth, outsideHeight)
+
+	if g.Default.Layout().Width() != outsideWidth || g.Default.Layout().Height() != outsideHeight {
+		g.Default.Layout().SetDimensions(outsideWidth, outsideHeight)
+		g.Default.Layout().Recalculate()
+	}
+
 	return outsideWidth, outsideHeight
 }

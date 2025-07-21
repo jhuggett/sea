@@ -1,29 +1,36 @@
 package world_map
 
 import (
+	"design-library/button"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
 	"design-library/stack"
+	"log/slog"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/colors"
 	"github.com/jhuggett/frontend/game"
+	"github.com/jhuggett/sea/outbound"
 )
 
 func NewRouteInformationDoodad(
 	ship *game.Ship,
-	spaceTranslator SpaceTranslator,
 	gesturer doodad.Gesturer,
 	positioner func(*box.Box) *box.Box,
 ) *RouteInformationDoodad {
 	doodad := &RouteInformationDoodad{
-		Ship:            ship,
-		SpaceTranslator: spaceTranslator,
-		Default:         *doodad.NewDefault(),
-		Postioner:       positioner,
+		Ship:      ship,
+		Default:   *doodad.NewDefault(),
+		Postioner: positioner,
 	}
 
 	doodad.Gesturer = gesturer
+
+	ship.Manager.OnShipMovedCallback.Add(func(smr outbound.ShipMovedReq) error {
+
+		return nil
+	})
 
 	return doodad
 }
@@ -41,7 +48,6 @@ type RouteInformationDoodad struct {
 func (w *RouteInformationDoodad) Setup() {
 	// setSailButton, err := button.New(button.Config{
 	// 	Message: "Set Sail",
-	// 		slog.Debug("Set Sail button clicked")
 	// 	OnClick: func() {
 	// 		_, err := w.Ship.SetSail()
 	// 		if err != nil {
@@ -61,6 +67,19 @@ func (w *RouteInformationDoodad) Setup() {
 		[]doodad.Doodad{
 			label.New(label.Config{
 				Message: "Route Information",
+			}),
+			button.New(button.Config{
+				OnClick: func() {
+					_, err := w.Ship.SetSail()
+					if err != nil {
+						slog.Error("Failed to set sail", "error", err)
+						return
+					}
+				},
+				Gesturer: w.Gesturer,
+				Config: label.Config{
+					Message: "Set Sail",
+				},
 			}),
 		},
 	)
@@ -85,4 +104,12 @@ func (w *RouteInformationDoodad) Setup() {
 	w.AddChild(panel)
 
 	w.Children.Setup()
+}
+
+func (w *RouteInformationDoodad) Draw(screen *ebiten.Image) {
+	if !w.Ship.HasRoute() {
+		return
+	}
+
+	w.Children.Draw(screen)
 }

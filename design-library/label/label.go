@@ -31,9 +31,7 @@ type Config struct {
 func New(config Config) *Label {
 	label := &Label{}
 
-	if config.Layout == nil {
-		label.Box = &box.Box{}
-	} else {
+	if config.Layout != nil {
 		label.Box = config.Layout
 	}
 
@@ -118,10 +116,6 @@ func (w *Label) Setup() {
 	}
 }
 
-func (w *Label) Teardown() error {
-	return nil
-}
-
 func (w *Label) SetMessage(message string) {
 	w.message = message
 
@@ -141,8 +135,8 @@ func (w *Label) SetMessage(message string) {
 	// w.Layout().Width = int(width)
 	// w.Layout().Height = int(height)
 
-	w.Layout().Computed(func(b *box.Box) *box.Box {
-		return b.SetDimensions(
+	w.Layout().Computed(func(b *box.Box) {
+		b.SetDimensions(
 			int(width)+w.padding.Left+w.padding.Right,
 			int(height)+w.padding.Top+w.padding.Bottom,
 		)

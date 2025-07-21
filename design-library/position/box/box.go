@@ -1,6 +1,9 @@
 package box
 
-import "log/slog"
+import (
+	"fmt"
+	"log/slog"
+)
 
 type Box struct {
 	x int
@@ -9,10 +12,12 @@ type Box struct {
 	width  int
 	height int
 
-	calculationSteps   []func(*Box) *Box
+	calculationSteps   []func(*Box)
 	needsRecalculation bool
 
 	dependents []*Box
+
+	recalculationCount int
 }
 
 func (b *Box) ZeroOut() *Box {
@@ -44,6 +49,8 @@ func (b *Box) Recalculate() *Box {
 }
 
 func (b *Box) AddDependent(dependent *Box) {
+	slog.Debug("Adding dependent Box", "dependent", fmt.Sprintf("%p", dependent), "to", fmt.Sprintf("%p", b))
+
 	if b == dependent {
 		// panic("A Box cannot depend on itself")
 		slog.Warn("A Box cannot depend on itself, ignoring dependency", "box", b)
@@ -66,6 +73,10 @@ func (b *Box) AddDependent(dependent *Box) {
 	b.dependents = append(b.dependents, dependent)
 }
 
+func (b *Box) ClearDependents() {
+	b.dependents = []*Box{}
+}
+
 type Config struct {
 	X      int
 	Y      int
@@ -80,11 +91,11 @@ func New(config Config) *Box {
 		width:            config.Width,
 		height:           config.Height,
 		dependents:       []*Box{},
-		calculationSteps: []func(*Box) *Box{},
+		calculationSteps: []func(*Box){},
 	}
 }
 
-func (b *Box) Computed(calculateFn func(*Box) *Box) *Box {
+func (b *Box) Computed(calculateFn func(*Box)) *Box {
 	b.calculationSteps = append(b.calculationSteps, calculateFn)
 	b.FlagNeedsRecalculation()
 	return b
@@ -147,6 +158,7 @@ func (b *Box) Contains(other *Box) bool {
 
 func (b *Box) recalculateIfNeeded() {
 	if b.needsRecalculation && len(b.calculationSteps) > 0 {
+		b.recalculationCount++
 		b.needsRecalculation = false
 		b.ZeroOut()
 		for _, step := range b.calculationSteps {
@@ -268,7 +280,7 @@ func Zeroed() *Box {
 	}
 }
 
-func Computed(calculateFn func(*Box) *Box) *Box {
+func Computed(calculateFn func(*Box)) *Box {
 	return Zeroed().Computed(calculateFn)
 }
 
@@ -369,5 +381,25 @@ func (b *Box) DecreaseWidth(amount int) *Box {
 
 func (b *Box) DecreaseHeight(amount int) *Box {
 	b.SetHeight(b.Height() - amount)
+	return b
+}
+
+func (b *Box) AlignRight(other *Box) *Box {
+	b.SetX(other.X() + other.Width() - b.Width())
+	return b
+}
+
+func (b *Box) AlignLeft(other *Box) *Box {
+	b.SetX(other.X())
+	return b
+}
+
+func (b *Box) AlignTop(other *Box) *Box {
+	b.SetY(other.Y())
+	return b
+}
+
+func (b *Box) AlignBottom(other *Box) *Box {
+	b.SetY(other.Y() + other.Height() - b.Height())
 	return b
 }

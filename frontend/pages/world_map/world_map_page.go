@@ -250,7 +250,6 @@ func (w *WorldMapPage) SetupMainScreen() {
 	w.AddChild(bottomBar)
 	w.AddChild(NewRouteInformationDoodad(
 		w.GameManager.PlayerShip,
-		w.SpaceTranslator,
 		w.Gesturer,
 		func(b *box.Box) *box.Box {
 			return b.MoveAbove(bottomBar.Box).MoveUp(20).CenterHorizontallyWithin(w.Box)

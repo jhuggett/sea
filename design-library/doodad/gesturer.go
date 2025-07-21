@@ -1,6 +1,7 @@
 package doodad
 
 import (
+	"design-library/position/box"
 	"errors"
 	"math"
 	"time"
@@ -9,6 +10,21 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
+
+type gesturer struct {
+	OnMouseUpCallbacks    CallbackRegistry[OnMouseUpFunc]
+	OnMouseDragCallbacks  CallbackRegistry[OnMouseDragFunc]
+	OnMouseWheelCallbacks CallbackRegistry[OnMouseWheelFunc]
+	OnMouseMoveCallbacks  CallbackRegistry[OnMouseMoveFunc]
+	OnKeyDownCallbacks    CallbackRegistry[OnKeyDownFunc]
+
+	MouseX int
+	MouseY int
+
+	Press *Press
+
+	Box *box.Box
+}
 
 type CallbackRegistryRecord[T any] struct {
 	Callback T
@@ -89,24 +105,6 @@ type Gesturer interface {
 	OnMouseMove(OnMouseMoveFunc) func()
 	OnKeyDown(OnKeyDownFunc) func()
 	Update()
-
-	Parent() Gesturer
-	CreateChild() Gesturer
-}
-
-type gesturer struct {
-	OnMouseUpCallbacks    CallbackRegistry[OnMouseUpFunc]
-	OnMouseDragCallbacks  CallbackRegistry[OnMouseDragFunc]
-	OnMouseWheelCallbacks CallbackRegistry[OnMouseWheelFunc]
-	OnMouseMoveCallbacks  CallbackRegistry[OnMouseMoveFunc]
-	OnKeyDownCallbacks    CallbackRegistry[OnKeyDownFunc]
-
-	MouseX int
-	MouseY int
-
-	Press *Press
-
-	parent Gesturer
 }
 
 func NewGesturer() *gesturer {
@@ -117,19 +115,6 @@ func NewGesturer() *gesturer {
 		OnMouseMoveCallbacks:  CallbackRegistry[OnMouseMoveFunc]{},
 		OnKeyDownCallbacks:    CallbackRegistry[OnKeyDownFunc]{},
 	}
-}
-
-func (g *gesturer) Parent() Gesturer {
-	if g.parent == nil {
-		return nil
-	}
-	return g.parent
-}
-
-func (g *gesturer) CreateChild() Gesturer {
-	child := NewGesturer()
-	child.parent = g
-	return child
 }
 
 // Register callbacks
@@ -225,5 +210,17 @@ func (g *gesturer) Update() {
 			}
 			g.Press = nil
 		}
+	}
+}
+
+func (g *gesturer) Teardown() {
+	g.OnMouseUpCallbacks.callbacks = nil
+	g.OnMouseDragCallbacks.callbacks = nil
+	g.OnMouseWheelCallbacks.callbacks = nil
+	g.OnMouseMoveCallbacks.callbacks = nil
+	g.OnKeyDownCallbacks.callbacks = nil
+
+	if g.Press != nil {
+		g.Press = nil
 	}
 }

@@ -3,6 +3,7 @@ package doodad
 import (
 	"design-library/position/box"
 	"fmt"
+	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -22,20 +23,37 @@ type Doodad interface {
 	Teardown() error
 
 	Layout() *box.Box
+	SetLayout(layout *box.Box)
 
-	AddChild(doodad Doodad)
+	AddChild(doodads ...Doodad)
+	Children() *Children
+	SetChildren(children *Children)
 
 	Parent() Doodad
 	SetParent(parent Doodad)
+
+	Gesturer() Gesturer
+	SetGesturer(gesturer Gesturer)
+
+	// this is what should be used to register gestures and return a list of unregister functions
+	Gestures(gesturer Gesturer) []func()
+	StoreUnregisterGestures(unregisters ...func()) // I don't like this
+	StoreRegisterGestureFn(registerFn func())      // This is also stupid
+
+	Hide()
+	Show()
+	IsVisible() bool
 }
 
 type Children struct {
+	Parent  Doodad
 	Doodads []Doodad
 }
 
-func NewChildren(children ...[]Doodad) *Children {
+func NewChildren(parent Doodad, children ...[]Doodad) *Children {
 	c := &Children{
 		Doodads: []Doodad{},
+		Parent:  parent,
 	}
 	for _, childGroup := range children {
 		for _, doodad := range childGroup {
@@ -60,8 +78,14 @@ func (c *Children) Draw(screen *ebiten.Image) {
 }
 
 func (c *Children) Setup() {
-	for _, doodad := range c.Doodads {
-		doodad.Setup()
+	for i := len(c.Doodads) - 1; i >= 0; i-- {
+		ii := i
+		c.Doodads[ii].Setup()
+		// This is so stupid
+		c.Doodads[ii].StoreRegisterGestureFn(func() {
+			c.Doodads[ii].StoreUnregisterGestures(c.Doodads[i].Gestures(c.Parent.Gesturer())...)
+		})
+		c.Doodads[ii].StoreUnregisterGestures(c.Doodads[i].Gestures(c.Parent.Gesturer())...)
 	}
 }
 
@@ -74,6 +98,7 @@ func (c *Children) Teardown() error {
 		if err := doodad.Teardown(); err != nil {
 			return err
 		}
+		doodad.Layout().ClearDependents()
 	}
 	return nil
 }
@@ -91,11 +116,16 @@ type Rectangular interface {
 }
 
 type Default struct {
-	Children *Children
-	Gesturer Gesturer
+	children *Children
 	Box      *box.Box
 
-	parent Doodad
+	parent   Doodad
+	gesturer Gesturer
+
+	hidden bool
+
+	unregisterGestures []func()
+	register           func()
 }
 
 func (t *Default) Update() error {
@@ -103,11 +133,23 @@ func (t *Default) Update() error {
 }
 
 func (t *Default) Draw(screen *ebiten.Image) {
-	t.Children.Draw(screen)
+	if t.hidden {
+		return
+	}
+	t.Children().Draw(screen)
+}
+
+func (t *Default) unregister() {
+	for _, unregister := range t.unregisterGestures {
+		unregister()
+	}
+	t.unregisterGestures = nil
 }
 
 func (t *Default) Teardown() error {
-	// Teardown logic for the tabs can go here
+	t.unregister()
+	t.Children().Clear()
+
 	return nil
 }
 
@@ -115,20 +157,50 @@ func (t *Default) Layout() *box.Box {
 	return t.Box
 }
 
-func (t *Default) AddChild(doodad Doodad) {
-	if t.Children == nil {
-		t.Children = &Children{}
-	}
-	t.Children.add(doodad)
-	t.Layout().AddDependent(doodad.Layout())
-	doodad.SetParent(t)
+func (t *Default) SetLayout(layout *box.Box) {
+	t.Box = layout
 }
 
-func NewDefault() *Default {
+func (t *Default) AddChild(doodads ...Doodad) {
+	if t.Children() == nil {
+		t.SetChildren(NewChildren(t))
+	}
+
+	for _, doodad := range doodads {
+		// Colorized logging using ASCII color codes
+		// Print colorized message about child addition
+		parentType := fmt.Sprintf("%T", t)
+		childType := fmt.Sprintf("%T", doodad)
+		fmt.Printf("🔗 Adding child: \x1b[36m%s\x1b[0m to parent: \x1b[32m%s\x1b[0m\n", childType, parentType)
+
+		// Still log structured information
+		slog.Info(
+			"Adding child to parent",
+			"parent", parentType,
+			"child", childType,
+		)
+
+		if doodad.Children() == nil {
+			doodad.SetChildren(NewChildren(doodad))
+		}
+
+		if doodad.Layout() == nil {
+			doodad.SetLayout(box.Computed(func(b *box.Box) {
+				b.Copy(t.Layout())
+			}))
+		}
+		t.Layout().AddDependent(doodad.Layout())
+
+		t.Children().add(doodad)
+		doodad.SetParent(t)
+		doodad.SetGesturer(t.Gesturer())
+	}
+}
+
+func NewDefault(parent Doodad) *Default {
 	return &Default{
-		Children: NewChildren(),
-		Gesturer: NewGesturer(),
 		Box:      box.Zeroed(),
+		children: NewChildren(parent),
 	}
 }
 
@@ -140,4 +212,50 @@ func (t *Default) Parent() Doodad {
 
 func (t *Default) SetParent(parent Doodad) {
 	t.parent = parent
+}
+
+func (t *Default) Gesturer() Gesturer {
+	return t.gesturer
+}
+
+func (t *Default) SetGesturer(gesturer Gesturer) {
+	t.gesturer = gesturer
+}
+
+func (t *Default) Children() *Children {
+	return t.children
+}
+
+func (t *Default) SetChildren(children *Children) {
+	t.children = children
+}
+
+func (t *Default) Hide() {
+	t.hidden = true
+	t.unregister()
+	for _, child := range t.Children().Doodads {
+		child.Hide()
+	}
+}
+
+func (t *Default) Show() {
+	t.hidden = false
+	t.register()
+	for _, child := range t.Children().Doodads {
+		child.Show()
+	}
+}
+
+func (t *Default) IsVisible() bool {
+	return !t.hidden
+}
+
+func (t *Default) Gestures(gesturer Gesturer) []func() { return nil }
+
+func (t *Default) StoreUnregisterGestures(unregisters ...func()) {
+	t.unregisterGestures = unregisters
+}
+
+func (t *Default) StoreRegisterGestureFn(registerFn func()) {
+	t.register = registerFn
 }

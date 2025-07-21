@@ -25,8 +25,8 @@ func TestXxx(t *testing.T) {
 
 	boxB := New(Config{})
 
-	boxB.Computed(func(b *Box) *Box {
-		return b.MoveBelow(boxA)
+	boxB.Computed(func(b *Box) {
+		b.MoveBelow(boxA)
 	})
 
 	assert.Equal(t, 0, boxB.X(), "Box B X should be 0")
@@ -51,8 +51,8 @@ func TestLayeredComputed(t *testing.T) {
 
 	someValue := 5
 
-	boxA.Computed(func(b *Box) *Box {
-		return b.SetOrigin(someValue, someValue)
+	boxA.Computed(func(b *Box) {
+		b.SetOrigin(someValue, someValue)
 	})
 
 	boxA.FlagNeedsRecalculation()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	design_library "design-library"
 	"design-library/button"
 	"design-library/doodad"
 	"design-library/label"
@@ -10,39 +11,26 @@ import (
 	"log/slog"
 )
 
-func NewFirstPage() *firstPage {
+func NewFirstPage(
+	app *design_library.App,
+) *firstPage {
 	page := &firstPage{
-		Default: doodad.Default{
-			Gesturer: doodad.NewGesturer(),
-			Box:      box.New(box.Config{}),
-			Children: &doodad.Children{},
-		},
+		Default: doodad.Default{},
+		App:     app,
 	}
-
-	page.Setup()
 
 	return page
 }
 
 type firstPage struct {
 	doodad.Default
-}
 
-func (p *firstPage) Update() error {
-	p.Gesturer.Update()
-	return nil
-}
-
-func (p *firstPage) SetWidthAndHeight(width, height int) {
-	p.Box.SetDimensions(width, height)
-	p.Box.Recalculate()
+	App *design_library.App
 }
 
 func (p *firstPage) Setup() {
 	titleLabel := label.New(label.Config{
-		Message: "First Page",
-		Layout:  box.Zeroed(),
-
+		Message:  "First Page",
 		FontSize: 36,
 		BackgroundColor: color.RGBA{
 			R: 255,
@@ -61,13 +49,11 @@ func (p *firstPage) Setup() {
 	})
 
 	exampleButton := button.New(button.Config{
-		OnClick: func() {
+		OnClick: func(b *button.Button) {
 			slog.Info("Example button clicked")
 		},
-		Gesturer: p.Gesturer,
 		Config: label.Config{
 			Message: "Click Me",
-			Layout:  box.Zeroed(),
 			BackgroundColor: color.RGBA{
 				R: 50,
 				A: 100,
@@ -82,13 +68,11 @@ func (p *firstPage) Setup() {
 	})
 
 	exampleButton2 := button.New(button.Config{
-		OnClick: func() {
+		OnClick: func(b *button.Button) {
 			slog.Info("No Click Me button clicked")
 		},
-		Gesturer: p.Gesturer,
 		Config: label.Config{
 			Message: "No Click Me",
-			Layout:  box.Zeroed(),
 			BackgroundColor: color.RGBA{
 				R: 50,
 				A: 100,
@@ -104,12 +88,10 @@ func (p *firstPage) Setup() {
 
 	anotherLabel := label.New(label.Config{
 		Message: "This is another label",
-		Layout:  box.Zeroed(),
 	})
 
 	yetAnotherLabel := label.New(label.Config{
 		Message: "This is yet another label",
-		Layout:  box.Zeroed(),
 	})
 
 	mainStackChildren := &doodad.Children{
@@ -124,9 +106,9 @@ func (p *firstPage) Setup() {
 
 	mainStack := stack.New(stack.Config{
 		Type: stack.Vertical,
-		Layout: box.Computed(func(b *box.Box) *box.Box {
+		Layout: box.Computed(func(b *box.Box) {
 			boundingBox := box.Bounding(mainStackChildren.Boxes())
-			return b.CopyDimensionsOf(boundingBox).CenterWithin(p.Box)
+			b.CopyDimensionsOf(boundingBox).CenterWithin(p.Layout())
 		}),
 		Children:     mainStackChildren,
 		SpaceBetween: 10,
@@ -136,8 +118,54 @@ func (p *firstPage) Setup() {
 			Bottom: 20,
 			Left:   20,
 		},
+		BackgroundColor: color.RGBA{
+			R: 100,
+			G: 150,
+			B: 100,
+			A: 255,
+		},
 	})
 
 	p.AddChild(mainStack)
-	p.Children.Setup()
+
+	toggleMessage := "Hide"
+
+	toggleButton := button.New(button.Config{
+		OnClick: func(b *button.Button) {
+			if toggleMessage == "Hide" {
+				toggleMessage = "Show"
+				mainStack.Hide()
+			} else {
+				toggleMessage = "Hide"
+				mainStack.Show()
+			}
+			b.SetMessage(toggleMessage)
+		},
+		Config: label.Config{
+			Message: toggleMessage,
+			BackgroundColor: color.RGBA{
+				R: 100,
+				G: 150,
+				B: 100,
+				A: 255,
+			},
+			Padding: label.Padding{
+				Top:    10,
+				Right:  20,
+				Bottom: 10,
+				Left:   20,
+			},
+		},
+	})
+
+	p.AddChild(toggleButton)
+
+	navBar := NewNavBar(p.App)
+	p.AddChild(navBar)
+
+	p.Children().Setup()
+
+	toggleButton.Layout().Computed(func(b *box.Box) {
+		b.AlignRight(p.Layout()).AlignBottom(p.Layout())
+	})
 }

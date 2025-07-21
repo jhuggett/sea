@@ -14,6 +14,7 @@ import (
 
 type OnTimeChangedCallback func(outbound.TimeChangedReq) error
 type OnShipChangedCallback func(outbound.ShipChangedReq) error
+type OnShipMovedCallback func(outbound.ShipMovedReq) error
 type Manager struct {
 	PlayerShip *Ship
 	WorldMap   *WorldMap
@@ -25,6 +26,7 @@ type Manager struct {
 
 	OnTimeChangedCallback callback.CallbackRegistry[OnTimeChangedCallback]
 	OnShipChangedCallback callback.CallbackRegistry[OnShipChangedCallback]
+	OnShipMovedCallback   callback.CallbackRegistry[OnShipMovedCallback]
 
 	LastTimeChangedReq outbound.TimeChangedReq
 }
@@ -33,6 +35,8 @@ func NewManager(snapshot *game_context.Snapshot) *Manager {
 	return &Manager{
 		Snapshot:              snapshot,
 		OnTimeChangedCallback: callback.CallbackRegistry[OnTimeChangedCallback]{},
+		OnShipChangedCallback: callback.CallbackRegistry[OnShipChangedCallback]{},
+		OnShipMovedCallback:   callback.CallbackRegistry[OnShipMovedCallback]{},
 	}
 }
 
@@ -49,6 +53,10 @@ func (m *Manager) Start() error {
 
 				m.PlayerShip.RawData.X = float64(smr.Location.X)
 				m.PlayerShip.RawData.Y = float64(smr.Location.Y)
+
+				m.OnShipMovedCallback.InvokeEndToStart(func(oshmc OnShipMovedCallback) error {
+					return oshmc(smr)
+				})
 
 				return outbound.ShipMovedResp{}, nil
 			},

@@ -16,11 +16,12 @@ func main() {
 		ebiten.SetWindowTitle("Design Library Example")
 		ebiten.SetWindowDecorated(true)
 		ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-		// ebiten.SetWindowIcon([]*ebiten.Image{})
+
 		ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
-		firstPage := NewFirstPage()
-
+		firstPage := NewFirstPage(
+			app,
+		)
 		app.Push(firstPage)
 
 		if err := ebiten.RunGame(app); err != nil {
