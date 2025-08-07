@@ -5,7 +5,6 @@ import (
 	"design-library/label"
 	"design-library/position/box"
 	"image/color"
-	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -58,19 +57,39 @@ func (w *Button) Setup() {
 	})
 	w.AddChild(nonHoveredLabel)
 
-	hoveredLabel := label.New(label.Config{
-		BackgroundColor: w.labelConfig.BackgroundColor,
-		ForegroundColor: color.RGBA{
-			R: 255,
-			G: 0,
-			B: 100,
-			A: 255,
-		},
-		Message:  w.message,
-		FontSize: w.labelConfig.FontSize,
-		Padding:  w.labelConfig.Padding,
-	})
-	w.AddChild(hoveredLabel)
+	w.showHoveringLabel = func() {
+		nonHoveredLabel.Config = label.Config{
+			BackgroundColor: w.labelConfig.BackgroundColor,
+			ForegroundColor: color.RGBA{
+				R: 255,
+				G: 0,
+				B: 100,
+				A: 255,
+			},
+			Message:  w.message,
+			FontSize: w.labelConfig.FontSize,
+			Padding:  w.labelConfig.Padding,
+		}
+
+		doodad.ReSetup(nonHoveredLabel)
+	}
+	w.showNonHoveredLabel = func() {
+		nonHoveredLabel.Config = label.Config{
+			BackgroundColor: w.labelConfig.BackgroundColor,
+			ForegroundColor: w.labelConfig.ForegroundColor,
+			Message:         w.message,
+			FontSize:        w.labelConfig.FontSize,
+			Padding:         w.labelConfig.Padding,
+		}
+
+		doodad.ReSetup(nonHoveredLabel)
+	}
+
+	w.onSetMessage = func(message string) {
+		nonHoveredLabel.SetMessage(message)
+	}
+
+	w.showNonHoveredLabel() // Show the non-hovered label by default
 
 	w.Children().Setup()
 
@@ -79,27 +98,22 @@ func (w *Button) Setup() {
 		b.CopyDimensionsOf(boundingBox)
 	})
 
-	w.showHoveringLabel = func() {
-		hoveredLabel.Show()
-		nonHoveredLabel.Hide()
-	}
-	w.showNonHoveredLabel = func() {
-		hoveredLabel.Hide()
-		nonHoveredLabel.Show()
-	}
-
-	w.hovered = true // so that it'll trigger the non-hovered event first
-
-	w.onSetMessage = func(message string) {
-		nonHoveredLabel.SetMessage(message)
-		hoveredLabel.SetMessage(message)
-	}
+	w.Reactions().Add(
+		doodad.NewMouseUpReaction(w, func(mue doodad.MouseUpEvent) {
+			w.OnClick(w)
+		}),
+		doodad.NewMouseMovedWithinReaction(w, func(mm doodad.MouseMoved) {
+			w.hovering()
+		}),
+		doodad.NewMouseMovedWithoutReaction(w, func(mm doodad.MouseMoved) {
+			w.stoppedHovering()
+		}),
+	)
 }
 
 func (w *Button) SetMessage(message string) {
 	w.message = message
 	w.onSetMessage(message)
-
 }
 
 func (w *Button) hovering() {
@@ -123,36 +137,36 @@ func (w *Button) stoppedHovering() {
 	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 }
 
-func (w *Button) Gestures(gesturer doodad.Gesturer) []func() {
-	slog.Debug("Registering button gestures", "button", w, "gesturer", gesturer)
+// func (w *Button) Gestures(gesturer doodad.Gesturer) []func() {
+// 	slog.Debug("Registering button gestures", "button", w, "gesturer", gesturer)
 
-	withinBounds := func(x, y int) bool {
-		return x >= w.Box.X() && x <= w.Box.X()+w.Box.Width() &&
-			y >= w.Box.Y() && y <= w.Box.Y()+w.Box.Height()
-	}
+// 	withinBounds := func(x, y int) bool {
+// 		return x >= w.Box.X() && x <= w.Box.X()+w.Box.Width() &&
+// 			y >= w.Box.Y() && y <= w.Box.Y()+w.Box.Height()
+// 	}
 
-	return []func(){
-		gesturer.OnMouseMove(func(x, y int) error {
-			if withinBounds(x, y) {
-				w.hovering()
-				// return callback.ErrStopPropagation
-			} else {
-				w.stoppedHovering()
-			}
-			return nil
-		}),
-		gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
-			if event.Button != ebiten.MouseButtonLeft {
-				return nil
-			}
-			x, y := event.X, event.Y
-			if withinBounds(x, y) {
-				if w.OnClick != nil {
-					w.OnClick(w)
-				}
-				return doodad.ErrStopPropagation
-			}
-			return nil
-		}),
-	}
-}
+// 	return []func(){
+// 		gesturer.OnMouseMove(func(x, y int) error {
+// 			if withinBounds(x, y) {
+// 				w.hovering()
+// 				return doodad.ErrStopPropagation
+// 			} else {
+// 				w.stoppedHovering()
+// 			}
+// 			return nil
+// 		}),
+// 		gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
+// 			if event.Button != ebiten.MouseButtonLeft {
+// 				return nil
+// 			}
+// 			x, y := event.X, event.Y
+// 			if withinBounds(x, y) {
+// 				if w.OnClick != nil {
+// 					w.OnClick(w)
+// 				}
+// 				return doodad.ErrStopPropagation
+// 			}
+// 			return nil
+// 		}),
+// 	}
+// }

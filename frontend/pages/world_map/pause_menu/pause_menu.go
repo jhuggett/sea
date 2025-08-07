@@ -12,59 +12,35 @@ import (
 	"github.com/jhuggett/frontend/colors"
 )
 
-func NewPauseMenu(
-	gesturer doodad.Gesturer,
-) *PauseMenu {
-	pauseMenu := &PauseMenu{
-		Default: *doodad.NewDefault(),
-	}
-
-	pauseMenu.Gesturer = gesturer
-
+func NewPauseMenu() *PauseMenu {
+	pauseMenu := &PauseMenu{}
 	return pauseMenu
 }
 
 type PauseMenu struct {
 	doodad.Default
-
-	isHidden bool
-}
-
-func (w *PauseMenu) Show() {
-	w.isHidden = false
-}
-
-func (w *PauseMenu) Hide() {
-	w.isHidden = true
-}
-
-func (w *PauseMenu) IsHidden() bool {
-	return w.isHidden
 }
 
 func (w *PauseMenu) Setup() {
-	w.isHidden = true
-
 	panelChildren := doodad.NewChildren(
+		w,
 		[]doodad.Doodad{
 			label.New(label.Config{
 				Message:  "Pause Menu",
 				FontSize: 24,
 			}),
 			button.New(button.Config{
-				OnClick: func() {
+				OnClick: func(*button.Button) {
 					w.Hide()
 				},
-				Gesturer: w.Gesturer,
 				Config: label.Config{
 					Message: "Resume",
 				},
 			}),
 			button.New(button.Config{
-				OnClick: func() {
+				OnClick: func(*button.Button) {
 					os.Exit(0)
 				},
-				Gesturer: w.Gesturer,
 				Config: label.Config{
 					Message: "Quit to Desktop",
 				},
@@ -75,10 +51,9 @@ func (w *PauseMenu) Setup() {
 	panel := stack.New(stack.Config{
 		Children: panelChildren,
 		Type:     stack.Vertical,
-		Layout: box.Computed(func(b *box.Box) *box.Box {
+		Layout: box.Computed(func(b *box.Box) {
 			boundingBox := box.Bounding(panelChildren.Boxes())
-
-			return b.CopyDimensionsOf(boundingBox).CenterWithin(w.Box)
+			b.CopyDimensionsOf(boundingBox).CenterWithin(w.Box)
 		}),
 
 		BackgroundColor: colors.Panel,
@@ -93,11 +68,11 @@ func (w *PauseMenu) Setup() {
 
 	w.AddChild(panel)
 
-	w.Children.Setup()
+	w.Children().Setup()
 }
 
 func (w *PauseMenu) Draw(screen *ebiten.Image) {
-	if w.isHidden {
+	if !w.IsVisible() {
 		return
 	}
 
@@ -108,5 +83,5 @@ func (w *PauseMenu) Draw(screen *ebiten.Image) {
 	options.ColorM.Scale(0.2, 0.2, 0.2, 1) // Reduce brightness for blur effect
 	screen.DrawImage(background, options)
 
-	w.Children.Draw(screen)
+	w.Children().Draw(screen)
 }

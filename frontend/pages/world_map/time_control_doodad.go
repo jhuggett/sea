@@ -16,14 +16,10 @@ import (
 
 func NewTimeControlDoodad(
 	manager *game.Manager,
-	gesturer doodad.Gesturer,
 ) *TimeControlDoodad {
 	timeControlDoodad := &TimeControlDoodad{
-		Default: *doodad.NewDefault(),
 		Manager: manager,
 	}
-
-	timeControlDoodad.Gesturer = gesturer
 
 	return timeControlDoodad
 }
@@ -48,7 +44,7 @@ func (w *TimeControlDoodad) Setup() {
 	})
 
 	increaseSpeedButton := button.New(button.Config{
-		OnClick: func() {
+		OnClick: func(*button.Button) {
 			t := w.Manager.LastTimeChangedReq.TicksPerSecond + 1
 			_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
 				SetTicksPerSecondTo: &t,
@@ -58,14 +54,13 @@ func (w *TimeControlDoodad) Setup() {
 				return
 			}
 		},
-		Gesturer: w.Gesturer,
 		Config: label.Config{
 			Message: "+",
 		},
 	})
 
 	decreaseSpeedButton := button.New(button.Config{
-		OnClick: func() {
+		OnClick: func(*button.Button) {
 			t := w.Manager.LastTimeChangedReq.TicksPerSecond - 1
 			_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
 				SetTicksPerSecondTo: &t,
@@ -75,14 +70,13 @@ func (w *TimeControlDoodad) Setup() {
 				return
 			}
 		},
-		Gesturer: w.Gesturer,
 		Config: label.Config{
 			Message: "-",
 		},
 	})
 
 	pauseResumeButton := button.New(button.Config{
-		OnClick: func() {
+		OnClick: func(*button.Button) {
 			shouldResume := w.Manager.LastTimeChangedReq.IsPaused
 			shouldPause := !shouldResume
 			_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
@@ -94,13 +88,13 @@ func (w *TimeControlDoodad) Setup() {
 				return
 			}
 		},
-		Gesturer: w.Gesturer,
 		Config: label.Config{
 			Message: "Pause/Resume",
 		},
 	})
 
 	children := doodad.NewChildren(
+		w,
 		[]doodad.Doodad{
 			currentTimeLabel,
 			increaseSpeedButton,
@@ -110,9 +104,9 @@ func (w *TimeControlDoodad) Setup() {
 
 	panel := stack.New(stack.Config{
 		Type: stack.Horizontal,
-		Layout: box.Computed(func(b *box.Box) *box.Box {
+		Layout: box.Computed(func(b *box.Box) {
 			boundingBox := box.Bounding(children.Boxes())
-			return b.CopyDimensionsOf(boundingBox).CenterHorizontallyWithin(w.Layout())
+			b.CopyDimensionsOf(boundingBox).CenterHorizontallyWithin(w.Layout())
 		}),
 		Children:        children,
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
@@ -134,7 +128,7 @@ func (w *TimeControlDoodad) Setup() {
 	})
 
 	w.AddChild(panel)
-	w.Children.Setup()
+	w.Children().Setup()
 
 	// panelDoodad, err := panel.New(panel.Config{
 	// 	Position: w.Position,

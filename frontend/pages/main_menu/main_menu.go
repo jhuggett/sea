@@ -10,36 +10,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/pages/world_map"
 	"github.com/jhuggett/sea/data/session"
 	"github.com/jhuggett/sea/game_context"
 )
 
 type MainMenuPage struct {
-	PageControls design_library.PageControls
-
+	App *design_library.App
 	doodad.Default
-}
-
-func (m *MainMenuPage) Update() error {
-	m.Gesturer.Update()
-	return nil
-}
-
-func (m *MainMenuPage) SetWidthAndHeight(width, height int) {
-	m.Box.SetDimensions(width, height)
-	m.Box.Recalculate()
-}
-
-func (m *MainMenuPage) Draw(screen *ebiten.Image) {
-	m.Children.Draw(screen)
 }
 
 func (m *MainMenuPage) Setup() {
 	titleLabel := label.New(label.Config{
 		Message:  "Ships Colonies & Commerce",
-		Layout:   box.Zeroed(),
 		FontSize: 36,
 		Padding: label.Padding{
 			Bottom: 20,
@@ -56,15 +39,15 @@ func (m *MainMenuPage) Setup() {
 
 	for _, gameSession := range sessions {
 		loadGameButton := button.New(button.Config{
-			OnClick: func() {
+			OnClick: func(b *button.Button) {
 				newPage := world_map.New(&game_context.Snapshot{
 					ShipID:    gameSession.ShipID,
 					PlayerID:  gameSession.PlayerID,
 					GameMapID: gameSession.GameMapID,
 				})
-				m.PageControls.Push(newPage)
+				// m.PageControls.Push(newPage)
+				m.App.Replace(newPage)
 			},
-			Gesturer: m.Gesturer,
 			Config: label.Config{
 				Message: fmt.Sprintf("Load Game: %s", gameSession.UpdatedAt.Format("2006-01-02 15:04:05")),
 				Layout:  box.Zeroed(),
@@ -74,11 +57,11 @@ func (m *MainMenuPage) Setup() {
 	}
 
 	newGameButton := button.New(button.Config{
-		OnClick: func() {
+		OnClick: func(b *button.Button) {
 			newPage := world_map.New(nil)
-			m.PageControls.Push(newPage)
+			// m.PageControls.Push(newPage)
+			m.App.Replace(newPage)
 		},
-		Gesturer: m.Gesturer,
 		Config: label.Config{
 			Message: "New Game",
 			Layout:  box.Zeroed(),
@@ -86,8 +69,7 @@ func (m *MainMenuPage) Setup() {
 	})
 
 	optionsButton := button.New(button.Config{
-		OnClick:  func() {},
-		Gesturer: m.Gesturer,
+		OnClick: func(b *button.Button) {},
 		Config: label.Config{
 			Message: "Options",
 			Layout:  box.Zeroed(),
@@ -95,10 +77,9 @@ func (m *MainMenuPage) Setup() {
 	})
 
 	exitButton := button.New(button.Config{
-		OnClick: func() {
+		OnClick: func(b *button.Button) {
 			os.Exit(0) // Exit the application
 		},
-		Gesturer: m.Gesturer,
 		Config: label.Config{
 			Message: "Exit",
 			Layout:  box.Zeroed(),
@@ -106,6 +87,7 @@ func (m *MainMenuPage) Setup() {
 	})
 
 	panelChildren := doodad.NewChildren(
+		m,
 		[]doodad.Doodad{
 			titleLabel,
 		},
@@ -120,29 +102,26 @@ func (m *MainMenuPage) Setup() {
 	panel := stack.New(stack.Config{
 		Children: panelChildren,
 		Type:     stack.Vertical,
-		Layout: box.Computed(func(b *box.Box) *box.Box {
+		Layout: box.Computed(func(b *box.Box) {
 			boundingBox := box.Bounding(panelChildren.Boxes())
-			return b.SetDimensions(boundingBox.Width(), boundingBox.Height()).CenterWithin(m.Box)
+			b.SetDimensions(boundingBox.Width(), boundingBox.Height()).CenterWithin(m.Box)
 		}),
 		SpaceBetween: 10,
 	})
 
 	m.AddChild(panel)
 
-	m.Children.Setup()
+	m.Children().Setup()
 }
 
-func New(pageControls design_library.PageControls) *MainMenuPage {
+func New(
+	app *design_library.App,
+) *MainMenuPage {
 	page := &MainMenuPage{
-		PageControls: pageControls,
-		Default: doodad.Default{
-			Children: &doodad.Children{},
-			Gesturer: doodad.NewGesturer(),
-			Box:      box.Zeroed(),
-		},
+		App: app,
 	}
 
-	page.Setup()
+	// page.Setup()
 
 	// titleLabel, err := label.New(label.Config{
 	// 	Message: "Ships Colonies & Commerce",

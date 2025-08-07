@@ -16,19 +16,14 @@ import (
 
 func NewRouteInformationDoodad(
 	ship *game.Ship,
-	gesturer doodad.Gesturer,
-	positioner func(*box.Box) *box.Box,
+	positioner func(*box.Box),
 ) *RouteInformationDoodad {
 	doodad := &RouteInformationDoodad{
 		Ship:      ship,
-		Default:   *doodad.NewDefault(),
 		Postioner: positioner,
 	}
 
-	doodad.Gesturer = gesturer
-
 	ship.Manager.OnShipMovedCallback.Add(func(smr outbound.ShipMovedReq) error {
-
 		return nil
 	})
 
@@ -38,7 +33,7 @@ func NewRouteInformationDoodad(
 type RouteInformationDoodad struct {
 	SpaceTranslator SpaceTranslator
 
-	Postioner func(*box.Box) *box.Box
+	Postioner func(*box.Box)
 
 	Ship *game.Ship
 
@@ -64,19 +59,19 @@ func (w *RouteInformationDoodad) Setup() {
 	// w.Children.Add(setSailButton)
 
 	panelChildren := doodad.NewChildren(
+		w,
 		[]doodad.Doodad{
 			label.New(label.Config{
 				Message: "Route Information",
 			}),
 			button.New(button.Config{
-				OnClick: func() {
+				OnClick: func(*button.Button) {
 					_, err := w.Ship.SetSail()
 					if err != nil {
 						slog.Error("Failed to set sail", "error", err)
 						return
 					}
 				},
-				Gesturer: w.Gesturer,
 				Config: label.Config{
 					Message: "Set Sail",
 				},
@@ -86,9 +81,9 @@ func (w *RouteInformationDoodad) Setup() {
 
 	panel := stack.New(stack.Config{
 		Children: panelChildren,
-		Layout: box.Computed(func(b *box.Box) *box.Box {
+		Layout: box.Computed(func(b *box.Box) {
 			boundingBox := box.Bounding(panelChildren.Boxes())
-			return w.Postioner(b.CopyDimensionsOf(boundingBox))
+			w.Postioner(b.CopyDimensionsOf(boundingBox))
 		}),
 		Padding: stack.Padding{
 			Top:    10,
@@ -103,7 +98,7 @@ func (w *RouteInformationDoodad) Setup() {
 
 	w.AddChild(panel)
 
-	w.Children.Setup()
+	w.Children().Setup()
 }
 
 func (w *RouteInformationDoodad) Draw(screen *ebiten.Image) {
@@ -111,5 +106,5 @@ func (w *RouteInformationDoodad) Draw(screen *ebiten.Image) {
 		return
 	}
 
-	w.Children.Draw(screen)
+	w.Children().Draw(screen)
 }

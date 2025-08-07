@@ -25,15 +25,6 @@ type ContinentDoodad struct {
 	Image *ebiten.Image
 }
 
-func (w *ContinentDoodad) Teardown() error {
-
-	return nil
-}
-
-func (w *ContinentDoodad) Update() error {
-	return nil
-}
-
 func (w *ContinentDoodad) Draw(screen *ebiten.Image) {
 	// originX, originY := w.Origin()
 	// scaleX, scaleY := w.Scale()
@@ -64,7 +55,7 @@ func (w *ContinentDoodad) Draw(screen *ebiten.Image) {
 	)
 	screen.DrawImage(w.Image, op)
 
-	w.Children.Draw(screen)
+	w.Children().Draw(screen)
 }
 
 func (w *ContinentDoodad) Setup() {
@@ -157,5 +148,5 @@ func (w *ContinentDoodad) Setup() {
 		))
 	}
 
-	w.Children.Setup()
+	w.Children().Setup()
 }

@@ -29,37 +29,9 @@ type Config struct {
 }
 
 func New(config Config) *Label {
-	label := &Label{}
-
-	if config.Layout != nil {
-		label.Box = config.Layout
+	label := &Label{
+		Config: config,
 	}
-
-	if config.BackgroundColor == nil {
-		label.BackgroundColor = color.RGBA{0, 0, 0, 0}
-	} else {
-		label.BackgroundColor = config.BackgroundColor
-	}
-
-	if config.ForegroundColor == nil {
-		label.ForegroundColor = color.White
-	} else {
-		label.ForegroundColor = config.ForegroundColor
-	}
-
-	if config.FontSize <= 0 {
-		label.FontSize = 16
-	} else {
-		label.FontSize = config.FontSize
-	}
-
-	if config.Message == "" {
-		config.Message = "Label"
-	} else {
-		label.message = config.Message
-	}
-
-	label.padding = config.Padding
 
 	return label
 }
@@ -80,6 +52,10 @@ type Label struct {
 	doodad.Default
 
 	Hidden bool
+
+	Config Config
+
+	OriginalBox *box.Box
 }
 
 func (w *Label) Hide() {
@@ -105,6 +81,45 @@ func (w *Label) Draw(screen *ebiten.Image) {
 }
 
 func (w *Label) Setup() {
+	if w.Config.Layout != nil {
+		w.Box = w.Config.Layout
+	}
+
+	// if w.OriginalBox == nil { // this resets the box to the original box
+	// 	w.OriginalBox = w.Box
+	// }
+
+	// w.Box = box.Computed(func(b *box.Box) {
+	// 	b.Copy(w.OriginalBox)
+	// })
+	// w.OriginalBox.AddDependent(w.Box)
+
+	if w.Config.BackgroundColor == nil {
+		w.BackgroundColor = color.RGBA{0, 0, 0, 0}
+	} else {
+		w.BackgroundColor = w.Config.BackgroundColor
+	}
+
+	if w.Config.ForegroundColor == nil {
+		w.ForegroundColor = color.White
+	} else {
+		w.ForegroundColor = w.Config.ForegroundColor
+	}
+
+	if w.Config.FontSize <= 0 {
+		w.FontSize = 16
+	} else {
+		w.FontSize = w.Config.FontSize
+	}
+
+	if w.Config.Message == "" {
+		w.Config.Message = "Label"
+	} else {
+		w.message = w.Config.Message
+	}
+
+	w.padding = w.Config.Padding
+
 	var err error
 	w.fontSource, err = text.NewGoTextFaceSource(bytes.NewReader(goregular.TTF))
 	if err != nil {

@@ -9,7 +9,7 @@ var Panel = color.RGBA{
 	R: 26 + 50,
 	G: 13 + 50,
 	B: 0 + 50,
-	A: 200,
+	A: 255,
 }
 
 func SemiTransparent(c color.Color) color.Color {
@@ -21,6 +21,6 @@ func SemiTransparent(c color.Color) color.Color {
 		R: uint8(r >> 8),
 		G: uint8(g >> 8),
 		B: uint8(b >> 8),
-		A: 230,
+		A: 255,
 	}
 }

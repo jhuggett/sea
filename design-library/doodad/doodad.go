@@ -2,6 +2,7 @@ package doodad
 
 import (
 	"design-library/position/box"
+	"design-library/reaction"
 	"fmt"
 	"log/slog"
 
@@ -32,13 +33,16 @@ type Doodad interface {
 	Parent() Doodad
 	SetParent(parent Doodad)
 
-	Gesturer() Gesturer
-	SetGesturer(gesturer Gesturer)
+	Gesturer() reaction.Gesturer
+	SetGesturer(gesturer reaction.Gesturer)
 
-	// this is what should be used to register gestures and return a list of unregister functions
-	Gestures(gesturer Gesturer) []func()
-	StoreUnregisterGestures(unregisters ...func()) // I don't like this
-	StoreRegisterGestureFn(registerFn func())      // This is also stupid
+	Reactions() *reaction.Reactions
+	SetReactions(*reaction.Reactions)
+
+	// // this is what should be used to register gestures and return a list of unregister functions
+	// Gestures(gesturer Gesturer) []func()
+	// StoreUnregisterGestures(unregisters ...func()) // I don't like this
+	// StoreRegisterGestureFn(registerFn func())      // This is also stupid
 
 	Hide()
 	Show()
@@ -80,12 +84,15 @@ func (c *Children) Draw(screen *ebiten.Image) {
 func (c *Children) Setup() {
 	for i := len(c.Doodads) - 1; i >= 0; i-- {
 		ii := i
+		// c.Doodads[ii].Setup()
+		// // This is so stupid
+		// c.Doodads[ii].StoreRegisterGestureFn(func() {
+		// 	c.Doodads[ii].StoreUnregisterGestures(c.Doodads[i].Gestures(c.Parent.Gesturer())...)
+		// })
+		// c.Doodads[ii].StoreUnregisterGestures(c.Doodads[i].Gestures(c.Parent.Gesturer())...)
+
 		c.Doodads[ii].Setup()
-		// This is so stupid
-		c.Doodads[ii].StoreRegisterGestureFn(func() {
-			c.Doodads[ii].StoreUnregisterGestures(c.Doodads[i].Gestures(c.Parent.Gesturer())...)
-		})
-		c.Doodads[ii].StoreUnregisterGestures(c.Doodads[i].Gestures(c.Parent.Gesturer())...)
+		c.Doodads[ii].Reactions().Register(c.Doodads[ii].Gesturer())
 	}
 }
 
@@ -119,13 +126,14 @@ type Default struct {
 	children *Children
 	Box      *box.Box
 
-	parent   Doodad
-	gesturer Gesturer
+	parent    Doodad
+	gesturer  reaction.Gesturer
+	reactions *reaction.Reactions
 
 	hidden bool
 
-	unregisterGestures []func()
-	register           func()
+	// unregisterGestures []func()
+	// register           func()
 }
 
 func (t *Default) Update() error {
@@ -139,17 +147,17 @@ func (t *Default) Draw(screen *ebiten.Image) {
 	t.Children().Draw(screen)
 }
 
-func (t *Default) unregister() {
-	for _, unregister := range t.unregisterGestures {
-		unregister()
-	}
-	t.unregisterGestures = nil
-}
+// func (t *Default) unregister() {
+// 	for _, unregister := range t.unregisterGestures {
+// 		unregister()
+// 	}
+// 	t.unregisterGestures = nil
+// }
 
 func (t *Default) Teardown() error {
-	t.unregister()
+	// t.unregister()
 	t.Children().Clear()
-
+	t.Reactions().Unregister()
 	return nil
 }
 
@@ -191,6 +199,10 @@ func (t *Default) AddChild(doodads ...Doodad) {
 		}
 		t.Layout().AddDependent(doodad.Layout())
 
+		if doodad.Reactions() == nil {
+			doodad.SetReactions(&reaction.Reactions{})
+		}
+
 		t.Children().add(doodad)
 		doodad.SetParent(t)
 		doodad.SetGesturer(t.Gesturer())
@@ -214,11 +226,11 @@ func (t *Default) SetParent(parent Doodad) {
 	t.parent = parent
 }
 
-func (t *Default) Gesturer() Gesturer {
+func (t *Default) Gesturer() reaction.Gesturer {
 	return t.gesturer
 }
 
-func (t *Default) SetGesturer(gesturer Gesturer) {
+func (t *Default) SetGesturer(gesturer reaction.Gesturer) {
 	t.gesturer = gesturer
 }
 
@@ -232,7 +244,8 @@ func (t *Default) SetChildren(children *Children) {
 
 func (t *Default) Hide() {
 	t.hidden = true
-	t.unregister()
+	t.reactions.Disable()
+	// t.unregister()
 	for _, child := range t.Children().Doodads {
 		child.Hide()
 	}
@@ -240,7 +253,8 @@ func (t *Default) Hide() {
 
 func (t *Default) Show() {
 	t.hidden = false
-	t.register()
+	t.reactions.Enable()
+	// t.register()
 	for _, child := range t.Children().Doodads {
 		child.Show()
 	}
@@ -250,12 +264,28 @@ func (t *Default) IsVisible() bool {
 	return !t.hidden
 }
 
-func (t *Default) Gestures(gesturer Gesturer) []func() { return nil }
+// func (t *Default) Gestures(gesturer Gesturer) []func() { return nil }
 
-func (t *Default) StoreUnregisterGestures(unregisters ...func()) {
-	t.unregisterGestures = unregisters
+// func (t *Default) StoreUnregisterGestures(unregisters ...func()) {
+// 	t.unregisterGestures = unregisters
+// }
+
+// func (t *Default) StoreRegisterGestureFn(registerFn func()) {
+// 	t.register = registerFn
+// }
+
+func (t *Default) Reactions() *reaction.Reactions {
+	return t.reactions
 }
 
-func (t *Default) StoreRegisterGestureFn(registerFn func()) {
-	t.register = registerFn
+func (t *Default) SetReactions(reactions *reaction.Reactions) {
+	if t.reactions != nil {
+		t.reactions.Unregister()
+	}
+	t.reactions = reactions
+}
+
+func ReSetup(doodad Doodad) {
+	doodad.Teardown()
+	doodad.Setup()
 }

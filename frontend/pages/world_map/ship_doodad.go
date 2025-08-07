@@ -12,7 +12,6 @@ import (
 func NewPlayerShipDoodad(gameManager *game.Manager, Camera *camera.Camera) *ShipDoodad {
 	shipDoodad := &ShipDoodad{
 		GameManager: gameManager,
-		Default:     *doodad.NewDefault(),
 		Camera:      Camera,
 	}
 

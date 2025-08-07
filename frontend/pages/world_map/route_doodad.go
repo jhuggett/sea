@@ -13,16 +13,13 @@ import (
 )
 
 func NewRouteDoodad(
-	gesturer doodad.Gesturer,
 	spaceTranslator SpaceTranslator,
 	ship *game.Ship,
 ) *RouteDoodad {
 	routeDoodad := &RouteDoodad{
 		SpaceTranslator: spaceTranslator,
 		Ship:            ship,
-		Default:         *doodad.NewDefault(),
 	}
-	routeDoodad.Gesturer = gesturer
 
 	return routeDoodad
 }
@@ -34,14 +31,7 @@ type RouteDoodad struct {
 	img              *ebiten.Image
 	originX, originY int
 
-	Children doodad.Children
-
 	doodad.Default
-}
-
-func (w *RouteDoodad) Teardown() error {
-	w.Children.Teardown()
-	return nil
 }
 
 func (w *RouteDoodad) Update() error {
@@ -71,17 +61,16 @@ func (w *RouteDoodad) Draw(screen *ebiten.Image) {
 	op.GeoM.Scale(w.SpaceTranslator.ScreenScale())
 	screen.DrawImage(w.img, op)
 
-	w.Children.Draw(screen)
+	w.Children().Draw(screen)
 }
 
 func (w *RouteDoodad) Setup() {
-
-	w.Gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
-		if event.Button != ebiten.MouseButtonLeft {
-			return nil
+	w.Reactions().Add(doodad.NewMouseUpReaction(w, func(mm doodad.MouseUpEvent) {
+		if mm.Button != ebiten.MouseButtonLeft {
+			return
 		}
 
-		x, y := event.X, event.Y
+		x, y := mm.X, mm.Y
 		fmt.Println("RouteDoodad.OnClick", x, y)
 
 		worldX, worldY := w.SpaceTranslator.FromScreenToWorld(
@@ -97,7 +86,7 @@ func (w *RouteDoodad) Setup() {
 		route, err := w.Ship.PlotRoute(int(dataX), int(dataY))
 		if err != nil {
 			slog.Error("RouteDoodad.OnClick", "error", err)
-			return nil
+			return
 		}
 
 		scale, _ := w.SpaceTranslator.TileSize()
@@ -140,28 +129,7 @@ func (w *RouteDoodad) Setup() {
 				false,
 			)
 		}
-
-		return nil
-	})
-
-	// setSailButton, err := button.New(button.Config{
-	// 	Message: "Set Sail",
-	// 	OnClick: func() {
-	// 		slog.Debug("Set Sail button clicked")
-	// 		_, err := w.Ship.SetSail()
-	// 		if err != nil {
-	// 			slog.Error("Failed to set sail", "error", err)
-	// 			return
-	// 		}
-	// 	},
-	// 	Gesturer: w.Gesturer,
-	// 	Position: doodad.ZeroZero,
-	// })
-	// if err != nil {
-	// 	slog.Error("Failed to create Set Sail button", "error", err)
-	// }
-	// w.Children.Add(setSailButton)
-
+	}))
 }
 
 func Box(points []inbound.Coordinate, scale float64) (width, height int) {

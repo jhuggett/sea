@@ -3,7 +3,10 @@ package stack
 import (
 	"design-library/doodad"
 	"design-library/position/box"
+	"design-library/reaction"
+
 	"image/color"
+	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -166,6 +169,18 @@ func (s *Stack) Setup() {
 			}
 		}
 		previousChild = child
+
+		s.Reactions().Add(
+			reaction.NewReaction[reaction.MouseMoved](
+				reaction.MouseMove,
+				func(mm reaction.MouseMoved) bool {
+					return true
+				},
+				func(mm reaction.MouseMoved) error {
+					return nil
+				},
+			),
+		)
 	}
 
 	if s.BackgroundColor != nil && s.Box.Width() > 0 && s.Box.Height() > 0 {
@@ -196,4 +211,33 @@ func (s *Stack) Draw(screen *ebiten.Image) {
 	}
 
 	s.Children().Draw(screen)
+}
+
+func (w *Stack) Gestures(gesturer doodad.Gesturer) []func() {
+
+	slog.Info("Gestures for Stack", "type", w.Type, "box", w.Box)
+
+	withinBounds := func(x, y int) bool {
+		return x >= w.Box.X() && x <= w.Box.X()+w.Box.Width() &&
+			y >= w.Box.Y() && y <= w.Box.Y()+w.Box.Height()
+	}
+
+	return []func(){
+		gesturer.OnMouseMove(func(x, y int) error {
+			if withinBounds(x, y) {
+				return doodad.ErrStopPropagation
+			}
+			return nil
+		}),
+		gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
+			if event.Button != ebiten.MouseButtonLeft {
+				return nil
+			}
+			x, y := event.X, event.Y
+			if withinBounds(x, y) {
+				return doodad.ErrStopPropagation
+			}
+			return nil
+		}),
+	}
 }

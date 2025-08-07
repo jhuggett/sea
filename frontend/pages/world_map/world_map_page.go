@@ -11,6 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jhuggett/frontend/game"
+	"github.com/jhuggett/frontend/pages/world_map/bottom_bar"
 	"github.com/jhuggett/frontend/pages/world_map/camera"
 	"github.com/jhuggett/frontend/pages/world_map/pause_menu"
 	"github.com/jhuggett/sea/game_context"
@@ -139,13 +140,14 @@ func (w *WorldMapPage) SetupLoadingScreen() {
 		Layout:   box.Zeroed(),
 		FontSize: 24,
 	})
-	loadingMessage.Setup()
-	loadingMessage.Box.Computed(func(b *box.Box) *box.Box {
-		return b.CenterWithin(w.Box)
-	})
 
 	w.AddChild(loadingMessage)
-	w.Children.Setup()
+
+	w.Children().Setup()
+
+	loadingMessage.Box.Computed(func(b *box.Box) {
+		b.CenterWithin(w.Box)
+	})
 }
 
 func (w *WorldMapPage) LoadRequiredData() error {
@@ -173,13 +175,13 @@ func (w *WorldMapPage) LoadRequiredData() error {
 	gameManager := game.NewManager(w.GameSnapshot)
 	gameManager.SetTileSize(int(w.Camera.TileSize))
 
-	w.Gesturer.OnMouseDrag(func(lastX, lastY, currentX, currentY int) error {
+	w.Gesturer().OnMouseDrag(func(lastX, lastY, currentX, currentY int) error {
 		w.Camera.Position[0] += float64(lastX-currentX) / w.Camera.ZoomFactor
 		w.Camera.Position[1] += float64(lastY-currentY) / w.Camera.ZoomFactor
 		return nil
 	})
 
-	w.Gesturer.OnMouseWheel(func(offset float64) error {
+	w.Gesturer().OnMouseWheel(func(offset float64) error {
 		if offset > 0 {
 			w.Camera.ZoomFactor += 0.1
 		} else {
@@ -212,7 +214,6 @@ func (w *WorldMapPage) SetupMainScreen() {
 	worldMapDoodad := NewWorldMapDoodad(
 		w.GameManager.WorldMap,
 		w.SpaceTranslator,
-		w.Gesturer,
 	)
 	w.AddChild(worldMapDoodad)
 
@@ -225,48 +226,41 @@ func (w *WorldMapPage) SetupMainScreen() {
 	))
 
 	w.AddChild(NewCursorDoodad(
-		w.Gesturer,
 		w.SpaceTranslator,
 	))
 
 	w.AddChild(NewRouteDoodad(
-		w.Gesturer,
 		w.SpaceTranslator,
 		w.GameManager.PlayerShip,
 	))
 
 	timeControlDoodad := NewTimeControlDoodad(
 		w.GameManager,
-		w.Gesturer,
 	)
-	timeControlDoodad.Layout().Computed(func(b *box.Box) *box.Box {
-		return b.Copy(w.Box)
-	})
 	w.AddChild(timeControlDoodad)
+	timeControlDoodad.Layout().Computed(func(b *box.Box) {
+		b.Copy(w.Box)
+	})
 
-	bottomBar := NewBottomBar(
-		w.Gesturer,
-	)
+	bottomBar := bottom_bar.NewBottomBar(w.GameManager)
 	w.AddChild(bottomBar)
 	w.AddChild(NewRouteInformationDoodad(
 		w.GameManager.PlayerShip,
-		w.Gesturer,
-		func(b *box.Box) *box.Box {
-			return b.MoveAbove(bottomBar.Box).MoveUp(20).CenterHorizontallyWithin(w.Box)
+		func(b *box.Box) {
+			b.MoveAbove(bottomBar.Box).MoveUp(40).CenterHorizontallyWithin(w.Box)
 		},
 	))
 
-	pauseMenu := pause_menu.NewPauseMenu(
-		w.Gesturer,
-	)
-	pauseMenu.Layout().Computed(func(b *box.Box) *box.Box {
-		return b.Copy(w.Box)
-	})
+	pauseMenu := pause_menu.NewPauseMenu()
 	w.AddChild(pauseMenu)
+	pauseMenu.Layout().Computed(func(b *box.Box) {
+		b.Copy(w.Box)
+	})
+	pauseMenu.Hide()
 
-	w.Gesturer.OnKeyDown(func(key ebiten.Key) error {
+	w.Gesturer().OnKeyDown(func(key ebiten.Key) error {
 		if key == ebiten.KeyEscape {
-			if pauseMenu.IsHidden() {
+			if !pauseMenu.IsVisible() {
 				pauseMenu.Show()
 			} else {
 				pauseMenu.Hide()
@@ -275,16 +269,13 @@ func (w *WorldMapPage) SetupMainScreen() {
 		return nil
 	})
 
-	w.Children.Setup()
-}
-
-func (w *WorldMapPage) Update() error {
-	w.Gesturer.Update()
-	return nil
+	w.Children().Setup()
 }
 
 func (w *WorldMapPage) Setup() {
-	w.Children = doodad.NewChildren()
+	if len(w.Children().Doodads) > 0 {
+		w.Children().Clear()
+	}
 
 	if w.loaded {
 		// show map
@@ -300,19 +291,14 @@ func (w *WorldMapPage) Setup() {
 			w.Setup() // recursively call Setup to switch to main screen
 		}()
 	}
+
+	w.Box.Recalculate()
 }
 
 func New(snapshot *game_context.Snapshot) *WorldMapPage {
 	p := &WorldMapPage{
-		Default: doodad.Default{
-			Children: doodad.NewChildren(),
-			Gesturer: doodad.NewGesturer(),
-			Box:      box.Zeroed(),
-		},
 		GameSnapshot: snapshot,
 	}
-
-	p.Setup()
 
 	// p := &WorldMapPage{
 	// 	Camera: &Camera{

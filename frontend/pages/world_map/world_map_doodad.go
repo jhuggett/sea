@@ -11,14 +11,11 @@ import (
 func NewWorldMapDoodad(
 	worldMap *game.WorldMap,
 	spaceTranslator SpaceTranslator,
-	doodadGesturer doodad.Gesturer,
 ) *WorldMapDoodad {
 	worldMapDoodad := &WorldMapDoodad{
-		Default:         *doodad.NewDefault(),
 		WorldMap:        worldMap,
 		SpaceTranslator: spaceTranslator,
 	}
-	worldMapDoodad.Gesturer = doodadGesturer
 
 	return worldMapDoodad
 }
@@ -34,16 +31,6 @@ type WorldMapDoodad struct {
 	SmallestContinentPointY int
 
 	doodad.Default
-}
-
-func (w *WorldMapDoodad) Teardown() error {
-	w.Children.Teardown()
-	return nil
-}
-
-func (w *WorldMapDoodad) Update() error {
-	// w.WorldMap.Update()
-	return nil
 }
 
 func (w *WorldMapDoodad) Draw(screen *ebiten.Image) {
@@ -83,7 +70,7 @@ func (w *WorldMapDoodad) Draw(screen *ebiten.Image) {
 	}
 
 	// Draw the doodads
-	w.Children.Draw(screen)
+	w.Children().Draw(screen)
 }
 
 func (w *WorldMapDoodad) Setup() {
@@ -96,12 +83,10 @@ func (w *WorldMapDoodad) Setup() {
 		continentDoodad := &ContinentDoodad{
 			Continent:       continent,
 			SpaceTranslator: w.SpaceTranslator,
-			Default:         *doodad.NewDefault(),
 		}
 
-		continentDoodad.Setup()
-
 		w.AddChild(continentDoodad)
+		continentDoodad.Setup()
 	}
 
 	largestX := 0

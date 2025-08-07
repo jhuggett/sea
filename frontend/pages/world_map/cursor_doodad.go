@@ -7,13 +7,10 @@ import (
 	"github.com/jhuggett/frontend/colors"
 )
 
-func NewCursorDoodad(gesturer doodad.Gesturer, spaceTranslator SpaceTranslator) *CursorDoodad {
+func NewCursorDoodad(spaceTranslator SpaceTranslator) *CursorDoodad {
 	cursorDoodad := &CursorDoodad{
 		SpaceTranslator: spaceTranslator,
-		Default:         *doodad.NewDefault(),
 	}
-
-	cursorDoodad.Gesturer = gesturer
 
 	return cursorDoodad
 }
@@ -24,8 +21,6 @@ type CursorDoodad struct {
 	SpaceTranslator SpaceTranslator
 
 	img *ebiten.Image
-
-	Hidden bool
 
 	doodad.Default
 }
@@ -39,7 +34,7 @@ func (w *CursorDoodad) Update() error {
 }
 
 func (w *CursorDoodad) Draw(screen *ebiten.Image) {
-	if w.Hidden {
+	if !w.IsVisible() {
 		return
 	}
 
@@ -92,11 +87,10 @@ func (w *CursorDoodad) Setup() {
 		}
 	}
 
-	w.Gesturer.OnMouseMove(func(x, y int) error {
-		w.MouseX = x
-		w.MouseY = y
-
-		return nil
-	})
-
+	w.Reactions().Add(
+		doodad.NewMouseMovedWithinReaction(w, func(mm doodad.MouseMoved) {
+			w.MouseX = mm.X
+			w.MouseY = mm.Y
+		}),
+	)
 }

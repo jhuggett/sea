@@ -15,7 +15,6 @@ func NewPortDoodad(
 	portDoodad := &PortDoodad{
 		Port:            port,
 		SpaceTranslator: spaceTranslator,
-		Default:         *doodad.NewDefault(),
 	}
 
 	return portDoodad

@@ -3,6 +3,7 @@ package design_library
 import (
 	"design-library/doodad"
 	"design-library/position/box"
+	"design-library/reaction"
 	"fmt"
 	"log/slog"
 
@@ -16,16 +17,24 @@ func NewApp(startup func(*App)) *App {
 	}
 
 	app.Children().Parent = &app.Default
-	app.SetGesturer(doodad.NewGesturer())
+	app.SetGesturer(reaction.NewGesturer())
 	app.SetLayout(box.Zeroed())
 
 	slog.Info("App initialized", "app", app, "layout", fmt.Sprintf("%p", app.Default.Layout()))
+
+	app.Reactions().Add()
 
 	app.Gesturer().OnKeyDown(func(key ebiten.Key) error {
 		if key == ebiten.KeyD {
 			app.Children().PrettyPrint(0)
 			fmt.Printf("App layout: %s\n", app.Default.Layout().String())
 		}
+
+		if key == ebiten.KeyR {
+			app.Default.Layout().Recalculate()
+			slog.Info("Recalculated layout")
+		}
+
 		return nil
 	})
 
