@@ -68,14 +68,6 @@ func (g *gesturer) trigger(reactionType ReactionType, data any) {
 
 type ReactionType string
 
-const (
-	MouseUp    ReactionType = "MouseUp"
-	MouseDrag  ReactionType = "MouseDrag"
-	MouseWheel ReactionType = "MouseWheel"
-	MouseMove  ReactionType = "MouseMove"
-	KeyDown    ReactionType = "KeyDown"
-)
-
 type Gesturer interface {
 	Update()
 	Register(reaction Reaction) func()
@@ -85,36 +77,27 @@ func NewGesturer() *gesturer {
 	return &gesturer{}
 }
 
-type MouseMoved struct {
-	X, Y int
-}
+// type MouseMoved struct {
+// 	X, Y int
+// }
 
-type MouseUpEvent struct {
-	X, Y   int
-	Button ebiten.MouseButton
-}
-
-type MouseWheelEvent struct {
-	YOffset float64
-}
-
-type OnMouseDragEvent struct {
-	StartX, StartY int
-	X, Y           int
-	TimeStart      time.Time
-	Button         ebiten.MouseButton
-}
+// type MouseUpEvent struct {
+// 	X, Y   int
+// 	Button ebiten.MouseButton
+// }
 
 func (g *gesturer) Update() {
 	x, y := ebiten.CursorPosition()
 
 	// Keydown events
 	for _, key := range inpututil.AppendJustPressedKeys(nil) {
-		g.trigger(KeyDown, key)
+		g.trigger(KeyDown, KeyDownEvent{
+			Key: key,
+		})
 	}
 
 	if x != g.MouseX || y != g.MouseY {
-		g.trigger(MouseMove, MouseMoved{X: x, Y: y})
+		g.trigger(MouseMoved, MouseMovedEvent{X: x, Y: y})
 	}
 
 	g.MouseX = x
@@ -147,14 +130,16 @@ func (g *gesturer) Update() {
 		}
 
 		if time.Since(g.Press.TimeStart) > 100*time.Millisecond || (math.Abs(float64(g.Press.StartX-x)) > 25 || math.Abs(float64(g.Press.StartY-y)) > 25) {
-			g.trigger(MouseDrag, OnMouseDragEvent{
-				StartX:    g.Press.StartX,
-				StartY:    g.Press.StartY,
-				X:         x,
-				Y:         y,
-				TimeStart: g.Press.TimeStart,
-				Button:    g.Press.Button,
-			})
+			if g.Press.X != x || g.Press.Y != y {
+				g.trigger(MouseDrag, OnMouseDragEvent{
+					StartX:    g.Press.StartX,
+					StartY:    g.Press.StartY,
+					X:         x,
+					Y:         y,
+					TimeStart: g.Press.TimeStart,
+					Button:    g.Press.Button,
+				})
+			}
 		}
 
 		g.Press.X = x

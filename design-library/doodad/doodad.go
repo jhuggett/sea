@@ -9,6 +9,24 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+func MouseMovedWithin[T reaction.PositionedEvent](doodad Doodad) func(event T) bool {
+	return func(event T) bool {
+		layout := doodad.Layout()
+		x, y := event.XY()
+		return x >= layout.X() && x <= layout.X()+layout.Width() &&
+			y >= layout.Y() && y <= layout.Y()+layout.Height()
+	}
+}
+
+func MouseMovedOutside[T reaction.PositionedEvent](doodad Doodad) func(event T) bool {
+	return func(event T) bool {
+		layout := doodad.Layout()
+		x, y := event.XY()
+		return x < layout.X() || x > layout.X()+layout.Width() ||
+			y < layout.Y() || y > layout.Y()+layout.Height()
+	}
+}
+
 type Rectangle struct {
 	Width  int
 	Height int

@@ -22,21 +22,39 @@ func NewApp(startup func(*App)) *App {
 
 	slog.Info("App initialized", "app", app, "layout", fmt.Sprintf("%p", app.Default.Layout()))
 
-	app.Reactions().Add()
+	app.SetReactions(&reaction.Reactions{})
 
-	app.Gesturer().OnKeyDown(func(key ebiten.Key) error {
-		if key == ebiten.KeyD {
-			app.Children().PrettyPrint(0)
-			fmt.Printf("App layout: %s\n", app.Default.Layout().String())
-		}
+	app.Reactions().Add(
+		reaction.NewKeyDownReaction(
+			reaction.SpecificKeyDown(ebiten.KeyD),
+			func(event reaction.KeyDownEvent) {
+				app.Children().PrettyPrint(0)
+				fmt.Printf("App layout: %s\n", app.Default.Layout().String())
+			},
+		),
+		reaction.NewKeyDownReaction(
+			reaction.SpecificKeyDown(ebiten.KeyR),
+			func(event reaction.KeyDownEvent) {
+				app.Default.Layout().Recalculate()
+				slog.Info("Recalculated layout")
+			},
+		),
+	)
+	app.Reactions().Register(app.Gesturer())
 
-		if key == ebiten.KeyR {
-			app.Default.Layout().Recalculate()
-			slog.Info("Recalculated layout")
-		}
+	// app.Gesturer().OnKeyDown(func(key ebiten.Key) error {
+	// 	if key == ebiten.KeyD {
+	// 		app.Children().PrettyPrint(0)
+	// 		fmt.Printf("App layout: %s\n", app.Default.Layout().String())
+	// 	}
 
-		return nil
-	})
+	// 	if key == ebiten.KeyR {
+	// 		app.Default.Layout().Recalculate()
+	// 		slog.Info("Recalculated layout")
+	// 	}
+
+	// 	return nil
+	// })
 
 	return app
 }

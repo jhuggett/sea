@@ -25,9 +25,23 @@ type ShipInfoPanel struct {
 	Manager *game.Manager
 
 	ShipData outbound.ShipChangedReq
+
+	Subbed bool
 }
 
 func (s *ShipInfoPanel) Setup() {
+
+	// TODO: handle unsub
+	if !s.Subbed {
+		s.Manager.OnShipChangedCallback.Add(func(scr outbound.ShipChangedReq) error {
+			s.ShipData = scr
+
+			doodad.ReSetup(s)
+
+			return nil
+		})
+		s.Subbed = true
+	}
 
 	if s.ShipData.ID == 0 {
 		return // No ship data available yet
@@ -123,12 +137,4 @@ func (s *ShipInfoPanel) Setup() {
 		b.AlignBottomWithin(s.Box).AlignRight(s.Box)
 	})
 
-	// TODO: handle unsub
-	s.Manager.OnShipChangedCallback.Add(func(scr outbound.ShipChangedReq) error {
-		s.ShipData = scr
-
-		doodad.ReSetup(s)
-
-		return nil
-	})
 }

@@ -2,6 +2,7 @@ package world_map
 
 import (
 	"design-library/doodad"
+	"design-library/reaction"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -65,71 +66,76 @@ func (w *RouteDoodad) Draw(screen *ebiten.Image) {
 }
 
 func (w *RouteDoodad) Setup() {
-	w.Reactions().Add(doodad.NewMouseUpReaction(w, func(mm doodad.MouseUpEvent) {
-		if mm.Button != ebiten.MouseButtonLeft {
-			return
-		}
+	w.Reactions().Add(
+		reaction.NewMouseUpReaction(
+			doodad.MouseMovedWithin[reaction.MouseUpEvent](w),
+			func(mm reaction.MouseUpEvent) {
+				if mm.Button != ebiten.MouseButtonLeft {
+					return
+				}
 
-		x, y := mm.X, mm.Y
-		fmt.Println("RouteDoodad.OnClick", x, y)
+				x, y := mm.X, mm.Y
+				fmt.Println("RouteDoodad.OnClick", x, y)
 
-		worldX, worldY := w.SpaceTranslator.FromScreenToWorld(
-			float64(x),
-			float64(y),
-		)
+				worldX, worldY := w.SpaceTranslator.FromScreenToWorld(
+					float64(x),
+					float64(y),
+				)
 
-		dataX, dataY := w.SpaceTranslator.FromWorldToData(
-			worldX,
-			worldY,
-		)
+				dataX, dataY := w.SpaceTranslator.FromWorldToData(
+					worldX,
+					worldY,
+				)
 
-		route, err := w.Ship.PlotRoute(int(dataX), int(dataY))
-		if err != nil {
-			slog.Error("RouteDoodad.OnClick", "error", err)
-			return
-		}
+				route, err := w.Ship.PlotRoute(int(dataX), int(dataY))
+				if err != nil {
+					slog.Error("RouteDoodad.OnClick", "error", err)
+					return
+				}
 
-		scale, _ := w.SpaceTranslator.TileSize()
-		w.img = ebiten.NewImage(Box(route.Points, float64(scale)))
+				scale, _ := w.SpaceTranslator.TileSize()
+				w.img = ebiten.NewImage(Box(route.Points, float64(scale)))
 
-		// For Debugging
-		// w.img.Fill(color.RGBA{
-		// 	R: 0,
-		// 	G: 100,
-		// 	B: 0,
-		// 	A: 125,
-		// })
+				// For Debugging
+				// w.img.Fill(color.RGBA{
+				// 	R: 0,
+				// 	G: 100,
+				// 	B: 0,
+				// 	A: 125,
+				// })
 
-		tileSize, _ := w.SpaceTranslator.TileSize()
-		smallestX, smallestY := 0.0, 0.0
+				tileSize, _ := w.SpaceTranslator.TileSize()
+				smallestX, smallestY := 0.0, 0.0
 
-		for _, point := range route.Points {
-			if point.X < smallestX {
-				smallestX = point.X
-			}
-			if point.Y < smallestY {
-				smallestY = point.Y
-			}
-		}
+				for _, point := range route.Points {
+					if point.X < smallestX {
+						smallestX = point.X
+					}
+					if point.Y < smallestY {
+						smallestY = point.Y
+					}
+				}
 
-		w.originX = int(smallestX)
-		w.originY = int(smallestY)
+				w.originX = int(smallestX)
+				w.originY = int(smallestY)
 
-		for _, point := range route.Points {
-			vector.DrawFilledRect(
-				w.img,
-				float32((point.X-smallestX)*tileSize+tileSize/4),
-				float32((point.Y-smallestY)*tileSize+tileSize/4),
-				float32(tileSize/2),
-				float32(tileSize/2),
-				color.RGBA{
-					B: 255,
-					A: 255,
-				},
-				false,
-			)
-		}
-	}))
+				for _, point := range route.Points {
+					vector.DrawFilledRect(
+						w.img,
+						float32((point.X-smallestX)*tileSize+tileSize/4),
+						float32((point.Y-smallestY)*tileSize+tileSize/4),
+						float32(tileSize/2),
+						float32(tileSize/2),
+						color.RGBA{
+							B: 255,
+							A: 255,
+						},
+						false,
+					)
+				}
+			},
+		),
+	)
 }
 
 func Box(points []inbound.Coordinate, scale float64) (width, height int) {

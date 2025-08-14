@@ -29,3 +29,14 @@ backend:
 	make generate-types; \
 	cd ./frontend/web-react; \
 	yarn upgrade @shared/sea;
+
+# --------------------------------
+
+.PHONY: design-library
+design-library:
+	go run ./design-library/main;
+
+.PHONY: game
+game:
+	cd frontend; \
+	go run main.go

@@ -4,6 +4,7 @@ import (
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
+	"design-library/reaction"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -99,15 +100,33 @@ func (w *Button) Setup() {
 	})
 
 	w.Reactions().Add(
-		doodad.NewMouseUpReaction(w, func(mue doodad.MouseUpEvent) {
-			w.OnClick(w)
-		}),
-		doodad.NewMouseMovedWithinReaction(w, func(mm doodad.MouseMoved) {
-			w.hovering()
-		}),
-		doodad.NewMouseMovedWithoutReaction(w, func(mm doodad.MouseMoved) {
-			w.stoppedHovering()
-		}),
+		// doodad.NewMouseUpReaction(w, func(mue doodad.MouseUpEvent) {
+		// 	w.OnClick(w)
+		// }),
+		// doodad.NewMouseMovedWithinReaction(w, func(mm doodad.MouseMoved) {
+		// 	w.hovering()
+		// }),
+		// doodad.NewMouseMovedWithoutReaction(w, func(mm doodad.MouseMoved) {
+		// 	w.stoppedHovering()
+		// }),
+		reaction.NewMouseUpReaction(
+			doodad.MouseMovedWithin[reaction.MouseUpEvent](w),
+			func(event reaction.MouseUpEvent) {
+				w.OnClick(w)
+			},
+		),
+		reaction.NewMouseMovedReaction(
+			doodad.MouseMovedWithin[reaction.MouseMovedEvent](w),
+			func(event reaction.MouseMovedEvent) {
+				w.hovering()
+			},
+		),
+		reaction.NewMouseMovedReaction(
+			doodad.MouseMovedOutside[reaction.MouseMovedEvent](w),
+			func(event reaction.MouseMovedEvent) {
+				w.stoppedHovering()
+			},
+		),
 	)
 }
 

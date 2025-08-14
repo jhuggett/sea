@@ -6,7 +6,6 @@ import (
 	"design-library/reaction"
 
 	"image/color"
-	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -171,13 +170,25 @@ func (s *Stack) Setup() {
 		previousChild = child
 
 		s.Reactions().Add(
-			reaction.NewReaction[reaction.MouseMoved](
-				reaction.MouseMove,
-				func(mm reaction.MouseMoved) bool {
-					return true
+			// reaction.NewReaction[reaction.MouseMoved](
+			// 	reaction.MouseMove,
+			// 	func(mm reaction.MouseMoved) bool {
+			// 		return true
+			// 	},
+			// 	func(mm reaction.MouseMoved) error {
+			// 		return nil
+			// 	},
+			// ),
+			reaction.NewMouseMovedReaction(
+				doodad.MouseMovedWithin[reaction.MouseMovedEvent](child),
+				func(event reaction.MouseMovedEvent) {
+					// child.hovering()
 				},
-				func(mm reaction.MouseMoved) error {
-					return nil
+			),
+			reaction.NewMouseMovedReaction(
+				doodad.MouseMovedOutside[reaction.MouseMovedEvent](child),
+				func(event reaction.MouseMovedEvent) {
+					// child.stoppedHovering()
 				},
 			),
 		)
@@ -213,31 +224,31 @@ func (s *Stack) Draw(screen *ebiten.Image) {
 	s.Children().Draw(screen)
 }
 
-func (w *Stack) Gestures(gesturer doodad.Gesturer) []func() {
+// func (w *Stack) Gestures(gesturer doodad.Gesturer) []func() {
 
-	slog.Info("Gestures for Stack", "type", w.Type, "box", w.Box)
+// 	slog.Info("Gestures for Stack", "type", w.Type, "box", w.Box)
 
-	withinBounds := func(x, y int) bool {
-		return x >= w.Box.X() && x <= w.Box.X()+w.Box.Width() &&
-			y >= w.Box.Y() && y <= w.Box.Y()+w.Box.Height()
-	}
+// 	withinBounds := func(x, y int) bool {
+// 		return x >= w.Box.X() && x <= w.Box.X()+w.Box.Width() &&
+// 			y >= w.Box.Y() && y <= w.Box.Y()+w.Box.Height()
+// 	}
 
-	return []func(){
-		gesturer.OnMouseMove(func(x, y int) error {
-			if withinBounds(x, y) {
-				return doodad.ErrStopPropagation
-			}
-			return nil
-		}),
-		gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
-			if event.Button != ebiten.MouseButtonLeft {
-				return nil
-			}
-			x, y := event.X, event.Y
-			if withinBounds(x, y) {
-				return doodad.ErrStopPropagation
-			}
-			return nil
-		}),
-	}
-}
+// 	return []func(){
+// 		gesturer.OnMouseMove(func(x, y int) error {
+// 			if withinBounds(x, y) {
+// 				return doodad.ErrStopPropagation
+// 			}
+// 			return nil
+// 		}),
+// 		gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
+// 			if event.Button != ebiten.MouseButtonLeft {
+// 				return nil
+// 			}
+// 			x, y := event.X, event.Y
+// 			if withinBounds(x, y) {
+// 				return doodad.ErrStopPropagation
+// 			}
+// 			return nil
+// 		}),
+// 	}
+// }

@@ -4,6 +4,7 @@ import (
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
+	"design-library/reaction"
 	"fmt"
 	"image/color"
 	"time"
@@ -175,23 +176,23 @@ func (w *WorldMapPage) LoadRequiredData() error {
 	gameManager := game.NewManager(w.GameSnapshot)
 	gameManager.SetTileSize(int(w.Camera.TileSize))
 
-	w.Gesturer().OnMouseDrag(func(lastX, lastY, currentX, currentY int) error {
-		w.Camera.Position[0] += float64(lastX-currentX) / w.Camera.ZoomFactor
-		w.Camera.Position[1] += float64(lastY-currentY) / w.Camera.ZoomFactor
-		return nil
-	})
+	// w.Gesturer().OnMouseDrag(func(lastX, lastY, currentX, currentY int) error {
+	// 	w.Camera.Position[0] += float64(lastX-currentX) / w.Camera.ZoomFactor
+	// 	w.Camera.Position[1] += float64(lastY-currentY) / w.Camera.ZoomFactor
+	// 	return nil
+	// })
 
-	w.Gesturer().OnMouseWheel(func(offset float64) error {
-		if offset > 0 {
-			w.Camera.ZoomFactor += 0.1
-		} else {
-			w.Camera.ZoomFactor -= 0.1
-			if w.Camera.ZoomFactor < 0.1 {
-				w.Camera.ZoomFactor = 0.1
-			}
-		}
-		return nil
-	})
+	// w.Gesturer().OnMouseWheel(func(offset float64) error {
+	// 	if offset > 0 {
+	// 		w.Camera.ZoomFactor += 0.1
+	// 	} else {
+	// 		w.Camera.ZoomFactor -= 0.1
+	// 		if w.Camera.ZoomFactor < 0.1 {
+	// 			w.Camera.ZoomFactor = 0.1
+	// 		}
+	// 	}
+	// 	return nil
+	// })
 
 	err := gameManager.Start()
 	if err != nil {
@@ -258,16 +259,58 @@ func (w *WorldMapPage) SetupMainScreen() {
 	})
 	pauseMenu.Hide()
 
-	w.Gesturer().OnKeyDown(func(key ebiten.Key) error {
-		if key == ebiten.KeyEscape {
-			if !pauseMenu.IsVisible() {
-				pauseMenu.Show()
-			} else {
-				pauseMenu.Hide()
-			}
-		}
-		return nil
-	})
+	// w.Gesturer().OnKeyDown(func(key ebiten.Key) error {
+	// 	if key == ebiten.KeyEscape {
+	// 		if !pauseMenu.IsVisible() {
+	// 			pauseMenu.Show()
+	// 		} else {
+	// 			pauseMenu.Hide()
+	// 		}
+	// 	}
+	// 	return nil
+	// })
+
+	w.Reactions().Add(
+		reaction.NewMouseDragReaction(
+			func(event reaction.OnMouseDragEvent) bool {
+				return true
+			},
+			func(event reaction.OnMouseDragEvent) {
+				w.Camera.Position[0] += float64(event.StartX-event.X) / w.Camera.ZoomFactor
+				w.Camera.Position[1] += float64(event.StartY-event.Y) / w.Camera.ZoomFactor
+			},
+		),
+		reaction.NewMouseWheelReaction(
+			func(event reaction.MouseWheelEvent) bool {
+				return true
+			},
+			func(event reaction.MouseWheelEvent) {
+				if event.YOffset > 0 {
+					w.Camera.ZoomFactor += 0.1
+				} else {
+					w.Camera.ZoomFactor -= 0.1
+					if w.Camera.ZoomFactor < 0.1 {
+						w.Camera.ZoomFactor = 0.1
+					}
+				}
+			},
+		),
+		reaction.NewKeyDownReaction(
+			func(event reaction.KeyDownEvent) bool {
+				return true
+			},
+			func(event reaction.KeyDownEvent) {
+				if event.Key == ebiten.KeyEscape {
+					if !pauseMenu.IsVisible() {
+						pauseMenu.Show()
+					} else {
+						pauseMenu.Hide()
+					}
+				}
+			},
+		),
+	)
+	w.Reactions().Register(w.Gesturer())
 
 	w.Children().Setup()
 }

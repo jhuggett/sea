@@ -17,7 +17,7 @@ type basicEvent[T any] struct {
 type basicReaction[T any] struct {
 	Type      ReactionType
 	Condition func(T) bool
-	Callback  func(T) error
+	Callback  func(T)
 	Enabled   bool
 
 	unregister func()
@@ -34,7 +34,8 @@ func (r *basicReaction[T]) PerformCallback(t T) error {
 	if r.Callback == nil {
 		return nil
 	}
-	return r.Callback(t)
+	r.Callback(t)
+	return nil
 }
 
 func (r *basicReaction[T]) TryPerform(event *Event, data any) error {
@@ -109,7 +110,7 @@ func (r *Reactions) Unregister() {
 func NewReaction[T any](
 	reactionType ReactionType,
 	condition func(T) bool,
-	callback func(T) error,
+	callback func(T),
 ) Reaction {
 	return &basicReaction[T]{
 		Type:      reactionType,
