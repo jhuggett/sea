@@ -74,6 +74,11 @@ func (w *RouteDoodad) Setup() {
 					return
 				}
 
+				if w.Ship.IsRouteActive() {
+					slog.Info("RouteDoodad.OnClick: Ship already has an active route")
+					return
+				}
+
 				x, y := mm.X, mm.Y
 				fmt.Println("RouteDoodad.OnClick", x, y)
 
@@ -95,14 +100,6 @@ func (w *RouteDoodad) Setup() {
 
 				scale, _ := w.SpaceTranslator.TileSize()
 				w.img = ebiten.NewImage(Box(route.Points, float64(scale)))
-
-				// For Debugging
-				// w.img.Fill(color.RGBA{
-				// 	R: 0,
-				// 	G: 100,
-				// 	B: 0,
-				// 	A: 125,
-				// })
 
 				tileSize, _ := w.SpaceTranslator.TileSize()
 				smallestX, smallestY := 0.0, 0.0

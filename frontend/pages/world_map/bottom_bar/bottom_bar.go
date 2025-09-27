@@ -29,21 +29,45 @@ type BottomBar struct {
 
 func (b *BottomBar) Setup() {
 
+	var activePanel string
+
 	shipInfoPanelButton := button.New(button.Config{
 		OnClick: func(bb *button.Button) {
-			if b.panel.IsVisible() {
+			if b.panel.IsVisible() && activePanel == "ship-info" {
 				b.panel.Hide()
 				bb.SetMessage("Ship Info")
+				activePanel = ""
 			} else {
 				b.panel.Show()
 				b.panel.SetContents([]doodad.Doodad{
 					NewShipInfoPanel(b.Manager),
 				})
 				bb.SetMessage("[Ship Info]")
+				activePanel = "ship-info"
 			}
 		},
 		Config: label.Config{
 			Message: "Ship Info",
+		},
+	})
+
+	shipInventoryPanelButton := button.New(button.Config{
+		OnClick: func(bb *button.Button) {
+			if b.panel.IsVisible() && activePanel == "inventory" {
+				b.panel.Hide()
+				bb.SetMessage("Inventory")
+				activePanel = ""
+			} else {
+				b.panel.Show()
+				b.panel.SetContents([]doodad.Doodad{
+					NewShipInventoryPanel(b.Manager),
+				})
+				bb.SetMessage("[Inventory]")
+				activePanel = "inventory"
+			}
+		},
+		Config: label.Config{
+			Message: "Inventory",
 		},
 	})
 
@@ -53,6 +77,7 @@ func (b *BottomBar) Setup() {
 			b,
 			[]doodad.Doodad{
 				shipInfoPanelButton,
+				shipInventoryPanelButton,
 			},
 		),
 		Layout: box.Computed(func(bb *box.Box) {

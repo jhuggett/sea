@@ -22,10 +22,15 @@ func (s *Ship) Location() inbound.Point {
 
 type ShipRoute struct {
 	Points []inbound.Coordinate
+	Active bool
 }
 
 func (s *Ship) HasRoute() bool {
 	return s.route != nil && len(s.route.Points) > 0
+}
+
+func (s *Ship) IsRouteActive() bool {
+	return s.route != nil && s.route.Active
 }
 
 func (s *Ship) PlotRoute(x, y int) (*ShipRoute, error) {
@@ -59,6 +64,8 @@ func (s *Ship) SetSail() (*inbound.MoveShipResp, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to move ship: %w", err)
 	}
+
+	s.route.Active = true
 
 	return resp, nil
 }

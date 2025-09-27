@@ -15,6 +15,7 @@ import (
 type OnTimeChangedCallback func(outbound.TimeChangedReq) error
 type OnShipChangedCallback func(outbound.ShipChangedReq) error
 type OnShipMovedCallback func(outbound.ShipMovedReq) error
+type OnShipInventoryChangedCallback func(outbound.ShipInventoryChangedReq) error
 type Manager struct {
 	PlayerShip *Ship
 	WorldMap   *WorldMap
@@ -24,19 +25,21 @@ type Manager struct {
 
 	tileSize int
 
-	OnTimeChangedCallback callback.CallbackRegistry[OnTimeChangedCallback]
-	OnShipChangedCallback callback.CallbackRegistry[OnShipChangedCallback]
-	OnShipMovedCallback   callback.CallbackRegistry[OnShipMovedCallback]
+	OnTimeChangedCallback          callback.CallbackRegistry[OnTimeChangedCallback]
+	OnShipChangedCallback          callback.CallbackRegistry[OnShipChangedCallback]
+	OnShipMovedCallback            callback.CallbackRegistry[OnShipMovedCallback]
+	OnShipInventoryChangedCallback callback.CallbackRegistry[OnShipInventoryChangedCallback]
 
 	LastTimeChangedReq outbound.TimeChangedReq
 }
 
 func NewManager(snapshot *game_context.Snapshot) *Manager {
 	return &Manager{
-		Snapshot:              snapshot,
-		OnTimeChangedCallback: callback.CallbackRegistry[OnTimeChangedCallback]{},
-		OnShipChangedCallback: callback.CallbackRegistry[OnShipChangedCallback]{},
-		OnShipMovedCallback:   callback.CallbackRegistry[OnShipMovedCallback]{},
+		Snapshot:                       snapshot,
+		OnTimeChangedCallback:          callback.CallbackRegistry[OnTimeChangedCallback]{},
+		OnShipChangedCallback:          callback.CallbackRegistry[OnShipChangedCallback]{},
+		OnShipMovedCallback:            callback.CallbackRegistry[OnShipMovedCallback]{},
+		OnShipInventoryChangedCallback: callback.CallbackRegistry[OnShipInventoryChangedCallback]{},
 	}
 }
 
@@ -77,6 +80,11 @@ func (m *Manager) Start() error {
 			},
 			OnShipInventoryChanged: func(sicr outbound.ShipInventoryChangedReq) (outbound.ShipInventoryChangedResp, error) {
 				slog.Info("ShipInventoryChanged called", "req", sicr)
+
+				m.OnShipInventoryChangedCallback.InvokeEndToStart(func(osicc OnShipInventoryChangedCallback) error {
+					return osicc(sicr)
+				})
+
 				return outbound.ShipInventoryChangedResp{}, nil
 			},
 			OnShipChanged: func(scr outbound.ShipChangedReq) (outbound.ShipChangedResp, error) {
