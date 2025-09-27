@@ -3,6 +3,7 @@ package reaction
 import (
 	"log/slog"
 	"math"
+	"sort"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -23,14 +24,24 @@ type gesturer struct {
 	Press  *Press
 }
 
-func (g *gesturer) Register(reaction Reaction) func() {
+func (g *gesturer) Register(reaction Reaction, atDepth int) func() {
 	if g.events == nil {
 		g.events = make(map[ReactionType][]Reaction)
 	}
 	if g.events[reaction.ReactionType()] == nil {
 		g.events[reaction.ReactionType()] = []Reaction{}
 	}
+
+	// g.events[reaction.ReactionType()] = append(g.events[reaction.ReactionType()], reaction)
+
+	reaction.SetDepth(atDepth)
+
 	g.events[reaction.ReactionType()] = append(g.events[reaction.ReactionType()], reaction)
+	reactions := g.events[reaction.ReactionType()]
+	sort.SliceStable(reactions, func(i, j int) bool {
+		return reactions[i].Depth() < reactions[j].Depth()
+	})
+	g.events[reaction.ReactionType()] = reactions
 
 	return func() {
 		for i, r := range g.events[reaction.ReactionType()] {
@@ -47,14 +58,25 @@ type Event struct {
 }
 
 func (e *Event) StopPropagation() {
+	if e == nil {
+		return
+	}
 	e.stopPropagation = true
 }
 
-func (g *gesturer) trigger(reactionType ReactionType, data any) {
+type Eventable interface {
+	setEvent(*Event)
+}
+
+func (g *gesturer) trigger(reactionType ReactionType, data Eventable) {
 	event := &Event{}
 
 	if reactions, ok := g.events[reactionType]; ok {
-		for _, reaction := range reactions {
+		for i := len(reactions) - 1; i >= 0; i-- {
+			reaction := reactions[i]
+
+			data.setEvent(event)
+
 			if event.stopPropagation {
 				return
 			}
@@ -70,7 +92,9 @@ type ReactionType string
 
 type Gesturer interface {
 	Update()
-	Register(reaction Reaction) func()
+	Register(reaction Reaction, atDepth int) func()
+
+	CurrentMouseLocation() (int, int)
 }
 
 func NewGesturer() *gesturer {
@@ -86,18 +110,22 @@ func NewGesturer() *gesturer {
 // 	Button ebiten.MouseButton
 // }
 
+func (g *gesturer) CurrentMouseLocation() (int, int) {
+	return g.MouseX, g.MouseY
+}
+
 func (g *gesturer) Update() {
 	x, y := ebiten.CursorPosition()
 
 	// Keydown events
 	for _, key := range inpututil.AppendJustPressedKeys(nil) {
-		g.trigger(KeyDown, KeyDownEvent{
+		g.trigger(KeyDown, &KeyDownEvent{
 			Key: key,
 		})
 	}
 
 	if x != g.MouseX || y != g.MouseY {
-		g.trigger(MouseMoved, MouseMovedEvent{X: x, Y: y})
+		g.trigger(MouseMoved, &MouseMovedEvent{X: x, Y: y})
 	}
 
 	g.MouseX = x
@@ -105,7 +133,11 @@ func (g *gesturer) Update() {
 
 	_, yoff := ebiten.Wheel()
 	if yoff != 0 {
-		g.trigger(MouseWheel, MouseWheelEvent{YOffset: yoff})
+		g.trigger(MouseWheel, &MouseWheelEvent{
+			YOffset: yoff,
+			OriginX: x,
+			OriginY: y,
+		})
 	}
 
 	var pressedMouseButton ebiten.MouseButton = -1
@@ -131,11 +163,13 @@ func (g *gesturer) Update() {
 
 		if time.Since(g.Press.TimeStart) > 100*time.Millisecond || (math.Abs(float64(g.Press.StartX-x)) > 25 || math.Abs(float64(g.Press.StartY-y)) > 25) {
 			if g.Press.X != x || g.Press.Y != y {
-				g.trigger(MouseDrag, OnMouseDragEvent{
-					StartX:    g.Press.StartX,
-					StartY:    g.Press.StartY,
+				g.trigger(MouseDrag, &OnMouseDragEvent{
+					StartX:    g.Press.X,
+					StartY:    g.Press.Y,
 					X:         x,
 					Y:         y,
+					OrignX:    g.Press.StartX,
+					OrignY:    g.Press.StartY,
 					TimeStart: g.Press.TimeStart,
 					Button:    g.Press.Button,
 				})
@@ -148,7 +182,7 @@ func (g *gesturer) Update() {
 	} else {
 		if g.Press != nil {
 			if time.Since(g.Press.TimeStart) < 100*time.Millisecond || (math.Abs(float64(g.Press.StartX-g.Press.X)) < 8 && math.Abs(float64(g.Press.StartY-g.Press.Y)) < 8) {
-				g.trigger(MouseUp, MouseUpEvent{
+				g.trigger(MouseUp, &MouseUpEvent{
 					X:      g.Press.X,
 					Y:      g.Press.Y,
 					Button: g.Press.Button,

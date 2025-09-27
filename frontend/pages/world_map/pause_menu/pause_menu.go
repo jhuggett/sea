@@ -22,6 +22,16 @@ type PauseMenu struct {
 }
 
 func (w *PauseMenu) Setup() {
+
+	// Root panel catches all mouse input
+	rootPanel := stack.New(stack.Config{
+		Layout: box.Computed(func(b *box.Box) {
+			b.Copy(w.Box)
+		}),
+	})
+
+	w.AddChild(rootPanel)
+
 	panelChildren := doodad.NewChildren(
 		w,
 		[]doodad.Doodad{
@@ -53,7 +63,8 @@ func (w *PauseMenu) Setup() {
 		Type:     stack.Vertical,
 		Layout: box.Computed(func(b *box.Box) {
 			boundingBox := box.Bounding(panelChildren.Boxes())
-			b.CopyDimensionsOf(boundingBox).CenterWithin(w.Box)
+			b.CopyDimensionsOf(boundingBox)
+			// b.CenterWithin(rootPanel.Layout())
 		}),
 
 		BackgroundColor: colors.Panel,
@@ -62,13 +73,17 @@ func (w *PauseMenu) Setup() {
 			Top:    20,
 			Bottom: 20,
 			Left:   20,
-			Right:  20,
+			Right:  40,
 		},
 	})
 
 	w.AddChild(panel)
 
 	w.Children().Setup()
+
+	panel.Box.Computed(func(b *box.Box) {
+		b.CenterWithin(rootPanel.Layout())
+	})
 }
 
 func (w *PauseMenu) Draw(screen *ebiten.Image) {

@@ -7,7 +7,9 @@ import (
 
 // String implements the Stringer interface for pretty printing a Box
 func (b *Box) String() string {
-	return b.prettyPrint(0, map[*Box]bool{})
+	// return b.prettyPrint(0, map[*Box]bool{})
+
+	return ""
 }
 
 // prettyPrint returns a formatted string representation of the Box with indentation and colors

@@ -80,6 +80,11 @@ type Stack struct {
 	background *ebiten.Image
 }
 
+/*
+  - Warning: when setup is called, we reposition all children!!!
+    This means that if you want to apply changes to the child of a stack, you
+    should call setup first, otherwise the changes will be discarded.
+*/
 func (s *Stack) Setup() {
 	if s.Config.Type != Horizontal && s.Type != Vertical {
 		s.Type = Vertical // Default to vertical if an invalid type is provided
@@ -169,30 +174,39 @@ func (s *Stack) Setup() {
 		}
 		previousChild = child
 
-		s.Reactions().Add(
-			// reaction.NewReaction[reaction.MouseMoved](
-			// 	reaction.MouseMove,
-			// 	func(mm reaction.MouseMoved) bool {
-			// 		return true
-			// 	},
-			// 	func(mm reaction.MouseMoved) error {
-			// 		return nil
-			// 	},
-			// ),
-			reaction.NewMouseMovedReaction(
-				doodad.MouseMovedWithin[reaction.MouseMovedEvent](child),
-				func(event reaction.MouseMovedEvent) {
-					// child.hovering()
-				},
-			),
-			reaction.NewMouseMovedReaction(
-				doodad.MouseMovedOutside[reaction.MouseMovedEvent](child),
-				func(event reaction.MouseMovedEvent) {
-					// child.stoppedHovering()
-				},
-			),
-		)
 	}
+
+	s.Reactions().Add(
+		reaction.NewMouseMovedReaction(
+			doodad.MouseMovedWithin[*reaction.MouseMovedEvent](s),
+			func(event *reaction.MouseMovedEvent) {
+				event.StopPropagation()
+			},
+		),
+		reaction.NewMouseMovedReaction(
+			doodad.MouseMovedOutside[*reaction.MouseMovedEvent](s),
+			func(event *reaction.MouseMovedEvent) {
+			},
+		),
+		reaction.NewMouseUpReaction(
+			doodad.MouseMovedWithin[*reaction.MouseUpEvent](s),
+			func(event *reaction.MouseUpEvent) {
+				event.StopPropagation()
+			},
+		),
+		reaction.NewMouseDragReaction(
+			doodad.MouseMovedWithin[*reaction.OnMouseDragEvent](s),
+			func(event *reaction.OnMouseDragEvent) {
+				event.StopPropagation()
+			},
+		),
+		reaction.NewMouseWheelReaction(
+			doodad.MouseMovedWithin[*reaction.MouseWheelEvent](s),
+			func(event *reaction.MouseWheelEvent) {
+				event.StopPropagation()
+			},
+		),
+	)
 
 	if s.BackgroundColor != nil && s.Box.Width() > 0 && s.Box.Height() > 0 {
 		s.background = ebiten.NewImage(s.Box.Width(), s.Box.Height())
@@ -223,32 +237,3 @@ func (s *Stack) Draw(screen *ebiten.Image) {
 
 	s.Children().Draw(screen)
 }
-
-// func (w *Stack) Gestures(gesturer doodad.Gesturer) []func() {
-
-// 	slog.Info("Gestures for Stack", "type", w.Type, "box", w.Box)
-
-// 	withinBounds := func(x, y int) bool {
-// 		return x >= w.Box.X() && x <= w.Box.X()+w.Box.Width() &&
-// 			y >= w.Box.Y() && y <= w.Box.Y()+w.Box.Height()
-// 	}
-
-// 	return []func(){
-// 		gesturer.OnMouseMove(func(x, y int) error {
-// 			if withinBounds(x, y) {
-// 				return doodad.ErrStopPropagation
-// 			}
-// 			return nil
-// 		}),
-// 		gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
-// 			if event.Button != ebiten.MouseButtonLeft {
-// 				return nil
-// 			}
-// 			x, y := event.X, event.Y
-// 			if withinBounds(x, y) {
-// 				return doodad.ErrStopPropagation
-// 			}
-// 			return nil
-// 		}),
-// 	}
-// }

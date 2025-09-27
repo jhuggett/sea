@@ -13,13 +13,18 @@ const (
 type MouseDownEvent struct {
 	X, Y   int
 	Button ebiten.MouseButton
+	*Event
+}
+
+func (e *MouseDownEvent) setEvent(event *Event) {
+	e.Event = event
 }
 
 func NewMouseDownReaction(
-	condition func(event MouseDownEvent) bool,
-	callback func(event MouseDownEvent),
+	condition func(event *MouseDownEvent) bool,
+	callback func(event *MouseDownEvent),
 ) Reaction {
-	return NewReaction[MouseDownEvent](
+	return NewReaction[*MouseDownEvent](
 		MouseDown,
 		condition,
 		callback,
@@ -33,6 +38,11 @@ const (
 type MouseUpEvent struct {
 	X, Y   int
 	Button ebiten.MouseButton
+	*Event
+}
+
+func (e *MouseUpEvent) setEvent(event *Event) {
+	e.Event = event
 }
 
 func (e MouseUpEvent) XY() (int, int) {
@@ -40,10 +50,10 @@ func (e MouseUpEvent) XY() (int, int) {
 }
 
 func NewMouseUpReaction(
-	condition func(event MouseUpEvent) bool,
-	callback func(event MouseUpEvent),
+	condition func(event *MouseUpEvent) bool,
+	callback func(event *MouseUpEvent),
 ) Reaction {
-	return NewReaction[MouseUpEvent](
+	return NewReaction[*MouseUpEvent](
 		MouseUp,
 		condition,
 		callback,
@@ -56,6 +66,11 @@ const (
 
 type MouseMovedEvent struct {
 	X, Y int
+	*Event
+}
+
+func (e *MouseMovedEvent) setEvent(event *Event) {
+	e.Event = event
 }
 
 func (e MouseMovedEvent) XY() (int, int) {
@@ -67,10 +82,10 @@ type PositionedEvent interface {
 }
 
 func NewMouseMovedReaction(
-	condition func(event MouseMovedEvent) bool,
-	callback func(event MouseMovedEvent),
+	condition func(event *MouseMovedEvent) bool,
+	callback func(event *MouseMovedEvent),
 ) Reaction {
-	return NewReaction[MouseMovedEvent](
+	return NewReaction[*MouseMovedEvent](
 		MouseMoved,
 		condition,
 		callback,
@@ -82,17 +97,27 @@ func NewMouseMovedReaction(
 const MouseDrag ReactionType = "MouseDrag"
 
 type OnMouseDragEvent struct {
+	OrignX, OrignY int
 	StartX, StartY int
 	X, Y           int
 	TimeStart      time.Time
 	Button         ebiten.MouseButton
+	*Event
+}
+
+func (o *OnMouseDragEvent) XY() (int, int) {
+	return o.OrignX, o.OrignY
+}
+
+func (e *OnMouseDragEvent) setEvent(event *Event) {
+	e.Event = event
 }
 
 func NewMouseDragReaction(
-	condition func(event OnMouseDragEvent) bool,
-	callback func(event OnMouseDragEvent),
+	condition func(event *OnMouseDragEvent) bool,
+	callback func(event *OnMouseDragEvent),
 ) Reaction {
-	return NewReaction[OnMouseDragEvent](
+	return NewReaction[*OnMouseDragEvent](
 		MouseDrag,
 		condition,
 		callback,
@@ -104,14 +129,24 @@ func NewMouseDragReaction(
 const MouseWheel ReactionType = "MouseWheel"
 
 type MouseWheelEvent struct {
-	YOffset float64
+	OriginX, OriginY int
+	YOffset          float64
+	*Event
+}
+
+func (m *MouseWheelEvent) XY() (int, int) {
+	return m.OriginX, m.OriginY
+}
+
+func (e *MouseWheelEvent) setEvent(event *Event) {
+	e.Event = event
 }
 
 func NewMouseWheelReaction(
-	condition func(event MouseWheelEvent) bool,
-	callback func(event MouseWheelEvent),
+	condition func(event *MouseWheelEvent) bool,
+	callback func(event *MouseWheelEvent),
 ) Reaction {
-	return NewReaction[MouseWheelEvent](
+	return NewReaction[*MouseWheelEvent](
 		MouseWheel,
 		condition,
 		callback,

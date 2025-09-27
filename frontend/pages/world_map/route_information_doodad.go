@@ -24,6 +24,7 @@ func NewRouteInformationDoodad(
 	}
 
 	ship.Manager.OnShipMovedCallback.Add(func(smr outbound.ShipMovedReq) error {
+
 		return nil
 	})
 
@@ -41,22 +42,6 @@ type RouteInformationDoodad struct {
 }
 
 func (w *RouteInformationDoodad) Setup() {
-	// setSailButton, err := button.New(button.Config{
-	// 	Message: "Set Sail",
-	// 	OnClick: func() {
-	// 		_, err := w.Ship.SetSail()
-	// 		if err != nil {
-	// 			slog.Error("Failed to set sail", "error", err)
-	// 			return
-	// 		}
-	// 	},
-	// 	Gesturer: w.Gesturer,
-	// 	Position: doodad.ZeroZero,
-	// })
-	// if err != nil {
-	// 	slog.Error("Failed to create Set Sail button", "error", err)
-	// }
-	// w.Children.Add(setSailButton)
 
 	panelChildren := doodad.NewChildren(
 		w,
@@ -104,6 +89,10 @@ func (w *RouteInformationDoodad) Setup() {
 func (w *RouteInformationDoodad) Draw(screen *ebiten.Image) {
 	if !w.Ship.HasRoute() {
 		return
+	}
+
+	if !w.IsVisible() {
+		w.Show()
 	}
 
 	w.Children().Draw(screen)

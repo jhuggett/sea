@@ -113,22 +113,11 @@ type Ship struct {
 }
 
 type WorldMapPage struct {
-	// Children doodad.Children
-	// Gesturer doodad.Gesturer
-
 	Camera          *camera.Camera
 	SpaceTranslator SpaceTranslator
 
 	GameSnapshot *game_context.Snapshot
 	GameManager  *game.Manager
-
-	// TileSize float64
-
-	// Press *Press
-
-	// MouseLocationX, MouseLocationY int
-
-	// Width, Height int
 
 	doodad.Default
 
@@ -152,15 +141,6 @@ func (w *WorldMapPage) SetupLoadingScreen() {
 }
 
 func (w *WorldMapPage) LoadRequiredData() error {
-	// 	err := gameManager.Start()
-	// 	if err != nil {
-	// 		slog.Error("Failed to start game manager", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-
-	// 	worldMapDoodad.WorldMap = gameManager.WorldMap
-
 	w.Camera = &camera.Camera{
 		ViewPort:   f64.Vec2{float64(w.Box.Width()), float64(w.Box.Height())},
 		TileSize:   32,
@@ -176,24 +156,6 @@ func (w *WorldMapPage) LoadRequiredData() error {
 	gameManager := game.NewManager(w.GameSnapshot)
 	gameManager.SetTileSize(int(w.Camera.TileSize))
 
-	// w.Gesturer().OnMouseDrag(func(lastX, lastY, currentX, currentY int) error {
-	// 	w.Camera.Position[0] += float64(lastX-currentX) / w.Camera.ZoomFactor
-	// 	w.Camera.Position[1] += float64(lastY-currentY) / w.Camera.ZoomFactor
-	// 	return nil
-	// })
-
-	// w.Gesturer().OnMouseWheel(func(offset float64) error {
-	// 	if offset > 0 {
-	// 		w.Camera.ZoomFactor += 0.1
-	// 	} else {
-	// 		w.Camera.ZoomFactor -= 0.1
-	// 		if w.Camera.ZoomFactor < 0.1 {
-	// 			w.Camera.ZoomFactor = 0.1
-	// 		}
-	// 	}
-	// 	return nil
-	// })
-
 	err := gameManager.Start()
 	if err != nil {
 		return fmt.Errorf("failed to start game manager: %w", err)
@@ -206,12 +168,6 @@ func (w *WorldMapPage) LoadRequiredData() error {
 }
 
 func (w *WorldMapPage) SetupMainScreen() {
-
-	// worldMapDoodad := &WorldMapDoodad{
-	// 	SpaceTranslator: p.SpaceTranslator,
-	// 	Gesturer:        p.Gesturer,
-	// }
-
 	worldMapDoodad := NewWorldMapDoodad(
 		w.GameManager.WorldMap,
 		w.SpaceTranslator,
@@ -224,6 +180,10 @@ func (w *WorldMapPage) SetupMainScreen() {
 	w.AddChild(NewPlayerShipDoodad(
 		w.GameManager,
 		w.Camera,
+	))
+
+	w.AddChild(NewTileInformationDoodad(
+		w.SpaceTranslator,
 	))
 
 	w.AddChild(NewCursorDoodad(
@@ -245,46 +205,47 @@ func (w *WorldMapPage) SetupMainScreen() {
 
 	bottomBar := bottom_bar.NewBottomBar(w.GameManager)
 	w.AddChild(bottomBar)
-	w.AddChild(NewRouteInformationDoodad(
+
+	routeInfoDoodad := NewRouteInformationDoodad(
 		w.GameManager.PlayerShip,
 		func(b *box.Box) {
-			b.MoveAbove(bottomBar.Box).MoveUp(40).CenterHorizontallyWithin(w.Box)
+			b.MoveAbove(bottomBar.Box).MoveDown(100).CenterHorizontallyWithin(w.Box)
 		},
-	))
+	)
+
+	w.AddChild(routeInfoDoodad)
+	routeInfoDoodad.Hide()
 
 	pauseMenu := pause_menu.NewPauseMenu()
 	w.AddChild(pauseMenu)
 	pauseMenu.Layout().Computed(func(b *box.Box) {
+
 		b.Copy(w.Box)
 	})
 	pauseMenu.Hide()
 
-	// w.Gesturer().OnKeyDown(func(key ebiten.Key) error {
-	// 	if key == ebiten.KeyEscape {
-	// 		if !pauseMenu.IsVisible() {
-	// 			pauseMenu.Show()
-	// 		} else {
-	// 			pauseMenu.Hide()
-	// 		}
-	// 	}
-	// 	return nil
-	// })
-
 	w.Reactions().Add(
 		reaction.NewMouseDragReaction(
-			func(event reaction.OnMouseDragEvent) bool {
+			func(event *reaction.OnMouseDragEvent) bool {
 				return true
 			},
-			func(event reaction.OnMouseDragEvent) {
+			func(event *reaction.OnMouseDragEvent) {
 				w.Camera.Position[0] += float64(event.StartX-event.X) / w.Camera.ZoomFactor
 				w.Camera.Position[1] += float64(event.StartY-event.Y) / w.Camera.ZoomFactor
 			},
 		),
 		reaction.NewMouseWheelReaction(
-			func(event reaction.MouseWheelEvent) bool {
+			func(event *reaction.MouseWheelEvent) bool {
 				return true
 			},
-			func(event reaction.MouseWheelEvent) {
+			func(event *reaction.MouseWheelEvent) {
+				mouseX, mouseY := w.Gesturer().CurrentMouseLocation()
+
+				// Convert mouse position to world coordinates before zoom
+				worldX := (float64(mouseX) / w.Camera.ZoomFactor) + w.Camera.Position[0]
+				worldY := (float64(mouseY) / w.Camera.ZoomFactor) + w.Camera.Position[1]
+
+				// oldZoom := w.Camera.ZoomFactor
 				if event.YOffset > 0 {
 					w.Camera.ZoomFactor += 0.1
 				} else {
@@ -293,13 +254,18 @@ func (w *WorldMapPage) SetupMainScreen() {
 						w.Camera.ZoomFactor = 0.1
 					}
 				}
+				newZoom := w.Camera.ZoomFactor
+
+				// Adjust camera position so the world point under the mouse stays under the mouse
+				w.Camera.Position[0] = worldX - float64(mouseX)/newZoom
+				w.Camera.Position[1] = worldY - float64(mouseY)/newZoom
 			},
 		),
 		reaction.NewKeyDownReaction(
-			func(event reaction.KeyDownEvent) bool {
+			func(event *reaction.KeyDownEvent) bool {
 				return true
 			},
-			func(event reaction.KeyDownEvent) {
+			func(event *reaction.KeyDownEvent) {
 				if event.Key == ebiten.KeyEscape {
 					if !pauseMenu.IsVisible() {
 						pauseMenu.Show()
@@ -310,7 +276,7 @@ func (w *WorldMapPage) SetupMainScreen() {
 			},
 		),
 	)
-	w.Reactions().Register(w.Gesturer())
+	w.Reactions().Register(w.Gesturer(), w.Z())
 
 	w.Children().Setup()
 }
@@ -342,185 +308,6 @@ func New(snapshot *game_context.Snapshot) *WorldMapPage {
 	p := &WorldMapPage{
 		GameSnapshot: snapshot,
 	}
-
-	// p := &WorldMapPage{
-	// 	Camera: &Camera{
-	// 		ViewPort:   f64.Vec2{800, 500},
-	// 		TileSize:   32,
-	// 		Position:   f64.Vec2{0, 0},
-	// 		ZoomFactor: 1,
-	// 	},
-	// 	TileSize: 32,
-	// }
-
-	// p.SpaceTranslator = &spaceTranslator{
-	// 	camera:   p.Camera,
-	// 	tileSize: p.TileSize,
-	// }
-
-	// p.Gesturer = doodad.NewGesturer()
-
-	// gameManager := game.NewManager(snapshot)
-
-	// gameManager.SetTileSize(32)
-
-	// worldMapDoodad := &WorldMapDoodad{
-	// 	SpaceTranslator: p.SpaceTranslator,
-	// 	Gesturer:        p.Gesturer,
-	// }
-
-	// loadingDoodad := &LoadingDoodad{}
-
-	// p.Children = doodad.Children{}
-	// p.Children.Add(loadingDoodad)
-
-	// loadingDoodad.Setup()
-	// loadingDoodad.SetMessage("Loading world map...")
-	// loadingDoodad.Show()
-
-	// p.Gesturer.OnMouseDrag(func(lastX, lastY, currentX, currentY int) error {
-	// 	p.Camera.Position[0] += float64(lastX-currentX) / p.Camera.ZoomFactor
-	// 	p.Camera.Position[1] += float64(lastY-currentY) / p.Camera.ZoomFactor
-	// 	return nil
-	// })
-
-	// p.Gesturer.OnMouseWheel(func(offset float64) error {
-	// 	if offset > 0 {
-	// 		p.Camera.ZoomFactor += 0.1
-	// 	} else {
-	// 		p.Camera.ZoomFactor -= 0.1
-	// 		if p.Camera.ZoomFactor < 0.1 {
-	// 			p.Camera.ZoomFactor = 0.1
-	// 		}
-	// 	}
-	// 	return nil
-	// })
-
-	// go func() {
-	// 	err := gameManager.Start()
-	// 	if err != nil {
-	// 		slog.Error("Failed to start game manager", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-
-	// 	worldMapDoodad.WorldMap = gameManager.WorldMap
-
-	// 	err = worldMapDoodad.Setup()
-	// 	if err != nil {
-	// 		slog.Error("Failed to setup world map doodad", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-
-	// 	err = p.Children.Clear()
-	// 	if err != nil {
-	// 		slog.Error("Failed to clear children", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-
-	// 	p.Children.Add(worldMapDoodad)
-
-	// 	// --- Ship
-
-	// 	shipDoodad := &ShipDoodad{
-	// 		Origin: func() (int, int) {
-	// 			return int(p.Camera.Position[0]), int(p.Camera.Position[1])
-	// 		},
-	// 		Scale: func() (float64, float64) {
-	// 			return p.Camera.ZoomFactor, p.Camera.ZoomFactor
-	// 		},
-	// 		Ship: gameManager.PlayerShip,
-	// 	}
-	// 	err = shipDoodad.Setup()
-	// 	if err != nil {
-	// 		slog.Error("Failed to setup ship doodad", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-	// 	p.Children.Add(shipDoodad)
-
-	// 	// --- Route Doodad
-
-	// 	routeDoodad := &RouteDoodad{
-	// 		SpaceTranslator: p.SpaceTranslator,
-	// 		Gesturer:        p.Gesturer,
-	// 		Ship:            gameManager.PlayerShip,
-	// 	}
-	// 	err = routeDoodad.Setup()
-	// 	if err != nil {
-	// 		slog.Error("Failed to setup route doodad", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-	// 	p.Children.Add(routeDoodad)
-
-	// 	// --- Cursor Doodad
-
-	// 	cursorDoodad := &CursorDoodad{
-	// 		Gesturer:        p.Gesturer,
-	// 		SpaceTranslator: p.SpaceTranslator,
-	// 	}
-	// 	err = cursorDoodad.Setup()
-	// 	if err != nil {
-	// 		slog.Error("Failed to setup cursor doodad", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-	// 	p.Children.Add(cursorDoodad)
-
-	// 	timeControlDoodad := &TimeControlDoodad{
-	// 		Gesturer: p.Gesturer,
-	// 		Manager:  gameManager,
-	// 		Position: func() doodad.Position {
-	// 			return doodad.Position{
-	// 				X: p.Width - 200,
-	// 				Y: 0,
-	// 			}
-	// 		},
-	// 	}
-	// 	err = timeControlDoodad.Setup()
-	// 	if err != nil {
-	// 		slog.Error("Failed to setup time control doodad", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-	// 	p.Children.Add(timeControlDoodad)
-
-	// 	tileInfoDoodad := &TileInformationDoodad{
-	// 		SpaceTranslator: p.SpaceTranslator,
-	// 		Gesturer:        p.Gesturer,
-
-	// 		HideTileCursor: func() {
-	// 			cursorDoodad.Hidden = true
-	// 		},
-	// 		ShowTileCursor: func() {
-	// 			cursorDoodad.Hidden = false
-	// 		},
-	// 	}
-	// 	err = tileInfoDoodad.Setup()
-	// 	if err != nil {
-	// 		slog.Error("Failed to setup tile info doodad", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-	// 	p.Children.Add(tileInfoDoodad)
-
-	// 	informationTabsDoodad := &InformationTabsDoodad{
-	// 		Gesturer: p.Gesturer,
-	// 		Manager:  gameManager,
-	// 		Position: doodad.ZeroZero,
-	// 	}
-	// 	err = informationTabsDoodad.Setup()
-	// 	if err != nil {
-	// 		slog.Error("Failed to setup information tabs doodad", "error", err)
-	// 		loadingDoodad.SetMessage("Failed to load world map")
-	// 		return
-	// 	}
-	// 	p.Children.Add(informationTabsDoodad)
-
-	// }()
 
 	return p
 }

@@ -127,14 +127,17 @@ func (s *ShipInfoPanel) Setup() {
 		},
 		Config: label.Config{
 			Message: "Repair Ship",
+			Layout:  box.Zeroed(),
 		},
 	})
-	s.AddChild(repairButton)
+	listStack.AddChild(repairButton)
 
 	s.Children().Setup()
 
 	repairButton.Layout().Computed(func(b *box.Box) {
-		b.AlignBottomWithin(s.Box).AlignRight(s.Box)
+		b.AlignRightWithin(s.Layout()).AlignBottomWithin(s.Layout())
 	})
 
+	// // Note: I'm not sure why calling Recalculate() here makes it work, worth investigating
+	// repairButton.Layout().Recalculate()
 }

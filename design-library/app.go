@@ -27,20 +27,20 @@ func NewApp(startup func(*App)) *App {
 	app.Reactions().Add(
 		reaction.NewKeyDownReaction(
 			reaction.SpecificKeyDown(ebiten.KeyD),
-			func(event reaction.KeyDownEvent) {
+			func(event *reaction.KeyDownEvent) {
 				app.Children().PrettyPrint(0)
 				fmt.Printf("App layout: %s\n", app.Default.Layout().String())
 			},
 		),
 		reaction.NewKeyDownReaction(
 			reaction.SpecificKeyDown(ebiten.KeyR),
-			func(event reaction.KeyDownEvent) {
+			func(event *reaction.KeyDownEvent) {
 				app.Default.Layout().Recalculate()
 				slog.Info("Recalculated layout")
 			},
 		),
 	)
-	app.Reactions().Register(app.Gesturer())
+	app.Reactions().Register(app.Gesturer(), app.Z())
 
 	// app.Gesturer().OnKeyDown(func(key ebiten.Key) error {
 	// 	if key == ebiten.KeyD {

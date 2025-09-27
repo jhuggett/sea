@@ -11,6 +11,9 @@ import (
 
 func MouseMovedWithin[T reaction.PositionedEvent](doodad Doodad) func(event T) bool {
 	return func(event T) bool {
+		if !doodad.IsVisible() {
+			return false
+		}
 		layout := doodad.Layout()
 		x, y := event.XY()
 		return x >= layout.X() && x <= layout.X()+layout.Width() &&
@@ -20,6 +23,10 @@ func MouseMovedWithin[T reaction.PositionedEvent](doodad Doodad) func(event T) b
 
 func MouseMovedOutside[T reaction.PositionedEvent](doodad Doodad) func(event T) bool {
 	return func(event T) bool {
+		if !doodad.IsVisible() {
+			return false
+		}
+
 		layout := doodad.Layout()
 		x, y := event.XY()
 		return x < layout.X() || x > layout.X()+layout.Width() ||
@@ -65,6 +72,9 @@ type Doodad interface {
 	Hide()
 	Show()
 	IsVisible() bool
+
+	Z() int
+	SetZ(z int)
 }
 
 type Children struct {
@@ -110,7 +120,7 @@ func (c *Children) Setup() {
 		// c.Doodads[ii].StoreUnregisterGestures(c.Doodads[i].Gestures(c.Parent.Gesturer())...)
 
 		c.Doodads[ii].Setup()
-		c.Doodads[ii].Reactions().Register(c.Doodads[ii].Gesturer())
+		c.Doodads[ii].Reactions().Register(c.Parent.Gesturer(), c.Doodads[ii].Z())
 	}
 }
 
@@ -124,6 +134,7 @@ func (c *Children) Teardown() error {
 			return err
 		}
 		doodad.Layout().ClearDependents()
+		doodad.Reactions().Unregister()
 	}
 	return nil
 }
@@ -150,8 +161,18 @@ type Default struct {
 
 	hidden bool
 
+	z int
+
 	// unregisterGestures []func()
 	// register           func()
+}
+
+func (t *Default) Z() int {
+	return t.z
+}
+
+func (t *Default) SetZ(z int) {
+	t.z = z
 }
 
 func (t *Default) Update() error {
@@ -221,9 +242,15 @@ func (t *Default) AddChild(doodads ...Doodad) {
 			doodad.SetReactions(&reaction.Reactions{})
 		}
 
+		doodad.SetZ(t.Z() + 1)
+
 		t.Children().add(doodad)
 		doodad.SetParent(t)
 		doodad.SetGesturer(t.Gesturer())
+
+		if !t.IsVisible() {
+			doodad.Hide()
+		}
 	}
 }
 

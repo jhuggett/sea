@@ -94,8 +94,8 @@ func (w *CursorDoodad) Setup() {
 		// 	w.MouseY = mm.Y
 		// }),
 		reaction.NewMouseMovedReaction(
-			doodad.MouseMovedWithin[reaction.MouseMovedEvent](w),
-			func(event reaction.MouseMovedEvent) {
+			doodad.MouseMovedWithin[*reaction.MouseMovedEvent](w),
+			func(event *reaction.MouseMovedEvent) {
 				w.MouseX, w.MouseY = event.XY()
 			},
 		),

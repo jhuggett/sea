@@ -25,8 +25,11 @@ func New(config Config) *Button {
 	if config.Layout != nil {
 		button.Box = config.Layout
 	} else {
-		button.Box = box.New(box.Config{})
+		// button.Box = box.New(box.Config{})
 	}
+
+	button.labelConfig.BackgroundColor = color.RGBA{50, 50, 50, 100}
+	button.labelConfig.Padding = label.Padding{Top: 5, Right: 10, Bottom: 5, Left: 10}
 
 	return button
 }
@@ -60,11 +63,11 @@ func (w *Button) Setup() {
 
 	w.showHoveringLabel = func() {
 		nonHoveredLabel.Config = label.Config{
-			BackgroundColor: w.labelConfig.BackgroundColor,
+			BackgroundColor: color.RGBA{50, 50, 50, 25},
 			ForegroundColor: color.RGBA{
-				R: 255,
-				G: 0,
-				B: 100,
+				R: 230,
+				G: 255,
+				B: 240,
 				A: 255,
 			},
 			Message:  w.message,
@@ -100,30 +103,23 @@ func (w *Button) Setup() {
 	})
 
 	w.Reactions().Add(
-		// doodad.NewMouseUpReaction(w, func(mue doodad.MouseUpEvent) {
-		// 	w.OnClick(w)
-		// }),
-		// doodad.NewMouseMovedWithinReaction(w, func(mm doodad.MouseMoved) {
-		// 	w.hovering()
-		// }),
-		// doodad.NewMouseMovedWithoutReaction(w, func(mm doodad.MouseMoved) {
-		// 	w.stoppedHovering()
-		// }),
 		reaction.NewMouseUpReaction(
-			doodad.MouseMovedWithin[reaction.MouseUpEvent](w),
-			func(event reaction.MouseUpEvent) {
+			doodad.MouseMovedWithin[*reaction.MouseUpEvent](w),
+			func(event *reaction.MouseUpEvent) {
 				w.OnClick(w)
+				event.StopPropagation()
 			},
 		),
 		reaction.NewMouseMovedReaction(
-			doodad.MouseMovedWithin[reaction.MouseMovedEvent](w),
-			func(event reaction.MouseMovedEvent) {
+			doodad.MouseMovedWithin[*reaction.MouseMovedEvent](w),
+			func(event *reaction.MouseMovedEvent) {
 				w.hovering()
+				event.StopPropagation()
 			},
 		),
 		reaction.NewMouseMovedReaction(
-			doodad.MouseMovedOutside[reaction.MouseMovedEvent](w),
-			func(event reaction.MouseMovedEvent) {
+			doodad.MouseMovedOutside[*reaction.MouseMovedEvent](w),
+			func(event *reaction.MouseMovedEvent) {
 				w.stoppedHovering()
 			},
 		),

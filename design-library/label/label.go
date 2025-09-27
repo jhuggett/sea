@@ -81,9 +81,9 @@ func (w *Label) Draw(screen *ebiten.Image) {
 }
 
 func (w *Label) Setup() {
-	if w.Config.Layout != nil {
-		w.Box = w.Config.Layout
-	}
+	// if w.Config.Layout != nil {
+	// 	w.Box = w.Config.Layout
+	// }
 
 	// if w.OriginalBox == nil { // this resets the box to the original box
 	// 	w.OriginalBox = w.Box

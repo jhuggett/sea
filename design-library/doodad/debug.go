@@ -22,8 +22,6 @@ func (c *Children) PrettyPrint(indent int) string {
 	if indent == 0 {
 		if c.Parent != nil {
 			parentType := fmt.Sprintf("%T", c.Parent)
-
-			// Get parent layout information (same format as children)
 			layout := c.Parent.Layout()
 			layoutInfo := ""
 			if layout != nil {
@@ -31,7 +29,6 @@ func (c *Children) PrettyPrint(indent int) string {
 					colorMagenta, layout.X(), layout.Y(), layout.Width(), layout.Height(), colorReset,
 					colorRed, layout, colorReset)
 			}
-
 			builder.WriteString(fmt.Sprintf("%sParent: %s%s%s %s\n",
 				colorBlue, colorGreen, parentType, colorReset, layoutInfo))
 		} else {
@@ -42,27 +39,37 @@ func (c *Children) PrettyPrint(indent int) string {
 
 	for i, doodad := range c.Doodads {
 		typeStr := fmt.Sprintf("%T", doodad)
-
-		// Get layout information
 		layout := doodad.Layout()
 		layoutInfo := ""
 		if layout != nil {
-			layoutInfo = fmt.Sprintf("%spos(%d,%d) size(%d×%d)%s %slayout(%p)%s",
-				colorMagenta, layout.X(), layout.Y(), layout.Width(), layout.Height(), colorReset,
+			layoutInfo = fmt.Sprintf("%spos(%d,%d,%d) size(%d×%d)%s %slayout(%p)%s",
+				colorMagenta, layout.X(), layout.Y(), doodad.Z(), layout.Width(), layout.Height(), colorReset,
 				colorRed, layout, colorReset)
 		}
 
-		// Add horizontal pipes for padding
+		// Print address of reactions and gesturer
+		reactionsAddr := ""
+		if doodad.Reactions() != nil {
+			reactionsAddr = fmt.Sprintf(" %sreactions(%p)%s", colorCyan, doodad.Reactions(), colorReset)
+		}
+		gesturerAddr := ""
+		if doodad.Gesturer() != nil {
+			gesturerAddr = fmt.Sprintf(" %sgesturer(%p)%s", colorYellow, doodad.Gesturer(), colorReset)
+		}
+
 		indentStr := prefix
 		if indent > 0 {
 			indentStr = strings.Repeat(colorBlue+"│ "+colorReset, indent-1) + colorBlue + "├─" + colorReset
 		}
 
-		builder.WriteString(fmt.Sprintf("%s %s%d%s: %s%s%s %s\n",
+		builder.WriteString(fmt.Sprintf("%s %s%d%s: %s%s%s %s%s%s\n",
 			indentStr,
 			colorYellow, i, colorReset,
 			colorGreen, typeStr, colorReset,
-			layoutInfo))
+			layoutInfo,
+			reactionsAddr,
+			gesturerAddr,
+		))
 
 		// Recursively print children
 		if doodad.Children() != nil && len(doodad.Children().Doodads) > 0 {

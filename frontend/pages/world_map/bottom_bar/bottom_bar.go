@@ -28,9 +28,6 @@ type BottomBar struct {
 }
 
 func (b *BottomBar) Setup() {
-	b.Box.Computed(func(bb *box.Box) {
-		bb.SetWidth(b.Parent().Layout().Width()).SetHeight(50).SetY(b.Parent().Layout().Height() - 50)
-	})
 
 	shipInfoPanelButton := button.New(button.Config{
 		OnClick: func(bb *button.Button) {
@@ -38,10 +35,10 @@ func (b *BottomBar) Setup() {
 				b.panel.Hide()
 				bb.SetMessage("Ship Info")
 			} else {
+				b.panel.Show()
 				b.panel.SetContents([]doodad.Doodad{
 					NewShipInfoPanel(b.Manager),
 				})
-				b.panel.Show()
 				bb.SetMessage("[Ship Info]")
 			}
 		},
@@ -59,7 +56,7 @@ func (b *BottomBar) Setup() {
 			},
 		),
 		Layout: box.Computed(func(bb *box.Box) {
-			bb.Copy(b.Box)
+			bb.SetWidth(b.Parent().Layout().Width()).SetHeight(50).SetY(b.Parent().Layout().Height() - 50)
 		}),
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
 	})
@@ -68,11 +65,12 @@ func (b *BottomBar) Setup() {
 
 	b.panel = NewPanel()
 	b.AddChild(b.panel)
+
+	b.Children().Setup()
+
 	b.panel.Layout().Computed(func(b *box.Box) {
 		b.SetWidth(450).SetHeight(250).MoveAbove(mainStack.Box).MoveUp(20)
 	})
 
 	b.panel.Hide()
-
-	b.Children().Setup()
 }

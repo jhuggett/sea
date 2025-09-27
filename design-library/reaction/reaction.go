@@ -9,6 +9,9 @@ type Reaction interface {
 	SetEnabled(enabled bool)
 
 	TryPerform(event *Event, data any) error
+
+	SetDepth(depth int)
+	Depth() int
 }
 
 type basicEvent[T any] struct {
@@ -21,6 +24,16 @@ type basicReaction[T any] struct {
 	Enabled   bool
 
 	unregister func()
+
+	depth int
+}
+
+func (r *basicReaction[T]) SetDepth(depth int) {
+	r.depth = depth
+}
+
+func (r *basicReaction[T]) Depth() int {
+	return r.depth
 }
 
 func (r *basicReaction[T]) MeetsCondition(t T) bool {
@@ -87,9 +100,9 @@ func (r *Reactions) Disable() {
 	}
 }
 
-func (r *Reactions) Register(gesturer Gesturer) {
+func (r *Reactions) Register(gesturer Gesturer, atDepth int) {
 	for _, r := range r.Reactions {
-		r.SetUnregister(gesturer.Register(r))
+		r.SetUnregister(gesturer.Register(r, atDepth))
 	}
 }
 
