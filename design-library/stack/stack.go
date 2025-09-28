@@ -32,6 +32,8 @@ type Config struct {
 	Padding      Padding
 
 	BackgroundColor color.Color
+
+	FitContents bool
 }
 
 func New(config Config) *Stack {
@@ -211,6 +213,14 @@ func (s *Stack) Setup() {
 	if s.BackgroundColor != nil && s.Box.Width() > 0 && s.Box.Height() > 0 {
 		s.background = ebiten.NewImage(s.Box.Width(), s.Box.Height())
 		s.background.Fill(s.BackgroundColor)
+	}
+
+	if s.Config.FitContents {
+		s.Layout().Computed(func(b *box.Box) {
+			bounding := box.Bounding(s.Children().Boxes())
+			b.SetWidth(bounding.Width() + s.Padding.Left + s.Padding.Right)
+			b.SetHeight(bounding.Height() + s.Padding.Top + s.Padding.Bottom)
+		})
 	}
 }
 

@@ -16,6 +16,7 @@ type OnTimeChangedCallback func(outbound.TimeChangedReq) error
 type OnShipChangedCallback func(outbound.ShipChangedReq) error
 type OnShipMovedCallback func(outbound.ShipMovedReq) error
 type OnShipInventoryChangedCallback func(outbound.ShipInventoryChangedReq) error
+type OnCrewInformationCallback func(outbound.CrewInformationReq) error
 type Manager struct {
 	PlayerShip *Ship
 	WorldMap   *WorldMap
@@ -29,6 +30,7 @@ type Manager struct {
 	OnShipChangedCallback          callback.CallbackRegistry[OnShipChangedCallback]
 	OnShipMovedCallback            callback.CallbackRegistry[OnShipMovedCallback]
 	OnShipInventoryChangedCallback callback.CallbackRegistry[OnShipInventoryChangedCallback]
+	OnCrewInformationCallback      callback.CallbackRegistry[OnCrewInformationCallback]
 
 	LastTimeChangedReq outbound.TimeChangedReq
 }
@@ -40,6 +42,7 @@ func NewManager(snapshot *game_context.Snapshot) *Manager {
 		OnShipChangedCallback:          callback.CallbackRegistry[OnShipChangedCallback]{},
 		OnShipMovedCallback:            callback.CallbackRegistry[OnShipMovedCallback]{},
 		OnShipInventoryChangedCallback: callback.CallbackRegistry[OnShipInventoryChangedCallback]{},
+		OnCrewInformationCallback:      callback.CallbackRegistry[OnCrewInformationCallback]{},
 	}
 }
 
@@ -49,6 +52,11 @@ func (m *Manager) Start() error {
 		Receiver: &outbound.Receiver{
 			OnCrewInformation: func(cir outbound.CrewInformationReq) (outbound.CrewInformationResp, error) {
 				slog.Info("CrewInformation called", "req", cir)
+
+				m.OnCrewInformationCallback.InvokeEndToStart(func(ocic OnCrewInformationCallback) error {
+					return ocic(cir)
+				})
+
 				return outbound.CrewInformationResp{}, nil
 			},
 			OnShipMoved: func(smr outbound.ShipMovedReq) (outbound.ShipMovedResp, error) {
@@ -169,6 +177,26 @@ func (s *Manager) PlotRoute(x, y int) (*inbound.PlotRouteResp, error) {
 
 func (s *Manager) ControlTime(req inbound.ControlTimeReq) (inbound.ControlTimeResp, error) {
 	return inbound.ControlTime(s.Conn, req)
+}
+
+func (s *Manager) RequestShipInfo(shipID int) error {
+	_, err := inbound.GetShipInfo(s.Conn, inbound.GetShipInfoReq{
+		ShipID: shipID,
+	})
+	return err
+}
+
+func (s *Manager) RequestShipInventoryInfo() error {
+	_, err := inbound.GetInventoryInfo(s.Conn, inbound.GetInventoryInfoReq{
+		ShipID: int(s.PlayerShip.RawData.ID),
+	})
+	return err
+}
+
+func (s *Manager) RequestCrewInfo() error {
+	// Use the connection's sender to request crew information
+	err := s.Conn.Sender().CrewInformation()
+	return err
 }
 
 /*

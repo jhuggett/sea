@@ -26,24 +26,25 @@ type ShipInventoryPanel struct {
 
 	InventoryData outbound.ShipInventoryChangedReq
 
-	Subbed bool
+	Subbed string
 }
 
 func (s *ShipInventoryPanel) Setup() {
 	// Subscribe to inventory updates if not already subscribed
-	if !s.Subbed {
+	if s.Subbed == "" {
 		// Add callback for ship inventory changes
-		s.Manager.OnShipInventoryChangedCallback.Add(func(sicr outbound.ShipInventoryChangedReq) error {
+		s.Subbed = s.Manager.OnShipInventoryChangedCallback.Add(func(sicr outbound.ShipInventoryChangedReq) error {
 			s.InventoryData = sicr
 			doodad.ReSetup(s)
 			return nil
 		})
-		s.Subbed = true
+
 	}
 
 	// Main container stack
 	mainStack := stack.New(stack.Config{
-		Type: stack.Vertical,
+		FitContents: true,
+		Type:        stack.Vertical,
 	})
 	s.AddChild(mainStack)
 
@@ -62,6 +63,8 @@ func (s *ShipInventoryPanel) Setup() {
 			}),
 		)
 		s.Children().Setup()
+
+		go s.Manager.PlayerShip.TriggerShipInventoryRequest()
 		return
 	}
 
@@ -76,13 +79,18 @@ func (s *ShipInventoryPanel) Setup() {
 	headerStack := stack.New(stack.Config{
 		Type:            stack.Horizontal,
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
+		FitContents:     true,
+		SpaceBetween:    10,
+		Padding: stack.Padding{
+			Top: 15,
+		},
 	})
 	mainStack.AddChild(headerStack)
 
 	// Add headers
 	headerStack.AddChild(
 		label.New(label.Config{
-			Message: "Item Name",
+			Message: "Name",
 			Layout:  box.Zeroed().SetWidth(200),
 		}),
 	)
@@ -96,14 +104,17 @@ func (s *ShipInventoryPanel) Setup() {
 
 	// Create a scrollable list for items
 	itemsContainer := stack.New(stack.Config{
-		Type: stack.Vertical,
+		Type:        stack.Vertical,
+		FitContents: true,
 	})
 	mainStack.AddChild(itemsContainer)
 
 	// Add each item to the list
 	for _, item := range s.InventoryData.Inventory.Items {
 		itemRow := stack.New(stack.Config{
-			Type: stack.Horizontal,
+			Type:         stack.Horizontal,
+			FitContents:  true,
+			SpaceBetween: 10,
 		})
 		itemsContainer.AddChild(itemRow)
 
@@ -125,4 +136,18 @@ func (s *ShipInventoryPanel) Setup() {
 	}
 
 	s.Children().Setup()
+
+	s.Layout().Recalculate()
+}
+
+func (s *ShipInventoryPanel) Teardown() error {
+
+	if s.Subbed != "" {
+		s.Manager.OnShipInventoryChangedCallback.Remove(s.Subbed)
+		s.Subbed = ""
+	}
+
+	s.Children().Teardown()
+
+	return nil
 }

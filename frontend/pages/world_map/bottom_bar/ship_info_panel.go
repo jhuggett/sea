@@ -26,24 +26,24 @@ type ShipInfoPanel struct {
 
 	ShipData outbound.ShipChangedReq
 
-	Subbed bool
+	Subbed string
 }
 
 func (s *ShipInfoPanel) Setup() {
 
 	// TODO: handle unsub
-	if !s.Subbed {
-		s.Manager.OnShipChangedCallback.Add(func(scr outbound.ShipChangedReq) error {
+	if s.Subbed == "" {
+		s.Subbed = s.Manager.OnShipChangedCallback.Add(func(scr outbound.ShipChangedReq) error {
 			s.ShipData = scr
 
 			doodad.ReSetup(s)
 
 			return nil
 		})
-		s.Subbed = true
 	}
 
 	if s.ShipData.ID == 0 {
+		go s.Manager.PlayerShip.TriggerShipInfoRequest()
 		return // No ship data available yet
 	}
 
@@ -140,4 +140,15 @@ func (s *ShipInfoPanel) Setup() {
 
 	// // Note: I'm not sure why calling Recalculate() here makes it work, worth investigating
 	// repairButton.Layout().Recalculate()
+
+	s.Layout().Recalculate()
+}
+
+func (s *ShipInfoPanel) Teardown() error {
+	if s.Subbed != "" {
+		s.Manager.OnShipChangedCallback.Remove(s.Subbed)
+		s.Subbed = ""
+	}
+
+	return s.Children().Teardown()
 }

@@ -79,3 +79,18 @@ func (s *Ship) Repair() (inbound.RepairShipResp, error) {
 	}
 	return resp, nil
 }
+
+func (s *Ship) TriggerShipInfoRequest() error {
+	err := s.Manager.RequestShipInfo(int(s.RawData.ID))
+	return err
+}
+
+func (s *Ship) TriggerShipInventoryRequest() error {
+	err := s.Manager.RequestShipInventoryInfo()
+	return err
+}
+
+func (s *Ship) TriggerCrewInfoRequest() error {
+	err := s.Manager.RequestCrewInfo()
+	return err
+}

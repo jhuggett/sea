@@ -71,6 +71,26 @@ func (b *BottomBar) Setup() {
 		},
 	})
 
+	crewPanelButton := button.New(button.Config{
+		OnClick: func(bb *button.Button) {
+			if b.panel.IsVisible() && activePanel == "crew" {
+				b.panel.Hide()
+				bb.SetMessage("Crew")
+				activePanel = ""
+			} else {
+				b.panel.Show()
+				b.panel.SetContents([]doodad.Doodad{
+					NewCrewPanel(b.Manager),
+				})
+				bb.SetMessage("[Crew]")
+				activePanel = "crew"
+			}
+		},
+		Config: label.Config{
+			Message: "Crew",
+		},
+	})
+
 	mainStack := stack.New(stack.Config{
 		Type: stack.Horizontal,
 		Children: doodad.NewChildren(
@@ -78,6 +98,7 @@ func (b *BottomBar) Setup() {
 			[]doodad.Doodad{
 				shipInfoPanelButton,
 				shipInventoryPanelButton,
+				crewPanelButton,
 			},
 		),
 		Layout: box.Computed(func(bb *box.Box) {

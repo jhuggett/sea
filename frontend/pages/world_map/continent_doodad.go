@@ -26,21 +26,6 @@ type ContinentDoodad struct {
 }
 
 func (w *ContinentDoodad) Draw(screen *ebiten.Image) {
-	// originX, originY := w.Origin()
-	// scaleX, scaleY := w.Scale()
-
-	// // Draw the continent
-	// op := &ebiten.DrawImageOptions{}
-	// op.GeoM.Translate(
-	// 	float64((w.SmallestPointX*w.Continent.TileSize())-originX),
-	// 	float64((w.SmallestPointY*w.Continent.TileSize())-originY),
-	// )
-	// op.GeoM.Scale(
-	// 	scaleX,
-	// 	scaleY,
-	// )
-	// screen.DrawImage(w.Image, op)
-
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(
 		w.SpaceTranslator.FromWorldToScreen(
@@ -77,18 +62,6 @@ func (w *ContinentDoodad) Setup() {
 
 	a := uint8(50)
 	b := uint8(100)
-	// lowestColor := color.RGBA{
-	// 	R: 23 + a,
-	// 	G: 18 + a,
-	// 	B: 13 + a,
-	// 	A: 255,
-	// }
-	// highestColor := color.RGBA{
-	// 	R: 58 + b,
-	// 	G: 45 + b,
-	// 	B: 25 + b,
-	// 	A: 255,
-	// }
 
 	lowestColor := color.RGBA{
 		R: 50 + a,
@@ -126,20 +99,6 @@ func (w *ContinentDoodad) Setup() {
 	}
 
 	w.Image = img
-
-	// for _, port := range w.Continent.Ports {
-
-	// 	portDoodad := &PortDoodad{
-	// 		Port:            port,
-	// 		SpaceTranslator: w.SpaceTranslator,
-	// 	}
-
-	// 	err := portDoodad.Setup()
-	// 	if err != nil {
-	// 		return fmt.Errorf("failed to setup port widget: %w", err)
-	// 	}
-	// 	w.Doodads = append(w.Doodads, portDoodad)
-	// }
 
 	for _, port := range w.Continent.Ports {
 		w.AddChild(NewPortDoodad(

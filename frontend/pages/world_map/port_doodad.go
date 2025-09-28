@@ -39,21 +39,6 @@ func (w *PortDoodad) Update() error {
 }
 
 func (w *PortDoodad) Draw(screen *ebiten.Image) {
-
-	// originX, originY := w.Origin()
-	// scaleX, scaleY := w.Scale()
-
-	// op := &ebiten.DrawImageOptions{}
-	// op.GeoM.Translate(
-	// 	float64((w.Port.Location().X)*w.Port.Manager.TileSize()-originX),
-	// 	float64((w.Port.Location().Y)*w.Port.Manager.TileSize()-originY),
-	// )
-
-	// op.GeoM.Scale(
-	// 	scaleX,
-	// 	scaleY,
-	// )
-
 	op := &ebiten.DrawImageOptions{}
 
 	op.GeoM.Translate(
