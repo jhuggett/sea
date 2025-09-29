@@ -163,6 +163,10 @@ func MoveShip(r MoveShipReq, conn Connection) (*MoveShipResp, error) {
 
 	ship_model.RegisterRoute(&shipRouter)
 
+	go conn.Sender().ShipMoved(
+		ship.Persistent.ID,
+	)
+
 	return &MoveShipResp{
 		Success: true,
 	}, nil

@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/jhuggett/sea/inbound"
+	"github.com/jhuggett/sea/outbound"
 )
 
 type Ship struct {
 	Manager *Manager
 	RawData inbound.ShipInfo
 
-	route *ShipRoute
+	Route *ShipRoute
 }
 
 func (s *Ship) Location() inbound.Point {
@@ -21,16 +22,17 @@ func (s *Ship) Location() inbound.Point {
 }
 
 type ShipRoute struct {
-	Points []inbound.Coordinate
-	Active bool
+	Points       []inbound.Coordinate
+	Active       bool
+	ShipMovedReq *outbound.ShipMovedReq
 }
 
 func (s *Ship) HasRoute() bool {
-	return s.route != nil && len(s.route.Points) > 0
+	return s.Route != nil && len(s.Route.Points) > 0
 }
 
 func (s *Ship) IsRouteActive() bool {
-	return s.route != nil && s.route.Active
+	return s.Route != nil && s.Route.Active
 }
 
 func (s *Ship) PlotRoute(x, y int) (*ShipRoute, error) {
@@ -43,18 +45,20 @@ func (s *Ship) PlotRoute(x, y int) (*ShipRoute, error) {
 		Points: resp.Coordinates,
 	}
 
-	s.route = route
+	s.Route = route
 
 	return route, nil
 }
 
 func (s *Ship) SetSail() (*inbound.MoveShipResp, error) {
-	if s.route == nil {
+	if s.Route == nil {
 		return nil, fmt.Errorf("no route set")
 	}
 
-	endTileX := int(s.route.Points[len(s.route.Points)-1].X)
-	endTileY := int(s.route.Points[len(s.route.Points)-1].Y)
+	s.Route.Active = true
+
+	endTileX := int(s.Route.Points[len(s.Route.Points)-1].X)
+	endTileY := int(s.Route.Points[len(s.Route.Points)-1].Y)
 
 	resp, err := inbound.MoveShip(inbound.MoveShipReq{
 		X: float64(endTileX),
@@ -62,10 +66,9 @@ func (s *Ship) SetSail() (*inbound.MoveShipResp, error) {
 	}, s.Manager.Conn)
 
 	if err != nil {
+		s.Route.Active = false
 		return nil, fmt.Errorf("failed to move ship: %w", err)
 	}
-
-	s.route.Active = true
 
 	return resp, nil
 }

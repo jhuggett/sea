@@ -3,7 +3,6 @@ package world_map
 import (
 	"design-library/doodad"
 	"design-library/reaction"
-	"fmt"
 	"image/color"
 	"log/slog"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jhuggett/frontend/game"
 	"github.com/jhuggett/sea/inbound"
+	"github.com/jhuggett/sea/outbound"
 )
 
 func NewRouteDoodad(
@@ -66,6 +66,17 @@ func (w *RouteDoodad) Draw(screen *ebiten.Image) {
 }
 
 func (w *RouteDoodad) Setup() {
+	w.DoOnTeardown(w.Ship.Manager.OnShipMovedCallback.Register(func(smr outbound.ShipMovedReq) error {
+		w.Ship.Route.ShipMovedReq = &smr
+
+		if w.Ship.Route.ShipMovedReq.RouteInfo.ReachedDestination {
+			w.Ship.Route.Active = false
+		}
+
+		w.RenderRoute()
+		return nil
+	}))
+
 	w.Reactions().Add(
 		reaction.NewMouseUpReaction(
 			doodad.MouseMovedWithin[*reaction.MouseUpEvent](w),
@@ -79,12 +90,9 @@ func (w *RouteDoodad) Setup() {
 					return
 				}
 
-				x, y := mm.X, mm.Y
-				fmt.Println("RouteDoodad.OnClick", x, y)
-
 				worldX, worldY := w.SpaceTranslator.FromScreenToWorld(
-					float64(x),
-					float64(y),
+					float64(mm.X),
+					float64(mm.Y),
 				)
 
 				dataX, dataY := w.SpaceTranslator.FromWorldToData(
@@ -92,47 +100,62 @@ func (w *RouteDoodad) Setup() {
 					worldY,
 				)
 
-				route, err := w.Ship.PlotRoute(int(dataX), int(dataY))
+				_, err := w.Ship.PlotRoute(int(dataX), int(dataY))
 				if err != nil {
 					slog.Error("RouteDoodad.OnClick", "error", err)
 					return
 				}
 
-				scale, _ := w.SpaceTranslator.TileSize()
-				w.img = ebiten.NewImage(Box(route.Points, float64(scale)))
+				w.RenderRoute()
 
-				tileSize, _ := w.SpaceTranslator.TileSize()
-				smallestX, smallestY := 0.0, 0.0
-
-				for _, point := range route.Points {
-					if point.X < smallestX {
-						smallestX = point.X
-					}
-					if point.Y < smallestY {
-						smallestY = point.Y
-					}
-				}
-
-				w.originX = int(smallestX)
-				w.originY = int(smallestY)
-
-				for _, point := range route.Points {
-					vector.DrawFilledRect(
-						w.img,
-						float32((point.X-smallestX)*tileSize+tileSize/4),
-						float32((point.Y-smallestY)*tileSize+tileSize/4),
-						float32(tileSize/2),
-						float32(tileSize/2),
-						color.RGBA{
-							B: 255,
-							A: 255,
-						},
-						false,
-					)
-				}
+				mm.StopPropagation()
 			},
 		),
 	)
+}
+
+func (w *RouteDoodad) RenderRoute() {
+
+	scale, _ := w.SpaceTranslator.TileSize()
+	w.img = ebiten.NewImage(Box(w.Ship.Route.Points, float64(scale)))
+
+	tileSize, _ := w.SpaceTranslator.TileSize()
+	smallestX, smallestY := 0.0, 0.0
+
+	for _, point := range w.Ship.Route.Points {
+		if point.X < smallestX {
+			smallestX = point.X
+		}
+		if point.Y < smallestY {
+			smallestY = point.Y
+		}
+	}
+
+	w.originX = int(smallestX)
+	w.originY = int(smallestY)
+
+	routeColor := color.RGBA{
+		R: 255,
+		A: 255,
+	}
+	if w.Ship.IsRouteActive() {
+		routeColor = color.RGBA{
+			G: 255,
+			A: 255,
+		}
+	}
+
+	for _, point := range w.Ship.Route.Points {
+		vector.DrawFilledRect(
+			w.img,
+			float32((point.X-smallestX)*tileSize+tileSize/4),
+			float32((point.Y-smallestY)*tileSize+tileSize/4),
+			float32(tileSize/2),
+			float32(tileSize/2),
+			routeColor,
+			false,
+		)
+	}
 }
 
 func Box(points []inbound.Coordinate, scale float64) (width, height int) {

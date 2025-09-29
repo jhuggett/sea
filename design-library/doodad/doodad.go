@@ -163,8 +163,14 @@ type Default struct {
 
 	z int
 
+	actionOnTeardown []func()
+
 	// unregisterGestures []func()
 	// register           func()
+}
+
+func (t *Default) DoOnTeardown(actions ...func()) {
+	t.actionOnTeardown = append(t.actionOnTeardown, actions...)
 }
 
 func (t *Default) Z() int {
@@ -195,6 +201,11 @@ func (t *Default) Draw(screen *ebiten.Image) {
 
 func (t *Default) Teardown() error {
 	// t.unregister()
+
+	for _, action := range t.actionOnTeardown {
+		action()
+	}
+
 	t.Children().Clear()
 	t.Reactions().Unregister()
 	return nil
