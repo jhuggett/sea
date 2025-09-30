@@ -214,7 +214,7 @@ func (w *WorldMapPage) SetupMainScreen() {
 	)
 
 	w.AddChild(routeInfoDoodad)
-	routeInfoDoodad.Hide()
+	// routeInfoDoodad.Hide()
 
 	pauseMenu := pause_menu.NewPauseMenu()
 	w.AddChild(pauseMenu)

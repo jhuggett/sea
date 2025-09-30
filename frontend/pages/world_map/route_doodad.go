@@ -73,6 +73,12 @@ func (w *RouteDoodad) Setup() {
 			w.Ship.Route.Active = false
 		}
 
+		if w.Ship.Route.ShipMovedReq.RouteInfo.IsCancelled {
+			w.Ship.Route.Active = false
+
+			w.Ship.Route = nil
+		}
+
 		w.RenderRoute()
 		return nil
 	}))
@@ -108,6 +114,12 @@ func (w *RouteDoodad) Setup() {
 
 				w.RenderRoute()
 
+				// Log that a route was plotted - this is critical for debugging
+				slog.Info("RouteDoodad: Route plotted successfully",
+					"hasRoute", w.Ship.HasRoute(),
+					"pointCount", len(w.Ship.Route.Points),
+				)
+
 				mm.StopPropagation()
 			},
 		),
@@ -115,14 +127,29 @@ func (w *RouteDoodad) Setup() {
 }
 
 func (w *RouteDoodad) RenderRoute() {
+	if w.Ship.Route == nil {
+		w.img = nil
+		return
+	}
+
+	points := w.Ship.Route.Points
+	if w.Ship.Route.ShipMovedReq != nil {
+		points = []inbound.Coordinate{}
+		for _, point := range w.Ship.Route.ShipMovedReq.RouteInfo.Trajectory {
+			points = append(points, inbound.Coordinate{
+				X: float64(point.X),
+				Y: float64(point.Y),
+			})
+		}
+	}
 
 	scale, _ := w.SpaceTranslator.TileSize()
-	w.img = ebiten.NewImage(Box(w.Ship.Route.Points, float64(scale)))
+	w.img = ebiten.NewImage(Box(points, float64(scale)))
 
 	tileSize, _ := w.SpaceTranslator.TileSize()
 	smallestX, smallestY := 0.0, 0.0
 
-	for _, point := range w.Ship.Route.Points {
+	for _, point := range points {
 		if point.X < smallestX {
 			smallestX = point.X
 		}
@@ -145,7 +172,7 @@ func (w *RouteDoodad) RenderRoute() {
 		}
 	}
 
-	for _, point := range w.Ship.Route.Points {
+	for _, point := range points {
 		vector.DrawFilledRect(
 			w.img,
 			float32((point.X-smallestX)*tileSize+tileSize/4),

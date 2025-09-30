@@ -47,6 +47,10 @@ func (s *Ship) PlotRoute(x, y int) (*ShipRoute, error) {
 
 	s.Route = route
 
+	s.Manager.RouteEventCallback.InvokeEndToStart(func(orec RouteEventCallback) error {
+		return orec(RouteEventCallbackData{})
+	})
+
 	return route, nil
 }
 
@@ -96,4 +100,25 @@ func (s *Ship) TriggerShipInventoryRequest() error {
 func (s *Ship) TriggerCrewInfoRequest() error {
 	err := s.Manager.RequestCrewInfo()
 	return err
+}
+
+func (s *Ship) CancelCurrentRoute() {
+	inbound.ManageRoute(inbound.ManageRouteReq{
+		ShipID: s.RawData.ID,
+		Action: inbound.ManageRouteActionStop,
+	})
+}
+
+func (s *Ship) PauseCurrentRoute() {
+	inbound.ManageRoute(inbound.ManageRouteReq{
+		ShipID: s.RawData.ID,
+		Action: inbound.ManageRouteActionPause,
+	})
+}
+
+func (s *Ship) ResumeCurrentRoute() {
+	inbound.ManageRoute(inbound.ManageRouteReq{
+		ShipID: s.RawData.ID,
+		Action: inbound.ManageRouteActionStart,
+	})
 }

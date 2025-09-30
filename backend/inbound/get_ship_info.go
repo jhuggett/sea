@@ -1,6 +1,8 @@
 package inbound
 
-import "log/slog"
+import (
+	"log/slog"
+)
 
 type GetShipInfoReq struct {
 	ShipID int `json:"ship_id"`

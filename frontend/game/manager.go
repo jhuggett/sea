@@ -12,6 +12,10 @@ import (
 	"github.com/jhuggett/sea/timeline"
 )
 
+type RouteEventCallbackData struct {
+}
+type RouteEventCallback func(RouteEventCallbackData) error
+
 type OnTimeChangedCallback func(outbound.TimeChangedReq) error
 type OnShipChangedCallback func(outbound.ShipChangedReq) error
 type OnShipMovedCallback func(outbound.ShipMovedReq) error
@@ -32,6 +36,8 @@ type Manager struct {
 	OnShipInventoryChangedCallback callback.CallbackRegistry[OnShipInventoryChangedCallback]
 	OnCrewInformationCallback      callback.CallbackRegistry[OnCrewInformationCallback]
 
+	RouteEventCallback callback.CallbackRegistry[RouteEventCallback]
+
 	LastTimeChangedReq outbound.TimeChangedReq
 }
 
@@ -43,6 +49,7 @@ func NewManager(snapshot *game_context.Snapshot) *Manager {
 		OnShipMovedCallback:            callback.CallbackRegistry[OnShipMovedCallback]{},
 		OnShipInventoryChangedCallback: callback.CallbackRegistry[OnShipInventoryChangedCallback]{},
 		OnCrewInformationCallback:      callback.CallbackRegistry[OnCrewInformationCallback]{},
+		RouteEventCallback:             callback.CallbackRegistry[RouteEventCallback]{},
 	}
 }
 
@@ -67,6 +74,10 @@ func (m *Manager) Start() error {
 
 				m.OnShipMovedCallback.InvokeEndToStart(func(oshmc OnShipMovedCallback) error {
 					return oshmc(smr)
+				})
+
+				m.RouteEventCallback.InvokeEndToStart(func(orec RouteEventCallback) error {
+					return orec(RouteEventCallbackData{})
 				})
 
 				return outbound.ShipMovedResp{}, nil
