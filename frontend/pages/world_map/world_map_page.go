@@ -177,6 +177,11 @@ func (w *WorldMapPage) SetupMainScreen() {
 	// Need to preload the things we need before we get to this method
 	// then we can just render
 
+	w.AddChild(NewRouteDoodad(
+		w.SpaceTranslator,
+		w.GameManager.PlayerShip,
+	))
+
 	w.AddChild(NewPlayerShipDoodad(
 		w.GameManager,
 		w.Camera,
@@ -188,11 +193,6 @@ func (w *WorldMapPage) SetupMainScreen() {
 
 	w.AddChild(NewCursorDoodad(
 		w.SpaceTranslator,
-	))
-
-	w.AddChild(NewRouteDoodad(
-		w.SpaceTranslator,
-		w.GameManager.PlayerShip,
 	))
 
 	timeControlDoodad := NewTimeControlDoodad(
@@ -225,6 +225,12 @@ func (w *WorldMapPage) SetupMainScreen() {
 	pauseMenu.Hide()
 
 	w.Reactions().Add(
+		reaction.NewKeyDownReaction(reaction.SpecificKeyDown(ebiten.KeySpace),
+			func(event *reaction.KeyDownEvent) {
+				// Center the camera on the player's ship when space bar is pressed
+				w.CenterCameraOnPlayerShip()
+			},
+		),
 		reaction.NewMouseDragReaction(
 			func(event *reaction.OnMouseDragEvent) bool {
 				return true
