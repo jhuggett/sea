@@ -34,12 +34,14 @@ type TimeControlDoodad struct {
 	Manager *game.Manager
 
 	// Position func() doodad.Position
+
+	tcr outbound.TimeChangedReq
 }
 
 func (w *TimeControlDoodad) Setup() {
 
 	currentTimeLabel := label.New(label.Config{
-		Message: "Time Control",
+		Message: fmt.Sprintf("Day %d of Year %d", w.tcr.CurrentDay, w.tcr.CurrentYear),
 		Layout:  box.Zeroed(),
 	})
 
@@ -119,16 +121,21 @@ func (w *TimeControlDoodad) Setup() {
 		SpaceBetween: 20,
 	})
 
-	w.Manager.OnTimeChangedCallback.Add(func(tcr outbound.TimeChangedReq) error {
+	w.DoOnTeardown(w.Manager.OnTimeChangedCallback.Register(func(tcr outbound.TimeChangedReq) error {
 		// currentTimeLabelDoodad.SetMessage(fmt.Sprintf("Time Control: %d", tcr.CurrentTick))
 		// currentTickSpeedLabel.SetMessage(fmt.Sprintf("S: %d, P: %v", tcr.TicksPerSecond, tcr.IsPaused))
 
-		currentTimeLabel.SetMessage(fmt.Sprintf("Day %d of Year %d", tcr.CurrentDay, tcr.CurrentYear))
+		// currentTimeLabel.SetMessage(fmt.Sprintf("Day %d of Year %d", tcr.CurrentDay, tcr.CurrentYear))
+		w.tcr = tcr
+		doodad.ReSetup(w)
+
 		return nil
-	})
+	}))
 
 	w.AddChild(panel)
 	w.Children().Setup()
+
+	w.Layout().Recalculate()
 
 	// panelDoodad, err := panel.New(panel.Config{
 	// 	Position: w.Position,

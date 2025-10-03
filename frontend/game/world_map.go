@@ -34,10 +34,7 @@ func (w *WorldMap) Load() error {
 		return err
 	}
 	for _, portData := range portsData.Ports {
-		w.Ports = append(w.Ports, &Port{
-			Manager: w.Manager,
-			RawData: portData,
-		})
+		w.Ports = append(w.Ports, PortFromInboundData(w.Manager, portData))
 	}
 
 	w.gameMap = &gameMap

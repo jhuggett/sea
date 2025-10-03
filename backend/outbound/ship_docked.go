@@ -23,6 +23,10 @@ type Port struct {
 	Inventory Inventory `json:"inventory,omitempty"`
 
 	ItemValuation map[string]float64 `json:"item_valuation,omitempty"`
+
+	Point       *coordination.Point `json:"point,omitempty"`
+	Name        string              `json:"name,omitempty"`
+	ContinentID uint                `json:"continent_id,omitempty"`
 }
 
 type Inventory struct {
@@ -134,6 +138,12 @@ func (s *Sender) ShipDocked(shipId uint, location coordination.Point, undocked b
 					ID:    port.Persistent.InventoryID,
 					Items: itemSummaries,
 				},
+				Point: &coordination.Point{
+					X: port.Persistent.Point.X,
+					Y: port.Persistent.Point.Y,
+				},
+				Name:        port.Persistent.Name,
+				ContinentID: port.Persistent.ContinentID,
 			},
 		})
 		if err != nil {

@@ -7,6 +7,7 @@ import (
 	"design-library/reaction"
 	"fmt"
 	"image/color"
+	"math"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -17,6 +18,7 @@ import (
 	"github.com/jhuggett/frontend/pages/world_map/pause_menu"
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/inbound"
+	"github.com/jhuggett/sea/outbound"
 	"golang.org/x/image/math/f64"
 )
 
@@ -122,6 +124,12 @@ type WorldMapPage struct {
 	doodad.Default
 
 	loaded bool
+
+	dockConfirmation      *DockConfirmation
+	portInteractionScreen *PortInteractionScreen
+
+	// Track when we're near a port
+	nearbyPort *game.Port
 }
 
 func (w *WorldMapPage) SetupLoadingScreen() {
@@ -198,6 +206,34 @@ func (w *WorldMapPage) SetupMainScreen() {
 	timeControlDoodad := NewTimeControlDoodad(
 		w.GameManager,
 	)
+
+	// // Setup callbacks for ship docking
+	// w.GameManager.OnShipMovedCallback.Register(func(req outbound.ShipMovedReq) error {
+	// 	// Check if ship is near a port when it moves
+	// 	w.checkNearbyPorts()
+	// 	return nil
+	// })
+
+	w.GameManager.OnShipDockedCallback.Register(func(req outbound.ShipDockedReq) error {
+		if !req.Undocked {
+			// // Ship has docked at a port - find which port
+			// for _, port := range w.GameManager.WorldMap.Ports {
+			// 	if port.RawData.ID == req.Port.ID {
+			// 		w.nearbyPort = port
+
+			// 		// Update dock confirmation with the current port
+			// 		w.dockConfirmation.Port = port
+			// 		w.dockConfirmation.Show()
+			// 		break
+			// 	}
+			// }
+
+			w.dockConfirmation.Port = game.PortFromOutboundData(w.GameManager, req.Port)
+			w.dockConfirmation.Show()
+			doodad.ReSetup(w.dockConfirmation)
+		}
+		return nil
+	})
 	w.AddChild(timeControlDoodad)
 	timeControlDoodad.Layout().Computed(func(b *box.Box) {
 		b.Copy(w.Box)
@@ -223,6 +259,49 @@ func (w *WorldMapPage) SetupMainScreen() {
 		b.Copy(w.Box)
 	})
 	pauseMenu.Hide()
+
+	// Setup dock confirmation dialog (initially hidden)
+	w.dockConfirmation = NewDockConfirmation(
+		w.GameManager,
+		nil, // Will set this when a port is detected
+		func() {
+			// On dock accepted
+			w.dockConfirmation.Hide()
+
+			if w.nearbyPort != nil {
+				// Show port interaction screen
+				if w.portInteractionScreen == nil {
+					w.portInteractionScreen = NewPortInteractionScreen(
+						w.GameManager,
+						w.nearbyPort,
+						func() {
+							// On close port screen
+							w.portInteractionScreen.Hide()
+							w.nearbyPort = nil
+						},
+					)
+					w.AddChild(w.portInteractionScreen)
+					w.Children().Setup()
+
+					w.portInteractionScreen.Layout().Computed(func(b *box.Box) {
+						b.Copy(w.Box)
+					})
+				} else {
+					w.portInteractionScreen.Port = w.nearbyPort
+					w.portInteractionScreen.Show()
+				}
+			}
+		},
+		func() {
+			// On dock declined
+			w.dockConfirmation.Hide()
+		},
+	)
+	w.AddChild(w.dockConfirmation)
+	w.dockConfirmation.Layout().Computed(func(b *box.Box) {
+		b.Copy(w.Box)
+	})
+	w.dockConfirmation.Hide()
 
 	w.Reactions().Add(
 		reaction.NewKeyDownReaction(reaction.SpecificKeyDown(ebiten.KeySpace),
@@ -321,4 +400,39 @@ func New(snapshot *game_context.Snapshot) *WorldMapPage {
 func (w *WorldMapPage) SetWidthAndHeight(width, height int) {
 	w.Box.SetDimensions(width, height)
 	w.Box.Recalculate()
+}
+
+// Check if the player's ship is near a port
+func (w *WorldMapPage) checkNearbyPorts() {
+	if w.GameManager == nil || w.GameManager.PlayerShip == nil || w.GameManager.WorldMap == nil {
+		return
+	}
+
+	shipX := w.GameManager.PlayerShip.RawData.X
+	shipY := w.GameManager.PlayerShip.RawData.Y
+
+	// Distance threshold for detecting nearby ports
+	const dockingDistance = 0.5
+
+	for _, port := range w.GameManager.WorldMap.Ports {
+		portX := float64(port.Location().X)
+		portY := float64(port.Location().Y)
+
+		// Calculate distance between ship and port
+		dx := shipX - portX
+		dy := shipY - portY
+		distance := math.Sqrt(dx*dx + dy*dy)
+
+		if distance <= dockingDistance {
+			w.nearbyPort = port
+
+			// Update dock confirmation with the current port
+			w.dockConfirmation.Port = port
+			w.dockConfirmation.Show()
+			return
+		}
+	}
+
+	// No nearby port found
+	w.nearbyPort = nil
 }

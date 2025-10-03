@@ -2,6 +2,7 @@ package outbound
 
 import (
 	"fmt"
+	"log/slog"
 
 	ship_model "github.com/jhuggett/sea/data/ship"
 	"github.com/jhuggett/sea/timeline"
@@ -54,7 +55,7 @@ func (s *Sender) ShipMoved(shipId uint) error {
 
 	estimatedTimeLeft, err := route.EstimatedTimeLeft()
 	if err != nil {
-		return err
+		slog.Warn("Failed to estimate time left", "error", err)
 	}
 
 	_, err = s.Receiver.OnShipMoved(ShipMovedReq{

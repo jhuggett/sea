@@ -25,6 +25,9 @@ type ShipRoute struct {
 	Points       []inbound.Coordinate
 	Active       bool
 	ShipMovedReq *outbound.ShipMovedReq
+
+	TargetX int
+	TargetY int
 }
 
 func (s *Ship) HasRoute() bool {
@@ -42,7 +45,9 @@ func (s *Ship) PlotRoute(x, y int) (*ShipRoute, error) {
 	}
 
 	route := &ShipRoute{
-		Points: resp.Coordinates,
+		Points:  resp.Coordinates,
+		TargetX: x,
+		TargetY: y,
 	}
 
 	s.Route = route
@@ -61,12 +66,9 @@ func (s *Ship) SetSail() (*inbound.MoveShipResp, error) {
 
 	s.Route.Active = true
 
-	endTileX := int(s.Route.Points[len(s.Route.Points)-1].X)
-	endTileY := int(s.Route.Points[len(s.Route.Points)-1].Y)
-
 	resp, err := inbound.MoveShip(inbound.MoveShipReq{
-		X: float64(endTileX),
-		Y: float64(endTileY),
+		X: float64(s.Route.TargetX),
+		Y: float64(s.Route.TargetY),
 	}, s.Manager.Conn)
 
 	if err != nil {

@@ -19,6 +19,7 @@ type RouteEventCallback func(RouteEventCallbackData) error
 type OnTimeChangedCallback func(outbound.TimeChangedReq) error
 type OnShipChangedCallback func(outbound.ShipChangedReq) error
 type OnShipMovedCallback func(outbound.ShipMovedReq) error
+type OnShipDockedCallback func(outbound.ShipDockedReq) error
 type OnShipInventoryChangedCallback func(outbound.ShipInventoryChangedReq) error
 type OnCrewInformationCallback func(outbound.CrewInformationReq) error
 type Manager struct {
@@ -33,6 +34,7 @@ type Manager struct {
 	OnTimeChangedCallback          callback.CallbackRegistry[OnTimeChangedCallback]
 	OnShipChangedCallback          callback.CallbackRegistry[OnShipChangedCallback]
 	OnShipMovedCallback            callback.CallbackRegistry[OnShipMovedCallback]
+	OnShipDockedCallback           callback.CallbackRegistry[OnShipDockedCallback]
 	OnShipInventoryChangedCallback callback.CallbackRegistry[OnShipInventoryChangedCallback]
 	OnCrewInformationCallback      callback.CallbackRegistry[OnCrewInformationCallback]
 
@@ -47,6 +49,7 @@ func NewManager(snapshot *game_context.Snapshot) *Manager {
 		OnTimeChangedCallback:          callback.CallbackRegistry[OnTimeChangedCallback]{},
 		OnShipChangedCallback:          callback.CallbackRegistry[OnShipChangedCallback]{},
 		OnShipMovedCallback:            callback.CallbackRegistry[OnShipMovedCallback]{},
+		OnShipDockedCallback:           callback.CallbackRegistry[OnShipDockedCallback]{},
 		OnShipInventoryChangedCallback: callback.CallbackRegistry[OnShipInventoryChangedCallback]{},
 		OnCrewInformationCallback:      callback.CallbackRegistry[OnCrewInformationCallback]{},
 		RouteEventCallback:             callback.CallbackRegistry[RouteEventCallback]{},
@@ -84,6 +87,11 @@ func (m *Manager) Start() error {
 			},
 			OnShipDocked: func(sdr outbound.ShipDockedReq) (outbound.ShipDockedResp, error) {
 				slog.Info("ShipDocked called", "req", sdr)
+
+				m.OnShipDockedCallback.InvokeEndToStart(func(osdc OnShipDockedCallback) error {
+					return osdc(sdr)
+				})
+
 				return outbound.ShipDockedResp{}, nil
 			},
 			OnTimeChanged: func(tcr outbound.TimeChangedReq) (outbound.TimeChangedResp, error) {
