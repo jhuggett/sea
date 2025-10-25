@@ -1,3 +1,4 @@
-./test.db
+./frontend/test.db
 ./dist/*
 ./DS_Store
+frontend/test.db

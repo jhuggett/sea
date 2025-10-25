@@ -5,6 +5,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/jhuggett/frontend/game"
 	"github.com/jhuggett/frontend/pages/world_map/camera"
 	"github.com/jhuggett/frontend/utils/space_translator"
@@ -36,13 +37,17 @@ type BuildingDoodad struct {
 
 	TileSize int
 
-	Image ebiten.Image
+	Image *ebiten.Image
 }
 
 func (b *BuildingDoodad) Setup() {
 
-	b.Image = *ebiten.NewImage(b.TileSize*b.Building.X, b.TileSize*b.Building.Y)
+	b.Image = ebiten.NewImage(b.TileSize+10, b.TileSize+10)
 	b.Image.Fill(color.RGBA{100, 100, 200, 255})
+
+	textImg := ebiten.NewImage(b.TileSize+10, 20)
+	ebitenutil.DebugPrintAt(textImg, b.Building.Name, 0, 0)
+	b.Image.DrawImage(textImg, &ebiten.DrawImageOptions{})
 
 	b.Children().Setup()
 }
@@ -52,15 +57,15 @@ func (b *BuildingDoodad) Draw(screen *ebiten.Image) {
 	op.GeoM.Translate(
 		b.SpaceTranslator.FromWorldToScreen(
 			b.SpaceTranslator.FromDataToWorld(
-				float64(b.Building.X*b.TileSize),
-				float64(b.Building.Y*b.TileSize),
+				float64(b.Building.X),
+				float64(b.Building.Y),
 			),
 		),
 	)
 	op.GeoM.Scale(
 		b.SpaceTranslator.ScreenScale(),
 	)
-	screen.DrawImage(&b.Image, op)
+	screen.DrawImage(b.Image, op)
 
 	b.Children().Draw(screen)
 }

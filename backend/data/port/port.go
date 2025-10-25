@@ -30,11 +30,11 @@ func (s *Port) Create() (uint, error) {
 
 	// -- Create buildings
 
-	building.Create(s.Persistent.ID, "Shipyard", string(building.TypeShipyard))
+	building.Create(s.Persistent.ID, "Shipyard", string(building.TypeShipyard), 1, 1)
 
-	building.Create(s.Persistent.ID, "Tavern", string(building.TypeTavern))
+	building.Create(s.Persistent.ID, "Tavern", string(building.TypeTavern), 3, 2)
 
-	building.Create(s.Persistent.ID, "Market", string(building.TypeMarket))
+	building.Create(s.Persistent.ID, "Market", string(building.TypeMarket), 5, 6)
 
 	// --
 

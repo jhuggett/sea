@@ -6,6 +6,8 @@ import (
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/reaction"
+	"log/slog"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/game"
@@ -27,6 +29,8 @@ type PortMapPage struct {
 
 	Port      *game.Port
 	Buildings []*game.Building
+
+	PointToBuilding map[f64.Vec2]*game.Building
 
 	doodad.Default
 
@@ -63,7 +67,16 @@ func (p *PortMapPage) Setup() {
 		ZoomFactor: 1,
 	}
 
-	p.SpaceTranslator = space_translator.New(p.Camera, float64(p.Camera.TileSize))
+	p.SpaceTranslator = space_translator.New(p.Camera, float64(tileSize))
+
+	// For lookups on mouse event
+	p.PointToBuilding = make(map[f64.Vec2]*game.Building)
+	for _, building := range p.Buildings {
+		p.PointToBuilding[f64.Vec2{
+			float64(building.X),
+			float64(building.Y),
+		}] = building
+	}
 
 	pauseMenu := pause_menu.NewPauseMenu()
 	p.AddChild(pauseMenu)
@@ -88,6 +101,10 @@ func (p *PortMapPage) Setup() {
 		tileSize,
 	)
 	p.AddChild(portMap)
+
+	buildingMenu := NewBuildingMenu()
+	p.AddChild(buildingMenu)
+	buildingMenu.Hide()
 
 	p.Reactions().Add(
 		reaction.NewMouseDragReaction(
@@ -141,6 +158,23 @@ func (p *PortMapPage) Setup() {
 				}
 			},
 		),
+		reaction.NewMouseUpReaction(func(event *reaction.MouseUpEvent) bool {
+			return true
+		}, func(event *reaction.MouseUpEvent) {
+			mouseX, mouseY := p.Gesturer().CurrentMouseLocation()
+
+			x, y := p.SpaceTranslator.FromWorldToData(p.SpaceTranslator.FromScreenToWorld(float64(mouseX), float64(mouseY)))
+			x = math.Floor(x)
+			y = math.Floor(y)
+			building := p.PointToBuilding[f64.Vec2{x, y}]
+			if building != nil {
+				buildingMenu.Building = building
+				doodad.ReSetup(buildingMenu)
+				buildingMenu.Show()
+			}
+
+			slog.Info("MouseUp", "mouseX", mouseX, "mouseY", mouseY, "x", x, "y", y, "building", building)
+		}),
 	)
 
 	p.Children().Setup()

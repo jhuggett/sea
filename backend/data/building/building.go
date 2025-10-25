@@ -17,11 +17,13 @@ type Building struct {
 	Persistent data.Building
 }
 
-func Create(portID uint, name string, buildingType string) (uint, error) {
+func Create(portID uint, name string, buildingType string, x, y int) (uint, error) {
 	persistent := data.Building{
 		PortID: portID,
 		Name:   name,
 		Type:   buildingType,
+		X:      x,
+		Y:      y,
 	}
 
 	err := db.Conn().Create(&persistent).Error

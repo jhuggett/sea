@@ -2,7 +2,6 @@ package port_map
 
 import (
 	"design-library/doodad"
-	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/game"
@@ -78,12 +77,12 @@ func (p *PortMapDoodad) Setup() {
 	// 	A: 20,
 	// })
 
-	p.Background.Fill(color.RGBA{
-		R: 25,
-		G: 0,
-		B: 0,
-		A: 255,
-	})
+	// p.Background.Fill(color.RGBA{
+	// 	R: 25,
+	// 	G: 0,
+	// 	B: 0,
+	// 	A: 100,
+	// })
 
 	for _, building := range p.Buildings {
 		b := building
