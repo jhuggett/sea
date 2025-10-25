@@ -32,7 +32,11 @@ func Get(id uint) (*Fleet, error) {
 
 func GetFleetByShipID(id uint) (*Fleet, error) {
 	var s data.Fleet
-	err := db.Conn().Preload("Ships").Joins("join ships on ships.fleet_id=fleets.id").Where("ships.id = ?", id).First(&s).Error
+	err := db.Conn().
+		Preload("Ships").
+		Joins("join ships on ships.fleet_id=fleets.id").
+		Where("ships.id = ?", id).
+		First(&s).Error
 	if err != nil {
 		return nil, err
 	}

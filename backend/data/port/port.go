@@ -2,6 +2,7 @@ package port
 
 import (
 	"github.com/jhuggett/sea/data"
+	"github.com/jhuggett/sea/data/building"
 	"github.com/jhuggett/sea/data/inventory"
 	"github.com/jhuggett/sea/db"
 )
@@ -23,6 +24,19 @@ func (s *Port) Create() (uint, error) {
 	s.Persistent.InventoryID = i.ID
 
 	err = db.Conn().Create(&s.Persistent).Error
+	if err != nil {
+		return 0, err
+	}
+
+	// -- Create buildings
+
+	building.Create(s.Persistent.ID, "Shipyard", string(building.TypeShipyard))
+
+	building.Create(s.Persistent.ID, "Tavern", string(building.TypeTavern))
+
+	building.Create(s.Persistent.ID, "Market", string(building.TypeMarket))
+
+	// --
 
 	return s.Persistent.ID, nil
 }

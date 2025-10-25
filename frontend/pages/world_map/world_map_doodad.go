@@ -6,11 +6,12 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/game"
+	"github.com/jhuggett/frontend/utils/space_translator"
 )
 
 func NewWorldMapDoodad(
 	worldMap *game.WorldMap,
-	spaceTranslator SpaceTranslator,
+	spaceTranslator space_translator.SpaceTranslator,
 ) *WorldMapDoodad {
 	worldMapDoodad := &WorldMapDoodad{
 		WorldMap:        worldMap,
@@ -25,7 +26,7 @@ type WorldMapDoodad struct {
 
 	Background *ebiten.Image
 
-	SpaceTranslator SpaceTranslator
+	SpaceTranslator space_translator.SpaceTranslator
 
 	SmallestContinentPointX int
 	SmallestContinentPointY int

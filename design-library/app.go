@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 func NewApp(startup func(*App)) *App {
@@ -73,6 +74,11 @@ func (g *App) Start() {
 
 func (g *App) Push(page doodad.Doodad) {
 	// g.CurrentPage = page
+
+	if g.CurrentPage != nil {
+		g.CurrentPage.Hide()
+	}
+
 	g.AddChild(page)
 	g.Children().Setup()
 }
@@ -111,6 +117,9 @@ func (g *App) Draw(screen *ebiten.Image) {
 	// g.CurrentPage.Draw(screen)
 
 	g.Children().Draw(screen)
+
+	x, y := g.Gesturer().CurrentMouseLocation()
+	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Mouse: %d, %d", x, y), 4, screen.Bounds().Dy()-14)
 }
 
 func (g *App) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

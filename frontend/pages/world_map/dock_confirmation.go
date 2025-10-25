@@ -17,11 +17,11 @@ type DockConfirmation struct {
 	doodad.Default
 	Manager       *game.Manager
 	Port          *game.Port
-	OnDockAccept  func()
+	OnDockAccept  func(port *game.Port)
 	OnDockDecline func()
 }
 
-func NewDockConfirmation(manager *game.Manager, port *game.Port, onDockAccept func(), onDockDecline func()) *DockConfirmation {
+func NewDockConfirmation(manager *game.Manager, port *game.Port, onDockAccept func(port *game.Port), onDockDecline func()) *DockConfirmation {
 	confirmation := &DockConfirmation{
 		Manager:       manager,
 		Port:          port,
@@ -85,7 +85,7 @@ func (d *DockConfirmation) Setup() {
 	acceptButton := button.New(button.Config{
 		OnClick: func(*button.Button) {
 			if d.OnDockAccept != nil {
-				d.OnDockAccept()
+				d.OnDockAccept(d.Port)
 			}
 		},
 		Config: label.Config{

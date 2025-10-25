@@ -6,9 +6,10 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/colors"
+	"github.com/jhuggett/frontend/utils/space_translator"
 )
 
-func NewCursorDoodad(spaceTranslator SpaceTranslator) *CursorDoodad {
+func NewCursorDoodad(spaceTranslator space_translator.SpaceTranslator) *CursorDoodad {
 	cursorDoodad := &CursorDoodad{
 		SpaceTranslator: spaceTranslator,
 	}
@@ -19,7 +20,7 @@ func NewCursorDoodad(spaceTranslator SpaceTranslator) *CursorDoodad {
 type CursorDoodad struct {
 	MouseX, MouseY int
 
-	SpaceTranslator SpaceTranslator
+	SpaceTranslator space_translator.SpaceTranslator
 
 	img *ebiten.Image
 
@@ -48,7 +49,7 @@ func (w *CursorDoodad) Draw(screen *ebiten.Image) {
 
 	x, y = w.SpaceTranslator.FromWorldToData(x, y)
 
-	x, y = Floor(x, y)
+	x, y = space_translator.Floor(x, y)
 
 	x, y = w.SpaceTranslator.FromDataToWorld(x, y)
 

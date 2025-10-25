@@ -44,7 +44,7 @@ func (m *MainMenuPage) Setup() {
 					ShipID:    gameSession.ShipID,
 					PlayerID:  gameSession.PlayerID,
 					GameMapID: gameSession.GameMapID,
-				})
+				}, m.App)
 				// m.PageControls.Push(newPage)
 				m.App.Replace(newPage)
 			},
@@ -58,7 +58,7 @@ func (m *MainMenuPage) Setup() {
 
 	newGameButton := button.New(button.Config{
 		OnClick: func(b *button.Button) {
-			newPage := world_map.New(nil)
+			newPage := world_map.New(nil, m.App)
 			// m.PageControls.Push(newPage)
 			m.App.Replace(newPage)
 		},

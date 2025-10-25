@@ -9,12 +9,13 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jhuggett/frontend/game"
+	"github.com/jhuggett/frontend/utils/space_translator"
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/outbound"
 )
 
 func NewRouteDoodad(
-	spaceTranslator SpaceTranslator,
+	spaceTranslator space_translator.SpaceTranslator,
 	ship *game.Ship,
 ) *RouteDoodad {
 	routeDoodad := &RouteDoodad{
@@ -26,7 +27,7 @@ func NewRouteDoodad(
 }
 
 type RouteDoodad struct {
-	SpaceTranslator SpaceTranslator
+	SpaceTranslator space_translator.SpaceTranslator
 	Ship            *game.Ship
 
 	img              *ebiten.Image

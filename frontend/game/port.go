@@ -60,3 +60,22 @@ func (p *Port) Location() inbound.Point {
 		Y: p.RawData.Point.Y,
 	}
 }
+
+func (p *Port) GetBuildings() ([]*Building, error) {
+	resp, err := p.Manager.GetBuildingsByPortID(p.RawData.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*Building
+	for _, b := range resp.Buildings {
+		result = append(result, &Building{
+			Name: b.Name,
+			Type: b.Type,
+			X:    b.X,
+			Y:    b.Y,
+		})
+	}
+
+	return result, nil
+}

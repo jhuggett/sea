@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jhuggett/frontend/game"
+	"github.com/jhuggett/frontend/utils/space_translator"
 )
 
 type ContinentDoodad struct {
@@ -20,7 +21,7 @@ type ContinentDoodad struct {
 	SmallestPointX int
 	SmallestPointY int
 
-	SpaceTranslator SpaceTranslator
+	SpaceTranslator space_translator.SpaceTranslator
 
 	Image *ebiten.Image
 }

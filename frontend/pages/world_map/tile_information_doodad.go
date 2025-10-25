@@ -11,10 +11,11 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/colors"
+	"github.com/jhuggett/frontend/utils/space_translator"
 )
 
 func NewTileInformationDoodad(
-	spaceTranslator SpaceTranslator,
+	spaceTranslator space_translator.SpaceTranslator,
 ) *TileInformationDoodad {
 	doodad := &TileInformationDoodad{
 		SpaceTranslator: spaceTranslator,
@@ -24,7 +25,7 @@ func NewTileInformationDoodad(
 }
 
 type TileInformationDoodad struct {
-	SpaceTranslator
+	space_translator.SpaceTranslator
 
 	Hidden bool
 

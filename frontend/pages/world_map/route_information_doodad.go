@@ -11,6 +11,7 @@ import (
 
 	"github.com/jhuggett/frontend/colors"
 	"github.com/jhuggett/frontend/game"
+	"github.com/jhuggett/frontend/utils/space_translator"
 )
 
 func NewRouteInformationDoodad(
@@ -31,7 +32,7 @@ func NewRouteInformationDoodad(
 }
 
 type RouteInformationDoodad struct {
-	SpaceTranslator SpaceTranslator
+	SpaceTranslator space_translator.SpaceTranslator
 
 	Postioner func(*box.Box)
 

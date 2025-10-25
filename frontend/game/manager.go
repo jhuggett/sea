@@ -218,6 +218,12 @@ func (s *Manager) RequestCrewInfo() error {
 	return err
 }
 
+func (s *Manager) GetBuildingsByPortID(portID uint) (inbound.GetBuildingsForPortResp, error) {
+	return inbound.GetBuildingsForPort(s.Conn, inbound.GetBuildingsForPortReq{
+		PortID: portID,
+	})
+}
+
 /*
 
 Ship ---

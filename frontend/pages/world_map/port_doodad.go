@@ -6,11 +6,12 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/game"
+	"github.com/jhuggett/frontend/utils/space_translator"
 )
 
 func NewPortDoodad(
 	port *game.Port,
-	spaceTranslator SpaceTranslator,
+	spaceTranslator space_translator.SpaceTranslator,
 ) *PortDoodad {
 	portDoodad := &PortDoodad{
 		Port:            port,
@@ -25,7 +26,7 @@ type PortDoodad struct {
 
 	img *ebiten.Image
 
-	SpaceTranslator SpaceTranslator
+	SpaceTranslator space_translator.SpaceTranslator
 
 	doodad.Default
 }

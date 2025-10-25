@@ -1,21 +1,23 @@
 package world_map
 
 import (
+	design_library "design-library"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
 	"design-library/reaction"
 	"fmt"
 	"image/color"
-	"math"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jhuggett/frontend/game"
+	"github.com/jhuggett/frontend/pages/port_map"
 	"github.com/jhuggett/frontend/pages/world_map/bottom_bar"
 	"github.com/jhuggett/frontend/pages/world_map/camera"
 	"github.com/jhuggett/frontend/pages/world_map/pause_menu"
+	"github.com/jhuggett/frontend/utils/space_translator"
 	"github.com/jhuggett/sea/game_context"
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/outbound"
@@ -115,8 +117,10 @@ type Ship struct {
 }
 
 type WorldMapPage struct {
+	App *design_library.App
+
 	Camera          *camera.Camera
-	SpaceTranslator SpaceTranslator
+	SpaceTranslator space_translator.SpaceTranslator
 
 	GameSnapshot *game_context.Snapshot
 	GameManager  *game.Manager
@@ -127,9 +131,6 @@ type WorldMapPage struct {
 
 	dockConfirmation      *DockConfirmation
 	portInteractionScreen *PortInteractionScreen
-
-	// Track when we're near a port
-	nearbyPort *game.Port
 }
 
 func (w *WorldMapPage) SetupLoadingScreen() {
@@ -156,10 +157,12 @@ func (w *WorldMapPage) LoadRequiredData() error {
 		ZoomFactor: 1,
 	}
 
-	w.SpaceTranslator = &spaceTranslator{
-		camera:   w.Camera,
-		tileSize: w.Camera.TileSize,
-	}
+	// w.SpaceTranslator = &spaceTranslator{
+	// 	camera:   w.Camera,
+	// 	tileSize: w.Camera.TileSize,
+	// }
+
+	w.SpaceTranslator = space_translator.New(w.Camera, float64(w.Camera.TileSize))
 
 	gameManager := game.NewManager(w.GameSnapshot)
 	gameManager.SetTileSize(int(w.Camera.TileSize))
@@ -255,7 +258,6 @@ func (w *WorldMapPage) SetupMainScreen() {
 	pauseMenu := pause_menu.NewPauseMenu()
 	w.AddChild(pauseMenu)
 	pauseMenu.Layout().Computed(func(b *box.Box) {
-
 		b.Copy(w.Box)
 	})
 	pauseMenu.Hide()
@@ -264,33 +266,52 @@ func (w *WorldMapPage) SetupMainScreen() {
 	w.dockConfirmation = NewDockConfirmation(
 		w.GameManager,
 		nil, // Will set this when a port is detected
-		func() {
+		func(port *game.Port) {
 			// On dock accepted
 			w.dockConfirmation.Hide()
 
-			if w.nearbyPort != nil {
-				// Show port interaction screen
-				if w.portInteractionScreen == nil {
-					w.portInteractionScreen = NewPortInteractionScreen(
-						w.GameManager,
-						w.nearbyPort,
-						func() {
-							// On close port screen
-							w.portInteractionScreen.Hide()
-							w.nearbyPort = nil
-						},
-					)
-					w.AddChild(w.portInteractionScreen)
-					w.Children().Setup()
+			// if w.nearbyPort != nil {
+			// 	// Show port interaction screen
+			// 	if w.portInteractionScreen == nil {
+			// 		w.portInteractionScreen = NewPortInteractionScreen(
+			// 			w.GameManager,
+			// 			w.nearbyPort,
+			// 			func() {
+			// 				// On close port screen
+			// 				w.portInteractionScreen.Hide()
+			// 				w.nearbyPort = nil
+			// 			},
+			// 		)
+			// 		w.AddChild(w.portInteractionScreen)
+			// 		w.Children().Setup()
 
-					w.portInteractionScreen.Layout().Computed(func(b *box.Box) {
-						b.Copy(w.Box)
-					})
-				} else {
-					w.portInteractionScreen.Port = w.nearbyPort
-					w.portInteractionScreen.Show()
-				}
+			// 		w.portInteractionScreen.Layout().Computed(func(b *box.Box) {
+			// 			b.Copy(w.Box)
+			// 		})
+			// 	} else {
+			// 		w.portInteractionScreen.Port = w.nearbyPort
+			// 		w.portInteractionScreen.Show()
+			// 	}
+			// }
+
+			w.GameManager.ControlTime(inbound.ControlTimeReq{
+				Pause: true,
+			})
+
+			portMap := port_map.New(
+				w.GameManager,
+				w.App,
+				port,
+			)
+
+			portMap.GoBack = func() {
+				w.App.Replace(New(
+					w.GameSnapshot,
+					w.App,
+				))
 			}
+
+			w.App.Replace(portMap)
 		},
 		func() {
 			// On dock declined
@@ -330,18 +351,19 @@ func (w *WorldMapPage) SetupMainScreen() {
 				worldX := (float64(mouseX) / w.Camera.ZoomFactor) + w.Camera.Position[0]
 				worldY := (float64(mouseY) / w.Camera.ZoomFactor) + w.Camera.Position[1]
 
-				// oldZoom := w.Camera.ZoomFactor
-				if event.YOffset > 0 {
-					w.Camera.ZoomFactor += 0.1
-				} else {
-					w.Camera.ZoomFactor -= 0.1
-					if w.Camera.ZoomFactor < 0.1 {
-						w.Camera.ZoomFactor = 0.1
-					}
-				}
-				newZoom := w.Camera.ZoomFactor
+				// Scale zoom by event.YOffset (so trackpads produce smaller changes)
+				zoomDelta := event.YOffset * 0.1 // reduce sensitivity; tune this constant
+				w.Camera.ZoomFactor += zoomDelta
 
-				// Adjust camera position so the world point under the mouse stays under the mouse
+				// Clamp zoom
+				if w.Camera.ZoomFactor < 0.1 {
+					w.Camera.ZoomFactor = 0.1
+				} else if w.Camera.ZoomFactor > 10 {
+					w.Camera.ZoomFactor = 10
+				}
+
+				// Adjust camera position so the world point under the mouse stays fixed
+				newZoom := w.Camera.ZoomFactor
 				w.Camera.Position[0] = worldX - float64(mouseX)/newZoom
 				w.Camera.Position[1] = worldY - float64(mouseY)/newZoom
 			},
@@ -389,9 +411,10 @@ func (w *WorldMapPage) Setup() {
 	w.Box.Recalculate()
 }
 
-func New(snapshot *game_context.Snapshot) *WorldMapPage {
+func New(snapshot *game_context.Snapshot, app *design_library.App) *WorldMapPage {
 	p := &WorldMapPage{
 		GameSnapshot: snapshot,
+		App:          app,
 	}
 
 	return p
@@ -400,39 +423,4 @@ func New(snapshot *game_context.Snapshot) *WorldMapPage {
 func (w *WorldMapPage) SetWidthAndHeight(width, height int) {
 	w.Box.SetDimensions(width, height)
 	w.Box.Recalculate()
-}
-
-// Check if the player's ship is near a port
-func (w *WorldMapPage) checkNearbyPorts() {
-	if w.GameManager == nil || w.GameManager.PlayerShip == nil || w.GameManager.WorldMap == nil {
-		return
-	}
-
-	shipX := w.GameManager.PlayerShip.RawData.X
-	shipY := w.GameManager.PlayerShip.RawData.Y
-
-	// Distance threshold for detecting nearby ports
-	const dockingDistance = 0.5
-
-	for _, port := range w.GameManager.WorldMap.Ports {
-		portX := float64(port.Location().X)
-		portY := float64(port.Location().Y)
-
-		// Calculate distance between ship and port
-		dx := shipX - portX
-		dy := shipY - portY
-		distance := math.Sqrt(dx*dx + dy*dy)
-
-		if distance <= dockingDistance {
-			w.nearbyPort = port
-
-			// Update dock confirmation with the current port
-			w.dockConfirmation.Port = port
-			w.dockConfirmation.Show()
-			return
-		}
-	}
-
-	// No nearby port found
-	w.nearbyPort = nil
 }
