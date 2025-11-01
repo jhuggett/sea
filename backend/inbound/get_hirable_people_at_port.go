@@ -1,8 +1,6 @@
 package inbound
 
 import (
-	"encoding/json"
-
 	"github.com/jhuggett/sea/data/person"
 	"github.com/jhuggett/sea/data/port"
 )
@@ -27,33 +25,26 @@ type GetHirablePeopleAtPortResp struct {
 	People []Person `json:"people"`
 }
 
-func GetHirablePeopleAtPort(conn Connection) InboundFunc {
-	return func(req json.RawMessage) (interface{}, error) {
-		var r GetHirablePeopleAtPortReq
-		if err := json.Unmarshal(req, &r); err != nil {
-			return nil, err
-		}
-
-		port, err := port.Get(r.PortID)
-		if err != nil {
-			return nil, err
-		}
-
-		people := person.GeneratePeople(10)
-
-		resp := GetHirablePeopleAtPortResp{
-			People: []Person{},
-		}
-
-		for _, p := range people {
-			resp.People = append(resp.People, Person{
-				FirstName:        p.FirstName,
-				LastName:         p.LastName,
-				NickName:         p.NickName,
-				Age:              int(p.Age),
-				PlaceOfResidence: port.Persistent.Name,
-			})
-		}
-		return resp, nil
+func GetHirablePeopleAtPort(r GetHirablePeopleAtPortReq) (GetHirablePeopleAtPortResp, error) {
+	port, err := port.Get(r.PortID)
+	if err != nil {
+		return GetHirablePeopleAtPortResp{}, err
 	}
+
+	people := person.GeneratePeople(1)
+
+	resp := GetHirablePeopleAtPortResp{
+		People: []Person{},
+	}
+
+	for _, p := range people {
+		resp.People = append(resp.People, Person{
+			FirstName:        p.FirstName,
+			LastName:         p.LastName,
+			NickName:         p.NickName,
+			Age:              int(p.Age),
+			PlaceOfResidence: port.Persistent.Name,
+		})
+	}
+	return resp, nil
 }

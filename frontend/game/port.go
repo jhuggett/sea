@@ -74,6 +74,7 @@ func (p *Port) GetBuildings() ([]*Building, error) {
 			Type: b.Type,
 			X:    b.X,
 			Y:    b.Y,
+			Port: p,
 		})
 	}
 
