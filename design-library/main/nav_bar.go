@@ -56,6 +56,15 @@ func (n *NavBar) Setup() {
 		},
 	})
 
+	thirdPageButton := button.New(button.Config{
+		OnClick: func(b *button.Button) {
+			n.App.Replace(NewThirdPage(n.App))
+		},
+		Config: label.Config{
+			Message: "Third Page",
+		},
+	})
+
 	mainStack := stack.New(stack.Config{
 		Type: stack.Vertical,
 		BackgroundColor: color.RGBA{
@@ -81,6 +90,7 @@ func (n *NavBar) Setup() {
 		titleLabel,
 		firstPageButton,
 		secondPageButton,
+		thirdPageButton,
 	)
 
 	n.Children().Setup()

@@ -158,6 +158,7 @@ func (b *Box) Contains(other *Box) bool {
 
 func (b *Box) recalculateIfNeeded() {
 	if b.needsRecalculation && len(b.calculationSteps) > 0 {
+
 		b.recalculationCount++
 		b.needsRecalculation = false
 		b.ZeroOut()
@@ -165,6 +166,7 @@ func (b *Box) recalculateIfNeeded() {
 			step(b)
 		}
 	}
+
 }
 
 func (b *Box) X() int {

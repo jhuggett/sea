@@ -43,25 +43,11 @@ func NewApp(startup func(*App)) *App {
 	)
 	app.Reactions().Register(app.Gesturer(), app.Z())
 
-	// app.Gesturer().OnKeyDown(func(key ebiten.Key) error {
-	// 	if key == ebiten.KeyD {
-	// 		app.Children().PrettyPrint(0)
-	// 		fmt.Printf("App layout: %s\n", app.Default.Layout().String())
-	// 	}
-
-	// 	if key == ebiten.KeyR {
-	// 		app.Default.Layout().Recalculate()
-	// 		slog.Info("Recalculated layout")
-	// 	}
-
-	// 	return nil
-	// })
-
 	return app
 }
 
 type App struct {
-	CurrentPage doodad.Doodad
+	PageStack []doodad.Doodad
 
 	startup func(*App)
 
@@ -72,29 +58,86 @@ func (g *App) Start() {
 	g.startup(g)
 }
 
-func (g *App) Push(page doodad.Doodad) {
-	// g.CurrentPage = page
-
-	if g.CurrentPage != nil {
-		g.CurrentPage.Hide()
+func (g *App) Current() doodad.Doodad {
+	if len(g.PageStack) == 0 {
+		return nil
 	}
+	return g.PageStack[len(g.PageStack)-1]
+}
+
+func (g *App) SetupCurrentPage() {
+	if g.Current() != nil {
+		g.Current().Setup()
+	}
+}
+
+func (g *App) Push(page doodad.Doodad) {
+	if len(g.PageStack) > 0 {
+		g.Current().Hide()
+	}
+	g.PageStack = append(g.PageStack, page)
 
 	g.AddChild(page)
-	g.Children().Setup()
+	g.SetupCurrentPage()
 }
 
 func (g *App) Replace(page doodad.Doodad) {
-	// g.CurrentPage = page
-	g.Children().Clear()
+	if len(g.PageStack) > 0 {
+		g.Children().Remove(g.Current())
+		g.PageStack = g.PageStack[:len(g.PageStack)-1]
+	}
+
+	g.PageStack = append(g.PageStack, page)
+
 	g.AddChild(page)
 
-	g.Children().Setup()
+	g.SetupCurrentPage()
 
 	g.Box.Recalculate()
 }
 
 func (g *App) Pop() {
-	// TODO: Implement
+	if len(g.PageStack) == 0 {
+		return
+	}
+
+	g.Children().Remove(g.Current())
+	g.PageStack = g.PageStack[:len(g.PageStack)-1]
+
+	if len(g.PageStack) > 0 {
+		g.Current().Show()
+	}
+
+	g.Box.Recalculate()
+}
+
+func (g *App) PopBy(count int) {
+	if len(g.PageStack) == 0 || count <= 0 {
+		return
+	}
+
+	if count > len(g.PageStack) {
+		count = len(g.PageStack)
+	}
+
+	for i := 0; i < count; i++ {
+		g.Children().Remove(g.Current())
+		g.PageStack = g.PageStack[:len(g.PageStack)-1]
+	}
+
+	if len(g.PageStack) > 0 {
+		g.Current().Show()
+	}
+
+	g.Box.Recalculate()
+}
+
+func (g *App) PopToRoot() {
+	if len(g.PageStack) == 0 {
+		return
+	}
+
+	g.PopBy(len(g.PageStack) - 1)
 }
 
 func (g *App) Update() error {
@@ -120,6 +163,7 @@ func (g *App) Draw(screen *ebiten.Image) {
 
 	x, y := g.Gesturer().CurrentMouseLocation()
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Mouse: %d, %d", x, y), 4, screen.Bounds().Dy()-14)
+
 }
 
 func (g *App) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

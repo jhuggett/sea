@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.6
 
 require (
-	github.com/hajimehoshi/ebiten/v2 v2.9.0
+	github.com/hajimehoshi/ebiten/v2 v2.9.3
 	github.com/stretchr/testify v1.10.0
 )
 
@@ -21,6 +21,7 @@ require (
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/exp v0.0.0-20190731235908-ec7cb31e5a56 // indirect
 	golang.org/x/mobile v0.0.0-20210208171126-f462b3930c8f // indirect
 	golang.org/x/sync v0.17.0 // indirect

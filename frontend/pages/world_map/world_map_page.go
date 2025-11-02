@@ -219,18 +219,6 @@ func (w *WorldMapPage) SetupMainScreen() {
 
 	w.GameManager.OnShipDockedCallback.Register(func(req outbound.ShipDockedReq) error {
 		if !req.Undocked {
-			// // Ship has docked at a port - find which port
-			// for _, port := range w.GameManager.WorldMap.Ports {
-			// 	if port.RawData.ID == req.Port.ID {
-			// 		w.nearbyPort = port
-
-			// 		// Update dock confirmation with the current port
-			// 		w.dockConfirmation.Port = port
-			// 		w.dockConfirmation.Show()
-			// 		break
-			// 	}
-			// }
-
 			w.dockConfirmation.Port = game.PortFromOutboundData(w.GameManager, req.Port)
 			w.dockConfirmation.Show()
 			doodad.ReSetup(w.dockConfirmation)
@@ -255,7 +243,7 @@ func (w *WorldMapPage) SetupMainScreen() {
 	w.AddChild(routeInfoDoodad)
 	// routeInfoDoodad.Hide()
 
-	pauseMenu := pause_menu.NewPauseMenu()
+	pauseMenu := pause_menu.NewPauseMenu(w.App)
 	w.AddChild(pauseMenu)
 	pauseMenu.Layout().Computed(func(b *box.Box) {
 		b.Copy(w.Box)
@@ -270,30 +258,6 @@ func (w *WorldMapPage) SetupMainScreen() {
 			// On dock accepted
 			w.dockConfirmation.Hide()
 
-			// if w.nearbyPort != nil {
-			// 	// Show port interaction screen
-			// 	if w.portInteractionScreen == nil {
-			// 		w.portInteractionScreen = NewPortInteractionScreen(
-			// 			w.GameManager,
-			// 			w.nearbyPort,
-			// 			func() {
-			// 				// On close port screen
-			// 				w.portInteractionScreen.Hide()
-			// 				w.nearbyPort = nil
-			// 			},
-			// 		)
-			// 		w.AddChild(w.portInteractionScreen)
-			// 		w.Children().Setup()
-
-			// 		w.portInteractionScreen.Layout().Computed(func(b *box.Box) {
-			// 			b.Copy(w.Box)
-			// 		})
-			// 	} else {
-			// 		w.portInteractionScreen.Port = w.nearbyPort
-			// 		w.portInteractionScreen.Show()
-			// 	}
-			// }
-
 			w.GameManager.ControlTime(inbound.ControlTimeReq{
 				Pause: true,
 			})
@@ -305,13 +269,10 @@ func (w *WorldMapPage) SetupMainScreen() {
 			)
 
 			portMap.GoBack = func() {
-				w.App.Replace(New(
-					w.GameSnapshot,
-					w.App,
-				))
+				w.App.Pop()
 			}
 
-			w.App.Replace(portMap)
+			w.App.Push(portMap)
 		},
 		func() {
 			// On dock declined

@@ -46,7 +46,7 @@ func (m *MainMenuPage) Setup() {
 					GameMapID: gameSession.GameMapID,
 				}, m.App)
 				// m.PageControls.Push(newPage)
-				m.App.Replace(newPage)
+				m.App.Push(newPage)
 			},
 			Config: label.Config{
 				Message: fmt.Sprintf("Load Game: %s", gameSession.UpdatedAt.Format("2006-01-02 15:04:05")),
@@ -60,7 +60,7 @@ func (m *MainMenuPage) Setup() {
 		OnClick: func(b *button.Button) {
 			newPage := world_map.New(nil, m.App)
 			// m.PageControls.Push(newPage)
-			m.App.Replace(newPage)
+			m.App.Push(newPage)
 		},
 		Config: label.Config{
 			Message: "New Game",

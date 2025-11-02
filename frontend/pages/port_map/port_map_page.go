@@ -78,7 +78,7 @@ func (p *PortMapPage) Setup() {
 		}] = building
 	}
 
-	pauseMenu := pause_menu.NewPauseMenu()
+	pauseMenu := pause_menu.NewPauseMenu(p.App)
 	p.AddChild(pauseMenu)
 	pauseMenu.Hide()
 

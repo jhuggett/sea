@@ -64,7 +64,7 @@ func (s *ShipInventoryPanel) Setup() {
 		)
 		s.Children().Setup()
 
-		go s.Manager.PlayerShip.TriggerShipInventoryRequest()
+		// go s.Manager.PlayerShip.TriggerShipInventoryRequest()
 		return
 	}
 

@@ -35,7 +35,7 @@ func Play(path string) (*audio.Player, error) {
 		return nil, err
 	}
 
-	singlePlayer.SetVolume(0.5) // Set volume to 50%
+	singlePlayer.SetVolume(0.1) // Set volume to 50%
 	singlePlayer.Rewind()
 	singlePlayer.Play()
 

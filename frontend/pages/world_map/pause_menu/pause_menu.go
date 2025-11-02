@@ -1,6 +1,7 @@
 package pause_menu
 
 import (
+	design_library "design-library"
 	"design-library/button"
 	"design-library/doodad"
 	"design-library/label"
@@ -12,12 +13,17 @@ import (
 	"github.com/jhuggett/frontend/colors"
 )
 
-func NewPauseMenu() *PauseMenu {
-	pauseMenu := &PauseMenu{}
+func NewPauseMenu(
+	app *design_library.App,
+) *PauseMenu {
+	pauseMenu := &PauseMenu{
+		App: app,
+	}
 	return pauseMenu
 }
 
 type PauseMenu struct {
+	App *design_library.App
 	doodad.Default
 }
 
@@ -45,6 +51,14 @@ func (w *PauseMenu) Setup() {
 				},
 				Config: label.Config{
 					Message: "Resume",
+				},
+			}),
+			button.New(button.Config{
+				OnClick: func(*button.Button) {
+					w.App.PopToRoot()
+				},
+				Config: label.Config{
+					Message: "Quit to Main Menu",
 				},
 			}),
 			button.New(button.Config{
