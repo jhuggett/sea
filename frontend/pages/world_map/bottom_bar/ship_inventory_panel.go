@@ -1,6 +1,7 @@
 package bottom_bar
 
 import (
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -42,10 +43,7 @@ func (s *ShipInventoryPanel) Setup() {
 	}
 
 	// Main container stack
-	mainStack := stack.New(stack.Config{
-		FitContents: true,
-		Type:        stack.Vertical,
-	})
+	mainStack := stack.New(stack.Config{})
 	s.AddChild(mainStack)
 
 	// Title
@@ -77,11 +75,11 @@ func (s *ShipInventoryPanel) Setup() {
 
 	// Create header for items table
 	headerStack := stack.New(stack.Config{
-		Type:            stack.Horizontal,
+		Flow:            config.LeftToRight,
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
-		FitContents:     true,
-		SpaceBetween:    10,
-		Padding: stack.Padding{
+
+		SpaceBetween: 10,
+		Padding: config.Padding{
 			Top: 15,
 		},
 	})
@@ -103,17 +101,13 @@ func (s *ShipInventoryPanel) Setup() {
 	)
 
 	// Create a scrollable list for items
-	itemsContainer := stack.New(stack.Config{
-		Type:        stack.Vertical,
-		FitContents: true,
-	})
+	itemsContainer := stack.New(stack.Config{})
 	mainStack.AddChild(itemsContainer)
 
 	// Add each item to the list
 	for _, item := range s.InventoryData.Inventory.Items {
 		itemRow := stack.New(stack.Config{
-			Type:         stack.Horizontal,
-			FitContents:  true,
+			Flow:         config.LeftToRight,
 			SpaceBetween: 10,
 		})
 		itemsContainer.AddChild(itemRow)

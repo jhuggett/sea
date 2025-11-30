@@ -3,8 +3,6 @@ package doodad
 import (
 	"design-library/position/box"
 	"design-library/reaction"
-	"fmt"
-	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -21,10 +19,11 @@ type Default struct {
 
 	z int
 
+	cachedDraw []*CachedDraw
+
 	actionOnTeardown []func()
 
-	// unregisterGestures []func()
-	// register           func()
+	statefulDoodads map[string]Doodad
 }
 
 func (t *Default) DoOnTeardown(actions ...func()) {
@@ -47,19 +46,26 @@ func (t *Default) Draw(screen *ebiten.Image) {
 	if t.hidden {
 		return
 	}
+
+	if cached := t.CachedDraw(); cached != nil {
+		for _, draw := range cached {
+			op := &ebiten.DrawImageOptions{}
+			if draw.Op != nil {
+				op = draw.Op
+			}
+			op.GeoM.Translate(float64(draw.X), float64(draw.Y))
+
+			x, y := t.Layout().XY()
+			op.GeoM.Translate(float64(x), float64(y))
+
+			screen.DrawImage(draw.Image, op)
+		}
+	}
+
 	t.Children().Draw(screen)
 }
 
-// func (t *Default) unregister() {
-// 	for _, unregister := range t.unregisterGestures {
-// 		unregister()
-// 	}
-// 	t.unregisterGestures = nil
-// }
-
 func (t *Default) Teardown() error {
-	// t.unregister()
-
 	for _, action := range t.actionOnTeardown {
 		action()
 	}
@@ -85,16 +91,16 @@ func (t *Default) AddChild(doodads ...Doodad) {
 	for _, doodad := range doodads {
 		// Colorized logging using ASCII color codes
 		// Print colorized message about child addition
-		parentType := fmt.Sprintf("%T", t)
-		childType := fmt.Sprintf("%T", doodad)
-		fmt.Printf("🔗 Adding child: \x1b[36m%s\x1b[0m to parent: \x1b[32m%s\x1b[0m\n", childType, parentType)
+		// parentType := fmt.Sprintf("%T", t)
+		// childType := fmt.Sprintf("%T", doodad)
+		// fmt.Printf("🔗 Adding child: \x1b[36m%s\x1b[0m to parent: \x1b[32m%s\x1b[0m\n", childType, parentType)
 
-		// Still log structured information
-		slog.Info(
-			"Adding child to parent",
-			"parent", parentType,
-			"child", childType,
-		)
+		// // Still log structured information
+		// slog.Info(
+		// 	"Adding child to parent",
+		// 	"parent", parentType,
+		// 	"child", childType,
+		// )
 
 		if doodad.Children() == nil {
 			doodad.SetChildren(NewChildren(doodad))
@@ -105,7 +111,9 @@ func (t *Default) AddChild(doodads ...Doodad) {
 				b.Copy(t.Layout())
 			}))
 		}
-		t.Layout().AddDependent(doodad.Layout())
+		if !t.Layout().HasDependent(doodad.Layout()) {
+			t.Layout().AddDependent(doodad.Layout())
+		}
 
 		if doodad.Reactions() == nil {
 			doodad.SetReactions(&reaction.Reactions{})
@@ -197,4 +205,39 @@ func (t *Default) SetReactions(reactions *reaction.Reactions) {
 		t.reactions.Unregister()
 	}
 	t.reactions = reactions
+}
+
+func (t *Default) CachedDraw() []*CachedDraw {
+	return t.cachedDraw
+}
+
+func (t *Default) SetCachedDraw(cachedDraw ...*CachedDraw) {
+	t.cachedDraw = cachedDraw
+}
+
+func (t *Default) StatefulDoodads() map[string]Doodad {
+	if t.statefulDoodads == nil {
+		t.statefulDoodads = make(map[string]Doodad)
+	}
+	return t.statefulDoodads
+}
+
+func (t *Default) AddStatefulChild(key string, create func() Doodad) Doodad {
+	child := Stateful(t, key, create)
+
+	t.AddChild(child)
+
+	return child
+}
+
+func Stateful[D Doodad](d Doodad, key string, create func() D) D {
+	statefulMap := d.StatefulDoodads()
+
+	if existing, exists := statefulMap[key]; exists {
+		return existing.(D)
+	}
+
+	newDoodad := create()
+	statefulMap[key] = newDoodad
+	return newDoodad
 }

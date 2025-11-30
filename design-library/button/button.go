@@ -10,6 +10,14 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+type ButtonState int
+
+const (
+	ButtonStateNormal ButtonState = iota
+	ButtonStateHovered
+	ButtonStatePressed
+)
+
 type Config struct {
 	OnClick func(*Button)
 	label.Config
@@ -21,48 +29,33 @@ func New(config Config) *Button {
 	button.OnClick = config.OnClick
 
 	button.labelConfig = config.Config
-
-	if config.Layout != nil {
-		button.Box = config.Layout
-	} else {
-		// button.Box = box.New(box.Config{})
-	}
+	button.Box = config.Layout
 
 	button.labelConfig.BackgroundColor = color.RGBA{50, 50, 50, 100}
 	button.labelConfig.Padding = label.Padding{Top: 5, Right: 10, Bottom: 5, Left: 10}
 
+	button.ConfigureLabelsForStates()
+
+	button.buttonState = ButtonStateNormal
+
 	return button
 }
 
-type Button struct {
-	message string
+func (w *Button) ConfigureLabelsForStates() {
+	w.labelForState = make(map[ButtonState]func() *label.Label)
 
-	labelConfig label.Config
+	w.labelForState[ButtonStateNormal] = func() *label.Label {
+		return label.New(label.Config{
+			BackgroundColor: w.labelConfig.BackgroundColor,
+			ForegroundColor: w.labelConfig.ForegroundColor,
+			Message:         w.message,
+			FontSize:        w.labelConfig.FontSize,
+			Padding:         w.labelConfig.Padding,
+		})
+	}
 
-	onSetMessage func(message string)
-
-	OnClick func(*Button)
-
-	hovered bool
-
-	doodad.Default
-
-	showHoveringLabel   func()
-	showNonHoveredLabel func()
-}
-
-func (w *Button) Setup() {
-	nonHoveredLabel := label.New(label.Config{
-		BackgroundColor: w.labelConfig.BackgroundColor,
-		ForegroundColor: w.labelConfig.ForegroundColor,
-		Message:         w.message,
-		FontSize:        w.labelConfig.FontSize,
-		Padding:         w.labelConfig.Padding,
-	})
-	w.AddChild(nonHoveredLabel)
-
-	w.showHoveringLabel = func() {
-		nonHoveredLabel.Config = label.Config{
+	w.labelForState[ButtonStateHovered] = func() *label.Label {
+		return label.New(label.Config{
 			BackgroundColor: color.RGBA{50, 50, 50, 25},
 			ForegroundColor: color.RGBA{
 				R: 230,
@@ -73,27 +66,41 @@ func (w *Button) Setup() {
 			Message:  w.message,
 			FontSize: w.labelConfig.FontSize,
 			Padding:  w.labelConfig.Padding,
-		}
-
-		doodad.ReSetup(nonHoveredLabel)
-	}
-	w.showNonHoveredLabel = func() {
-		nonHoveredLabel.Config = label.Config{
-			BackgroundColor: w.labelConfig.BackgroundColor,
-			ForegroundColor: w.labelConfig.ForegroundColor,
-			Message:         w.message,
-			FontSize:        w.labelConfig.FontSize,
-			Padding:         w.labelConfig.Padding,
-		}
-
-		doodad.ReSetup(nonHoveredLabel)
+		})
 	}
 
-	w.onSetMessage = func(message string) {
-		nonHoveredLabel.SetMessage(message)
+	w.labelForState[ButtonStatePressed] = func() *label.Label {
+		return label.New(label.Config{
+			BackgroundColor: color.RGBA{25, 25, 25, 50},
+			ForegroundColor: color.RGBA{
+				R: 130,
+				G: 155,
+				B: 140,
+				A: 155,
+			},
+			Message:  w.message,
+			FontSize: w.labelConfig.FontSize,
+			Padding:  w.labelConfig.Padding,
+		})
 	}
+}
 
-	w.showNonHoveredLabel() // Show the non-hovered label by default
+type Button struct {
+	message string
+
+	labelConfig label.Config
+
+	OnClick func(*Button)
+
+	doodad.Default
+
+	buttonState   ButtonState
+	labelForState map[ButtonState]func() *label.Label
+}
+
+func (w *Button) Setup() {
+	buttonLabel := w.labelForState[w.buttonState]()
+	w.AddChild(buttonLabel)
 
 	w.Children().Setup()
 
@@ -104,23 +111,52 @@ func (w *Button) Setup() {
 
 	w.Reactions().Add(
 		reaction.NewMouseUpReaction(
-			doodad.MouseMovedWithin[*reaction.MouseUpEvent](w),
+			doodad.MouseIsWithin[*reaction.MouseUpEvent](w),
 			func(event *reaction.MouseUpEvent) {
+				if w.buttonState != ButtonStatePressed {
+					return
+				}
 				w.OnClick(w)
 				event.StopPropagation()
+
+				w.buttonState = ButtonStateHovered
+				doodad.ReSetup(w)
 			},
 		),
-		reaction.NewMouseMovedReaction(
-			doodad.MouseMovedWithin[*reaction.MouseMovedEvent](w),
-			func(event *reaction.MouseMovedEvent) {
-				w.hovering()
+		reaction.NewMouseDownReaction(
+			doodad.MouseIsWithin[*reaction.MouseDownEvent](w),
+			func(event *reaction.MouseDownEvent) {
+				if w.buttonState == ButtonStatePressed {
+					return
+				}
+				w.buttonState = ButtonStatePressed
+				doodad.ReSetup(w)
 				event.StopPropagation()
 			},
 		),
 		reaction.NewMouseMovedReaction(
-			doodad.MouseMovedOutside[*reaction.MouseMovedEvent](w),
+			doodad.MouseIsWithin[*reaction.MouseMovedEvent](w),
 			func(event *reaction.MouseMovedEvent) {
-				w.stoppedHovering()
+				event.StopPropagation()
+				if w.buttonState == ButtonStateHovered {
+					return
+				}
+
+				w.buttonState = ButtonStateHovered
+				doodad.ReSetup(w)
+				ebiten.SetCursorShape(ebiten.CursorShapePointer)
+			},
+		),
+		reaction.NewMouseMovedReaction(
+			doodad.MouseIsOutside[*reaction.MouseMovedEvent](w),
+			func(event *reaction.MouseMovedEvent) {
+				if w.buttonState == ButtonStateNormal {
+					return
+				}
+
+				w.buttonState = ButtonStateNormal
+				doodad.ReSetup(w)
+				ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 			},
 		),
 	)
@@ -128,60 +164,5 @@ func (w *Button) Setup() {
 
 func (w *Button) SetMessage(message string) {
 	w.message = message
-	w.onSetMessage(message)
+	doodad.ReSetup(w)
 }
-
-func (w *Button) hovering() {
-	if w.hovered {
-		return
-	}
-
-	w.hovered = true
-	w.showHoveringLabel()
-
-	ebiten.SetCursorShape(ebiten.CursorShapePointer) // Change cursor to text mode when hovering over the button
-}
-
-func (w *Button) stoppedHovering() {
-	if !w.hovered {
-		return
-	}
-
-	w.hovered = false
-	w.showNonHoveredLabel()
-	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
-}
-
-// func (w *Button) Gestures(gesturer doodad.Gesturer) []func() {
-// 	slog.Debug("Registering button gestures", "button", w, "gesturer", gesturer)
-
-// 	withinBounds := func(x, y int) bool {
-// 		return x >= w.Box.X() && x <= w.Box.X()+w.Box.Width() &&
-// 			y >= w.Box.Y() && y <= w.Box.Y()+w.Box.Height()
-// 	}
-
-// 	return []func(){
-// 		gesturer.OnMouseMove(func(x, y int) error {
-// 			if withinBounds(x, y) {
-// 				w.hovering()
-// 				return doodad.ErrStopPropagation
-// 			} else {
-// 				w.stoppedHovering()
-// 			}
-// 			return nil
-// 		}),
-// 		gesturer.OnMouseUp(func(event doodad.MouseUpEvent) error {
-// 			if event.Button != ebiten.MouseButtonLeft {
-// 				return nil
-// 			}
-// 			x, y := event.X, event.Y
-// 			if withinBounds(x, y) {
-// 				if w.OnClick != nil {
-// 					w.OnClick(w)
-// 				}
-// 				return doodad.ErrStopPropagation
-// 			}
-// 			return nil
-// 		}),
-// 	}
-// }

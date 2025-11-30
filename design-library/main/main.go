@@ -19,10 +19,15 @@ func main() {
 
 		ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
-		firstPage := NewFirstPage(
+		// firstPage := NewFirstPage(
+		// 	app,
+		// )
+		// app.Push(firstPage)
+
+		sandboxPage := NewSandboxPage(
 			app,
 		)
-		app.Push(firstPage)
+		app.Push(sandboxPage)
 
 		if err := ebiten.RunGame(app); err != nil {
 			panic(err)

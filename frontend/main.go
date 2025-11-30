@@ -1,34 +1,55 @@
 package main
 
 import (
-	"context"
 	"log/slog"
+	"os"
+	"runtime/pprof"
 
 	design_library "design-library"
-	"design-library/sound"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/pages/main_menu"
 	"github.com/jhuggett/sea/db"
 	"github.com/jhuggett/sea/log"
+
+	_ "net/http/pprof"
 )
 
 func main() {
 	// game := &Game{}
 	// game.Start()
 
-	sound.Setup()
+	cpuFile, err := os.Create("cpu.prof")
+	if err != nil {
+		panic(err)
+	}
+	pprof.StartCPUProfile(cpuFile)
+	defer pprof.StopCPUProfile()
 
-	backgroundMusic := sound.NewBackgroundMusic(
-		[]string{
-			"../assets/audio/IMG_0948.mp3",
-			"../assets/audio/IMG_0960.mp3",
-			"../assets/audio/IMG_0961.mp3",
-			"../assets/audio/IMG_0962.mp3",
-		},
-	)
+	// --- OPTIONAL: HEAP PROFILER ---
+	// Will write the heap profile when the game exits.
+	defer func() {
+		heapFile, err := os.Create("heap.prof")
+		if err != nil {
+			panic(err)
+		}
+		pprof.WriteHeapProfile(heapFile)
+	}()
 
-	go backgroundMusic.Run(context.Background())
+	// Switch to WAV format for sound files or OGG
+
+	// sound.Setup()
+
+	// backgroundMusic := sound.NewBackgroundMusic(
+	// 	[]string{
+	// 		"../assets/audio/IMG_0948.mp3",
+	// 		"../assets/audio/IMG_0960.mp3",
+	// 		"../assets/audio/IMG_0961.mp3",
+	// 		"../assets/audio/IMG_0962.mp3",
+	// 	},
+	// )
+
+	// go backgroundMusic.Run(context.Background())
 
 	app := design_library.NewApp(func(app *design_library.App) {
 		ebiten.SetWindowSize(1200, 800)

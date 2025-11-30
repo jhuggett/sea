@@ -3,6 +3,7 @@ package main
 import (
 	design_library "design-library"
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -29,6 +30,10 @@ type firstPage struct {
 }
 
 func (p *firstPage) Setup() {
+
+	navBar := NewNavBar(p.App)
+	p.AddChild(navBar)
+
 	titleLabel := label.New(label.Config{
 		Message:  "First Page",
 		FontSize: 36,
@@ -94,39 +99,26 @@ func (p *firstPage) Setup() {
 		Message: "This is yet another label",
 	})
 
-	mainStackChildren := &doodad.Children{
-		Doodads: []doodad.Doodad{
-			titleLabel,
-			exampleButton,
-			exampleButton2,
-			anotherLabel,
-			yetAnotherLabel,
-		},
-	}
-
 	mainStack := stack.New(stack.Config{
-		Type: stack.Vertical,
-		Layout: box.Computed(func(b *box.Box) {
-			boundingBox := box.Bounding(mainStackChildren.Boxes())
-			b.CopyDimensionsOf(boundingBox).CenterWithin(p.Layout())
-		}),
-		Children:     mainStackChildren,
 		SpaceBetween: 10,
-		Padding: stack.Padding{
-			Top:    20,
-			Right:  20,
-			Bottom: 20,
-			Left:   20,
-		},
+		Padding:      config.EqualPadding(20),
 		BackgroundColor: color.RGBA{
 			R: 100,
 			G: 150,
-			B: 100,
+			B: 170,
 			A: 255,
 		},
 	})
 
 	p.AddChild(mainStack)
+
+	mainStack.AddChild(
+		titleLabel,
+		exampleButton,
+		exampleButton2,
+		anotherLabel,
+		yetAnotherLabel,
+	)
 
 	toggleMessage := "Hide"
 
@@ -160,8 +152,13 @@ func (p *firstPage) Setup() {
 
 	p.AddChild(toggleButton)
 
-	navBar := NewNavBar(p.App)
-	p.AddChild(navBar)
+	contentPane := box.Computed(func(b *box.Box) {
+		b.Copy(p.Box).DecreaseWidth(navBar.Box.Width()).MoveRight(navBar.Box.Width())
+	})
+
+	mainStack.Layout().Computed(func(b *box.Box) {
+		b.AlignTopWithin(contentPane).AlignLeftWithin(contentPane)
+	})
 
 	p.Children().Setup()
 

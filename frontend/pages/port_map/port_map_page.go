@@ -33,8 +33,6 @@ type PortMapPage struct {
 	PointToBuilding map[f64.Vec2]*game.Building
 
 	doodad.Default
-
-	loaded bool
 }
 
 func New(manager *game.Manager, app *design_library.App, port *game.Port) *PortMapPage {
@@ -112,6 +110,8 @@ func (p *PortMapPage) Setup() {
 				return true
 			},
 			func(event *reaction.OnMouseDragEvent) {
+				event.StopPropagation()
+
 				p.Camera.Position[0] += float64(event.StartX-event.X) / p.Camera.ZoomFactor
 				p.Camera.Position[1] += float64(event.StartY-event.Y) / p.Camera.ZoomFactor
 			},
@@ -121,6 +121,8 @@ func (p *PortMapPage) Setup() {
 				return true
 			},
 			func(event *reaction.MouseWheelEvent) {
+				event.StopPropagation()
+
 				mouseX, mouseY := p.Gesturer().CurrentMouseLocation()
 
 				// Convert mouse position to world coordinates before zoom
@@ -161,6 +163,9 @@ func (p *PortMapPage) Setup() {
 		reaction.NewMouseUpReaction(func(event *reaction.MouseUpEvent) bool {
 			return true
 		}, func(event *reaction.MouseUpEvent) {
+
+			event.StopPropagation()
+
 			mouseX, mouseY := p.Gesturer().CurrentMouseLocation()
 
 			x, y := p.SpaceTranslator.FromWorldToData(p.SpaceTranslator.FromScreenToWorld(float64(mouseX), float64(mouseY)))

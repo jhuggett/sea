@@ -16,6 +16,10 @@ type MouseDownEvent struct {
 	*Event
 }
 
+func (e MouseDownEvent) XY() (int, int) {
+	return e.X, e.Y
+}
+
 func (e *MouseDownEvent) setEvent(event *Event) {
 	e.Event = event
 }

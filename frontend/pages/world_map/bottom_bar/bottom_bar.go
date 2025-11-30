@@ -2,6 +2,7 @@ package bottom_bar
 
 import (
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -92,25 +93,25 @@ func (b *BottomBar) Setup() {
 	})
 
 	mainStack := stack.New(stack.Config{
-		Type: stack.Horizontal,
-		Children: doodad.NewChildren(
-			b,
-			[]doodad.Doodad{
-				shipInfoPanelButton,
-				shipInventoryPanelButton,
-				crewPanelButton,
-			},
-		),
-		Layout: box.Computed(func(bb *box.Box) {
-			bb.SetWidth(b.Parent().Layout().Width()).SetHeight(50).SetY(b.Parent().Layout().Height() - 50)
-		}),
+		Flow:            config.LeftToRight,
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
+		LayoutRule:      stack.Fill,
 	})
 
 	b.AddChild(mainStack)
 
+	mainStack.AddChild(
+		shipInfoPanelButton,
+		shipInventoryPanelButton,
+		crewPanelButton,
+	)
+
 	b.panel = NewPanel()
 	b.AddChild(b.panel)
+
+	mainStack.Layout().Computed(func(bb *box.Box) {
+		bb.SetWidth(b.Box.Width()).SetHeight(50).AlignBottomWithin(b.Box)
+	})
 
 	b.Children().Setup()
 

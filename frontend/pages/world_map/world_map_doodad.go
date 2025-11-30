@@ -32,6 +32,8 @@ type WorldMapDoodad struct {
 	SmallestContinentPointY int
 
 	doodad.Default
+
+	ContinentDoodads []*ContinentDoodad
 }
 
 func (w *WorldMapDoodad) Draw(screen *ebiten.Image) {
@@ -74,58 +76,76 @@ func (w *WorldMapDoodad) Draw(screen *ebiten.Image) {
 	w.Children().Draw(screen)
 }
 
-func (w *WorldMapDoodad) Setup() {
-
-	if w.WorldMap == nil {
-		panic("WorldMap is nil, cannot setup WorldMapDoodad")
-	}
-
+func (w *WorldMapDoodad) Load() { // So setting up all the renderables doesn't block the UI thread
 	for _, continent := range w.WorldMap.Continents {
 		continentDoodad := &ContinentDoodad{
 			Continent:       continent,
 			SpaceTranslator: w.SpaceTranslator,
 		}
 
+		continentDoodad.Load()
+
+		w.ContinentDoodads = append(w.ContinentDoodads, continentDoodad)
+
+		largestX := 0
+		largestY := 0
+
+		for _, continent := range w.WorldMap.Continents {
+			if continent.LargestX > largestX {
+				largestX = continent.LargestX
+			}
+			if continent.LargestY > largestY {
+				largestY = continent.LargestY
+			}
+			if continent.SmallestX < w.SmallestContinentPointX {
+				w.SmallestContinentPointX = continent.SmallestX
+			}
+			if continent.SmallestY < w.SmallestContinentPointY {
+				w.SmallestContinentPointY = continent.SmallestY
+			}
+		}
+
+		w.Background = ebiten.NewImage(
+			int(float64(largestX+1)*float64(w.WorldMap.Manager.TileSize()))-int(float64(w.SmallestContinentPointX)*float64(w.WorldMap.Manager.TileSize())),
+			int(float64(largestY+1)*float64(w.WorldMap.Manager.TileSize()))-int(float64(w.SmallestContinentPointY)*float64(w.WorldMap.Manager.TileSize())),
+		)
+
+		// w.Background.Fill(color.RGBA{
+		// 	R: 220,
+		// 	G: 202,
+		// 	B: 127,
+		// 	A: 20,
+		// })
+
+		w.Background.Fill(color.RGBA{
+			R: 0,
+			G: 0,
+			B: 0,
+			A: 255,
+		})
+	}
+}
+
+func (w *WorldMapDoodad) Setup() {
+
+	if w.WorldMap == nil {
+		panic("WorldMap is nil, cannot setup WorldMapDoodad")
+	}
+
+	// for _, continent := range w.WorldMap.Continents {
+	// 	continentDoodad := &ContinentDoodad{
+	// 		Continent:       continent,
+	// 		SpaceTranslator: w.SpaceTranslator,
+	// 	}
+
+	// 	w.AddChild(continentDoodad)
+	// 	continentDoodad.Setup()
+	// }
+
+	for _, continentDoodad := range w.ContinentDoodads {
 		w.AddChild(continentDoodad)
 		continentDoodad.Setup()
 	}
-
-	largestX := 0
-	largestY := 0
-
-	for _, continent := range w.WorldMap.Continents {
-		if continent.LargestX > largestX {
-			largestX = continent.LargestX
-		}
-		if continent.LargestY > largestY {
-			largestY = continent.LargestY
-		}
-		if continent.SmallestX < w.SmallestContinentPointX {
-			w.SmallestContinentPointX = continent.SmallestX
-		}
-		if continent.SmallestY < w.SmallestContinentPointY {
-			w.SmallestContinentPointY = continent.SmallestY
-		}
-	}
-
-	w.Background = ebiten.NewImage(
-		int(float64(largestX+1)*float64(w.WorldMap.Manager.TileSize()))-int(float64(w.SmallestContinentPointX)*float64(w.WorldMap.Manager.TileSize())),
-		int(float64(largestY+1)*float64(w.WorldMap.Manager.TileSize()))-int(float64(w.SmallestContinentPointY)*float64(w.WorldMap.Manager.TileSize())),
-	)
-
-	// w.Background.Fill(color.RGBA{
-	// 	R: 220,
-	// 	G: 202,
-	// 	B: 127,
-	// 	A: 20,
-	// })
-
-	w.Background.Fill(color.RGBA{
-		R: 0,
-		G: 0,
-		B: 0,
-		A: 255,
-	})
 
 }
 

@@ -2,6 +2,7 @@ package port_map
 
 import (
 	"design-library/doodad"
+	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/game"
@@ -70,12 +71,12 @@ func (p *PortMapDoodad) Setup() {
 		int(float64(largestY+1)*tileSize)-int(float64(p.SmallestPointY)*tileSize),
 	)
 
-	// w.Background.Fill(color.RGBA{
-	// 	R: 220,
-	// 	G: 202,
-	// 	B: 127,
-	// 	A: 20,
-	// })
+	p.Background.Fill(color.RGBA{
+		R: 220,
+		G: 202,
+		B: 127,
+		A: 20,
+	})
 
 	// p.Background.Fill(color.RGBA{
 	// 	R: 25,

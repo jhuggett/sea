@@ -31,10 +31,6 @@ type PortDoodad struct {
 	doodad.Default
 }
 
-func (w *PortDoodad) Teardown() error {
-	return nil
-}
-
 func (w *PortDoodad) Update() error {
 	return nil
 }
@@ -58,8 +54,7 @@ func (w *PortDoodad) Draw(screen *ebiten.Image) {
 	screen.DrawImage(w.img, op)
 }
 
-func (w *PortDoodad) Setup() {
-
+func (w *PortDoodad) Load() {
 	w.img = ebiten.NewImage(
 		w.Port.Manager.TileSize(),
 		w.Port.Manager.TileSize(),
@@ -84,4 +79,8 @@ func (w *PortDoodad) Setup() {
 			w.img.Set(x, y, squareColor)
 		}
 	}
+}
+
+func (w *PortDoodad) Setup() {
+
 }

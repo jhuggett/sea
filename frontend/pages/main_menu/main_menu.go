@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jhuggett/frontend/pages/loading"
+	"github.com/jhuggett/frontend/pages/settings"
 	"github.com/jhuggett/frontend/pages/world_map"
 	"github.com/jhuggett/sea/data/session"
 	"github.com/jhuggett/sea/game_context"
@@ -35,18 +37,32 @@ func (m *MainMenuPage) Setup() {
 		panic(fmt.Errorf("failed to retrieve game sessions: %w", err))
 	}
 
+	navigateToGame := func(snapshot *game_context.Snapshot) {
+		loadingPage := loading.New(func(lpc *loading.LoadingPageController) {
+			newPage := world_map.New(snapshot, m.App)
+
+			newPage.SetLayout(box.Computed(func(b *box.Box) {
+				b.Copy(m.App.Box)
+			}))
+
+			newPage.LoadRequiredData()
+
+			m.App.Replace(newPage)
+		})
+
+		m.App.Push(loadingPage)
+	}
+
 	loadSaves := []doodad.Doodad{}
 
 	for _, gameSession := range sessions {
 		loadGameButton := button.New(button.Config{
 			OnClick: func(b *button.Button) {
-				newPage := world_map.New(&game_context.Snapshot{
+				navigateToGame(&game_context.Snapshot{
 					ShipID:    gameSession.ShipID,
 					PlayerID:  gameSession.PlayerID,
 					GameMapID: gameSession.GameMapID,
-				}, m.App)
-				// m.PageControls.Push(newPage)
-				m.App.Push(newPage)
+				})
 			},
 			Config: label.Config{
 				Message: fmt.Sprintf("Load Game: %s", gameSession.UpdatedAt.Format("2006-01-02 15:04:05")),
@@ -58,9 +74,8 @@ func (m *MainMenuPage) Setup() {
 
 	newGameButton := button.New(button.Config{
 		OnClick: func(b *button.Button) {
-			newPage := world_map.New(nil, m.App)
-			// m.PageControls.Push(newPage)
-			m.App.Push(newPage)
+			navigateToGame(nil)
+
 		},
 		Config: label.Config{
 			Message: "New Game",
@@ -69,10 +84,12 @@ func (m *MainMenuPage) Setup() {
 	})
 
 	optionsButton := button.New(button.Config{
-		OnClick: func(b *button.Button) {},
+		OnClick: func(b *button.Button) {
+			settingsPage := settings.New(m.App)
+			m.App.Push(settingsPage)
+		},
 		Config: label.Config{
-			Message: "Options",
-			Layout:  box.Zeroed(),
+			Message: "Settings",
 		},
 	})
 
@@ -86,32 +103,30 @@ func (m *MainMenuPage) Setup() {
 		},
 	})
 
-	panelChildren := doodad.NewChildren(
-		m,
-		[]doodad.Doodad{
-			titleLabel,
-		},
-		loadSaves,
-		[]doodad.Doodad{
-			newGameButton,
-			optionsButton,
-			exitButton,
-		},
-	)
-
 	panel := stack.New(stack.Config{
-		Children: panelChildren,
-		Type:     stack.Vertical,
-		Layout: box.Computed(func(b *box.Box) {
-			boundingBox := box.Bounding(panelChildren.Boxes())
-			b.SetDimensions(boundingBox.Width(), boundingBox.Height()).CenterWithin(m.Box)
-		}),
+
 		SpaceBetween: 10,
 	})
 
 	m.AddChild(panel)
 
+	panel.AddChild(
+		titleLabel,
+	)
+	panel.AddChild(
+		loadSaves...,
+	)
+	panel.AddChild(
+		newGameButton,
+		optionsButton,
+		exitButton,
+	)
+
 	m.Children().Setup()
+
+	panel.Box.Computed(func(b *box.Box) {
+		b.CenterWithin(m.App.Box)
+	})
 }
 
 func New(
@@ -120,98 +135,6 @@ func New(
 	page := &MainMenuPage{
 		App: app,
 	}
-
-	// page.Setup()
-
-	// titleLabel, err := label.New(label.Config{
-	// 	Message: "Ships Colonies & Commerce",
-	// 	Layout: position.NewBox(position.BoxConfig{}).Computed(func(b *position.Box) *position.Box {
-	// 		return b
-	// 	}),
-	// 	FontSize: 48,
-	// 	Padding: label.Padding{
-	// 		Top:    20,
-	// 		Bottom: 20,
-	// 		Left:   20,
-	// 		Right:  20,
-	// 	},
-	// 	ForegroundColor: color.RGBA{
-	// 		A: 255,
-	// 		R: 255,
-	// 		G: 155,
-	// 		B: 105,
-	// 	},
-	// })
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to create title label: %w", err)
-	// }
-	// page.Children.Add(titleLabel)
-
-	// newGameButton, err := button.New(button.Config{
-	// 	OnClick: func() {
-	// 		// newPage, err := world_map.New(nil)
-	// 		// if err != nil {
-	// 		// 	panic(err)
-	// 		// }
-	// 		// page.PageControls.Push(newPage)
-	// 	},
-	// 	Gesturer: page.Gesturer,
-	// 	Config: label.Config{
-	// 		Message: "New Game",
-	// 		Layout: position.NewBox(position.BoxConfig{}).Computed(func(b *position.Box) *position.Box {
-	// 			return b.MoveAbove(titleLabel.Box)
-	// 		}),
-	// 	},
-	// })
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to create new game button: %w", err)
-	// }
-	// page.Children.Add(newGameButton)
-
-	// sessions, err := session.All()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to retrieve game sessions: %w", err)
-	// }
-
-	// var previousButton *button.Button
-
-	// for _, gameSession := range sessions {
-
-	// 	previousButtonReferenceCopy := previousButton
-
-	// 	loadGameButton, err := button.New(button.Config{
-	// 		Config: label.Config{
-	// 			Message: fmt.Sprintf("Load Game: %s", gameSession.UpdatedAt.Format("2006-01-02 15:04:05")),
-	// 			Layout: position.NewBox(position.BoxConfig{}).Computed(func(b *position.Box) *position.Box {
-	// 				if previousButtonReferenceCopy == nil {
-	// 					return b.MoveBelow(titleLabel.Box)
-	// 				}
-	// 				return b.MoveBelow(previousButtonReferenceCopy.Box)
-	// 			}),
-	// 			Padding: label.Padding{
-	// 				Left: 20,
-	// 			},
-	// 		},
-	// 		OnClick: func() {
-	// 			// newPage, err := world_map.New(&game_context.Snapshot{
-	// 			// 	ShipID:    gameSession.ShipID,
-	// 			// 	PlayerID:  gameSession.PlayerID,
-	// 			// 	GameMapID: gameSession.GameMapID,
-	// 			// })
-	// 			// if err != nil {
-	// 			// 	panic(err)
-	// 			// }
-	// 			// page.PageControls.Push(newPage)
-	// 		},
-	// 		Gesturer: page.Gesturer,
-	// 	})
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("failed to create load game button: %w", err)
-	// 	}
-
-	// 	page.Children.Add(loadGameButton)
-	// 	previousButton = loadGameButton
-	// }
 
 	return page
 }

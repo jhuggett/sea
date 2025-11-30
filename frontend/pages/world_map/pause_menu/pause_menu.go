@@ -3,6 +3,7 @@ package pause_menu
 import (
 	design_library "design-library"
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -31,59 +32,16 @@ func (w *PauseMenu) Setup() {
 
 	// Root panel catches all mouse input
 	rootPanel := stack.New(stack.Config{
-		Layout: box.Computed(func(b *box.Box) {
-			b.Copy(w.Box)
-		}),
+		LayoutRule: stack.Fill,
 	})
 
 	w.AddChild(rootPanel)
 
-	panelChildren := doodad.NewChildren(
-		w,
-		[]doodad.Doodad{
-			label.New(label.Config{
-				Message:  "Pause Menu",
-				FontSize: 24,
-			}),
-			button.New(button.Config{
-				OnClick: func(*button.Button) {
-					w.Hide()
-				},
-				Config: label.Config{
-					Message: "Resume",
-				},
-			}),
-			button.New(button.Config{
-				OnClick: func(*button.Button) {
-					w.App.PopToRoot()
-				},
-				Config: label.Config{
-					Message: "Quit to Main Menu",
-				},
-			}),
-			button.New(button.Config{
-				OnClick: func(*button.Button) {
-					os.Exit(0)
-				},
-				Config: label.Config{
-					Message: "Quit to Desktop",
-				},
-			}),
-		},
-	)
-
 	panel := stack.New(stack.Config{
-		Children: panelChildren,
-		Type:     stack.Vertical,
-		Layout: box.Computed(func(b *box.Box) {
-			boundingBox := box.Bounding(panelChildren.Boxes())
-			b.CopyDimensionsOf(boundingBox)
-			// b.CenterWithin(rootPanel.Layout())
-		}),
 
 		BackgroundColor: colors.Panel,
 		SpaceBetween:    10,
-		Padding: stack.Padding{
+		Padding: config.Padding{
 			Top:    20,
 			Bottom: 20,
 			Left:   20,
@@ -93,24 +51,53 @@ func (w *PauseMenu) Setup() {
 
 	w.AddChild(panel)
 
+	panel.AddChild(label.New(label.Config{
+		Message:  "Pause Menu",
+		FontSize: 24,
+	}),
+		button.New(button.Config{
+			OnClick: func(*button.Button) {
+				w.Hide()
+			},
+			Config: label.Config{
+				Message: "Resume",
+			},
+		}),
+		button.New(button.Config{
+			OnClick: func(*button.Button) {
+				w.App.PopToRoot()
+			},
+			Config: label.Config{
+				Message: "Quit to Main Menu",
+			},
+		}),
+		button.New(button.Config{
+			OnClick: func(*button.Button) {
+				os.Exit(0)
+			},
+			Config: label.Config{
+				Message: "Quit to Desktop",
+			},
+		}))
+
 	w.Children().Setup()
 
 	panel.Box.Computed(func(b *box.Box) {
 		b.CenterWithin(rootPanel.Layout())
 	})
-}
-
-func (w *PauseMenu) Draw(screen *ebiten.Image) {
-	if !w.IsVisible() {
-		return
-	}
 
 	// Apply blur effect to the background
-	background := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
-	background.DrawImage(screen, nil)
-	options := &ebiten.DrawImageOptions{}
-	options.ColorM.Scale(0.2, 0.2, 0.2, 1) // Reduce brightness for blur effect
-	screen.DrawImage(background, options)
+	background := ebiten.NewImage(w.Layout().Width(), w.Layout().Height())
+	colorScale := ebiten.ColorScale{}
+	colorScale.Scale(0.2, 0.2, 0.2, 1) // Reduce brightness for blur effect
+	options := &ebiten.DrawImageOptions{
+		ColorScale: colorScale,
+	}
 
-	w.Children().Draw(screen)
+	w.SetCachedDraw(
+		&doodad.CachedDraw{
+			Image: background,
+			Op:    options,
+		},
+	)
 }

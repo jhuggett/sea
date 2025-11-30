@@ -15,6 +15,8 @@ func NewApp(startup func(*App)) *App {
 	app := &App{
 		startup: startup,
 		Default: *doodad.NewDefault(nil),
+
+		WaitForInitialDimensions: make(chan struct{}, 1),
 	}
 
 	app.Children().Parent = &app.Default
@@ -40,6 +42,13 @@ func NewApp(startup func(*App)) *App {
 				slog.Info("Recalculated layout")
 			},
 		),
+		reaction.NewKeyDownReaction(
+			reaction.SpecificKeyDown(ebiten.KeyQ),
+			func(event *reaction.KeyDownEvent) {
+				doodad.ReSetup(app.Current())
+				slog.Info("Re-setup current page")
+			},
+		),
 	)
 	app.Reactions().Register(app.Gesturer(), app.Z())
 
@@ -52,6 +61,8 @@ type App struct {
 	startup func(*App)
 
 	doodad.Default
+
+	WaitForInitialDimensions chan struct{}
 }
 
 func (g *App) Start() {
@@ -169,9 +180,16 @@ func (g *App) Draw(screen *ebiten.Image) {
 func (g *App) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	// g.CurrentPage.SetWidthAndHeight(outsideWidth, outsideHeight)
 
+	// if g.WaitForInitialDimensions != nil {
+	// 	close(g.WaitForInitialDimensions)
+	// 	g.WaitForInitialDimensions = nil
+	// }
+
 	if g.Default.Layout().Width() != outsideWidth || g.Default.Layout().Height() != outsideHeight {
 		g.Default.Layout().SetDimensions(outsideWidth, outsideHeight)
 		g.Default.Layout().Recalculate()
+
+		doodad.ReSetup(g.Current())
 	}
 
 	return outsideWidth, outsideHeight

@@ -1,69 +1,40 @@
 package stack
 
 import (
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/position/box"
 	"design-library/reaction"
+	"log/slog"
 
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type Type string
+type LayoutRule int
 
 const (
-	Horizontal Type = "horizontal"
-	Vertical   Type = "vertical"
+	FitContents LayoutRule = iota
+	Fill
 )
 
-type Padding struct {
-	Top    int
-	Right  int
-	Bottom int
-	Left   int
-}
-
 type Config struct {
-	Type         Type
-	Layout       *box.Box
-	Children     *doodad.Children
+	Flow         config.Flow
 	SpaceBetween int
-	Padding      Padding
+	Padding      config.Padding
 
 	BackgroundColor color.Color
 
-	FitContents bool
+	LayoutRule LayoutRule
+
+	HorizontalAlignment config.HorizontalAlignment
+	VerticalAlignment   config.VerticalAlignment
 }
 
 func New(config Config) *Stack {
-	// stack := &Stack{
-	// 	Type: config.Type,
-	// 	Default: doodad.Default{
-	// 		Box:      config.Layout,
-	// 		Children: &doodad.Children{},
-	// 	},
-	// 	SpaceBetween:    config.SpaceBetween,
-	// 	Padding:         config.Padding,
-	// 	BackgroundColor: config.BackgroundColor,
-	// }
-
-	// if config.Type != Horizontal && config.Type != Vertical {
-	// 	config.Type = Vertical // Default to vertical if an invalid type is provided
-	// }
-
-	// if config.Children != nil {
-	// 	for _, child := range config.Children.Doodads {
-	// 		stack.AddChild(child)
-	// 	}
-	// }
-
 	s := &Stack{
 		Config: config,
-	}
-
-	if s.Config.Layout != nil {
-		s.Box = s.Config.Layout
 	}
 
 	return s
@@ -73,13 +44,6 @@ type Stack struct {
 	Config Config
 
 	doodad.Default
-	Type         Type
-	SpaceBetween int
-	Padding      Padding
-
-	BackgroundColor color.Color
-
-	background *ebiten.Image
 }
 
 /*
@@ -88,89 +52,72 @@ type Stack struct {
     should call setup first, otherwise the changes will be discarded.
 */
 func (s *Stack) Setup() {
-	if s.Config.Type != Horizontal && s.Type != Vertical {
-		s.Type = Vertical // Default to vertical if an invalid type is provided
-	} else {
-		s.Type = s.Config.Type
-	}
 
-	if s.Config.SpaceBetween == 0 {
-		s.SpaceBetween = 0
-	} else {
-		s.SpaceBetween = s.Config.SpaceBetween
-	}
-
-	if s.Config.Padding.Top == 0 && s.Config.Padding.Right == 0 &&
-		s.Config.Padding.Bottom == 0 && s.Config.Padding.Left == 0 {
-		s.Padding = Padding{} // Default padding
-	} else {
-		s.Padding = s.Config.Padding
-	}
-
-	if s.Config.BackgroundColor != nil {
-		s.BackgroundColor = s.Config.BackgroundColor
-	}
-
-	// if s.Config.Children != nil {
-	// 	for _, child := range s.Config.Children.Doodads {
-	// 		s.AddChild(child)
-	// 	}
-	// }
-
-	if s.Config.Children != nil {
-		s.AddChild(s.Config.Children.Doodads...)
-	}
-
-	s.Box.Computed(func(b *box.Box) {
-		// Adjust box for padding
-
-		// Handle positioning - we use IncreaseWidth/Height instead of Move for padding
-		// to ensure the stack is sized correctly regardless of position
-		b.IncreaseWidth(s.Padding.Left + s.Padding.Right)
-		b.IncreaseHeight(s.Padding.Top + s.Padding.Bottom)
-
-		// If we're at position Y=0 (top of screen), only move right
-		// Otherwise apply normal positioning
-		// if b.Y() == 0 {
-		// 	// b.MoveRight(s.Padding.Left)
-		// } else {
-		// 	// b.MoveLeft(s.Padding.Left).MoveUp(s.Padding.Top)
-		// }
-
-	})
-
-	s.Children().Setup()
+	slog.Info("Setting up stack", "z", s.Z())
 
 	var previousChild doodad.Doodad
 	for _, child := range s.Children().Doodads {
 		previousChildReferenceCopy := previousChild
 
-		if s.Type == Horizontal {
+		switch s.Config.Flow {
+		case config.LeftToRight:
 			if previousChildReferenceCopy == nil {
 				child.Layout().Computed(func(b *box.Box) {
-					b.CopyPositionOf(s.Box).
-						MoveDown(s.Padding.Top).
-						MoveRight(s.Padding.Left)
+					switch s.Config.VerticalAlignment {
+					case config.VerticalAlignmentTop:
+						b.SetY(s.Box.Y() + s.Config.Padding.Top)
+					case config.VerticalAlignmentCenter:
+						b.SetY(s.Box.Y() + (s.Box.Height() / 2) - (b.Height() / 2))
+					case config.VerticalAlignmentBottom:
+						b.SetY(s.Box.Y() + s.Box.Height() - b.Height() - s.Config.Padding.Bottom)
+					}
+
+					b.SetX(s.Box.X() + s.Config.Padding.Left)
 				})
 			} else {
 				child.Layout().Computed(func(b *box.Box) {
-					b.CopyPositionOf(previousChildReferenceCopy.Layout()).
-						MoveRightOf(previousChildReferenceCopy.Layout()).
-						MoveRight(s.SpaceBetween)
+					switch s.Config.VerticalAlignment {
+					case config.VerticalAlignmentTop:
+						b.SetY(s.Box.Y() + s.Config.Padding.Top)
+					case config.VerticalAlignmentCenter:
+						b.SetY(s.Box.Y() + (s.Box.Height() / 2) - (b.Height() / 2))
+					case config.VerticalAlignmentBottom:
+						b.SetY(s.Box.Y() + s.Box.Height() - b.Height() - s.Config.Padding.Bottom)
+					}
+
+					b.SetX(previousChildReferenceCopy.Layout().X() +
+						previousChildReferenceCopy.Layout().Width() +
+						s.Config.SpaceBetween)
 				})
 			}
-		} else if s.Type == Vertical {
+		case config.TopToBottom:
 			if previousChildReferenceCopy == nil {
 				child.Layout().Computed(func(b *box.Box) {
-					b.CopyPositionOf(s.Box).
-						MoveDown(s.Padding.Top).
-						MoveRight(s.Padding.Left)
+					switch s.Config.HorizontalAlignment {
+					case config.HorizontalAlignmentLeft:
+						b.SetX(s.Box.X() + s.Config.Padding.Left)
+					case config.HorizontalAlignmentCenter:
+						b.SetX(s.Box.X() + (s.Box.Width() / 2) - (b.Width() / 2))
+					case config.HorizontalAlignmentRight:
+						b.SetX(s.Box.X() + s.Box.Width() - b.Width() - s.Config.Padding.Right)
+					}
+
+					b.SetY(s.Box.Y() + s.Config.Padding.Top)
 				})
 			} else {
 				child.Layout().Computed(func(b *box.Box) {
-					b.CopyPositionOf(previousChildReferenceCopy.Layout()).
-						MoveBelow(previousChildReferenceCopy.Layout()).
-						MoveDown(s.SpaceBetween)
+					switch s.Config.HorizontalAlignment {
+					case config.HorizontalAlignmentLeft:
+						b.SetX(s.Box.X() + s.Config.Padding.Left)
+					case config.HorizontalAlignmentCenter:
+						b.SetX(s.Box.X() + (s.Box.Width() / 2) - (b.Width() / 2))
+					case config.HorizontalAlignmentRight:
+						b.SetX(s.Box.X() + s.Box.Width() - b.Width() - s.Config.Padding.Right)
+					}
+
+					b.SetY(previousChildReferenceCopy.Layout().Y() +
+						previousChildReferenceCopy.Layout().Height() +
+						s.Config.SpaceBetween)
 				})
 			}
 		}
@@ -180,70 +127,64 @@ func (s *Stack) Setup() {
 
 	s.Reactions().Add(
 		reaction.NewMouseMovedReaction(
-			doodad.MouseMovedWithin[*reaction.MouseMovedEvent](s),
+			doodad.MouseIsWithin[*reaction.MouseMovedEvent](s),
 			func(event *reaction.MouseMovedEvent) {
 				event.StopPropagation()
 			},
 		),
 		reaction.NewMouseMovedReaction(
-			doodad.MouseMovedOutside[*reaction.MouseMovedEvent](s),
+			doodad.MouseIsOutside[*reaction.MouseMovedEvent](s),
 			func(event *reaction.MouseMovedEvent) {
 			},
 		),
 		reaction.NewMouseUpReaction(
-			doodad.MouseMovedWithin[*reaction.MouseUpEvent](s),
+			doodad.MouseIsWithin[*reaction.MouseUpEvent](s),
 			func(event *reaction.MouseUpEvent) {
 				event.StopPropagation()
 			},
 		),
 		reaction.NewMouseDragReaction(
-			doodad.MouseMovedWithin[*reaction.OnMouseDragEvent](s),
+			doodad.MouseIsWithin[*reaction.OnMouseDragEvent](s),
 			func(event *reaction.OnMouseDragEvent) {
 				event.StopPropagation()
 			},
 		),
 		reaction.NewMouseWheelReaction(
-			doodad.MouseMovedWithin[*reaction.MouseWheelEvent](s),
+			doodad.MouseIsWithin[*reaction.MouseWheelEvent](s),
 			func(event *reaction.MouseWheelEvent) {
 				event.StopPropagation()
 			},
 		),
 	)
+	s.Children().Setup()
 
-	if s.BackgroundColor != nil && s.Box.Width() > 0 && s.Box.Height() > 0 {
-		s.background = ebiten.NewImage(s.Box.Width(), s.Box.Height())
-		s.background.Fill(s.BackgroundColor)
-	}
-
-	if s.Config.FitContents {
-		s.Layout().Computed(func(b *box.Box) {
+	s.Box.Computed(func(b *box.Box) {
+		switch s.Config.LayoutRule {
+		case FitContents:
 			bounding := box.Bounding(s.Children().Boxes())
-			b.SetWidth(bounding.Width() + s.Padding.Left + s.Padding.Right)
-			b.SetHeight(bounding.Height() + s.Padding.Top + s.Padding.Bottom)
+			b.SetWidth(bounding.Width() + s.Config.Padding.Left + s.Config.Padding.Right)
+			b.SetHeight(bounding.Height() + s.Config.Padding.Top + s.Config.Padding.Bottom)
+		case Fill:
+			// Do nothing, we fill the available space
+		}
+	})
+
+	// if s.Config.FitContents {
+	// 	s.Layout().Computed(func(b *box.Box) {
+	// 		// bounding := box.Bounding(s.Children().Boxes())
+	// 		b.SetWidth(paddedBounds.Width() + s.Config.Padding.Left + s.Config.Padding.Right)
+	// 		b.SetHeight(paddedBounds.Height() + s.Config.Padding.Top + s.Config.Padding.Bottom)
+	// 	})
+	// }
+
+	s.Layout().Recalculate()
+
+	if s.Config.BackgroundColor != nil && s.Box.Width() > 0 && s.Box.Height() > 0 {
+		background := ebiten.NewImage(s.Box.Width(), s.Box.Height())
+		background.Fill(s.Config.BackgroundColor)
+
+		s.SetCachedDraw(&doodad.CachedDraw{
+			Image: background,
 		})
 	}
-}
-
-func (s *Stack) Draw(screen *ebiten.Image) {
-	if !s.IsVisible() {
-		return
-	}
-
-	if s.background != nil {
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(s.Box.X()), float64(s.Box.Y()))
-		screen.DrawImage(s.background, op)
-
-		if s.background.Bounds().Dx() != s.Box.Width() ||
-			s.background.Bounds().Dy() != s.Box.Height() {
-			// If the background size doesn't match the box size, we need to recreate it
-			s.background = ebiten.NewImage(s.Box.Width(), s.Box.Height())
-			s.background.Fill(s.BackgroundColor)
-		}
-	} else if s.BackgroundColor != nil && s.Box.Width() > 0 && s.Box.Height() > 0 {
-		s.background = ebiten.NewImage(s.Box.Width(), s.Box.Height())
-		s.background.Fill(s.BackgroundColor)
-	}
-
-	s.Children().Draw(screen)
 }

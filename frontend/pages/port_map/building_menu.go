@@ -2,6 +2,7 @@ package port_map
 
 import (
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -70,8 +71,7 @@ func (b *BuildingMenu) Setup() {
 
 	panel := stack.New(stack.Config{
 		BackgroundColor: colors.Panel,
-		Padding:         stack.Padding{10, 10, 10, 10},
-		FitContents:     true,
+		Padding:         config.Padding{10, 10, 10, 10},
 	})
 	b.AddChild(panel)
 

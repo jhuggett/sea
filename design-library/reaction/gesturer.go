@@ -32,8 +32,6 @@ func (g *gesturer) Register(reaction Reaction, atDepth int) func() {
 		g.events[reaction.ReactionType()] = []Reaction{}
 	}
 
-	// g.events[reaction.ReactionType()] = append(g.events[reaction.ReactionType()], reaction)
-
 	reaction.SetDepth(atDepth)
 
 	g.events[reaction.ReactionType()] = append(g.events[reaction.ReactionType()], reaction)
@@ -75,6 +73,10 @@ func (g *gesturer) trigger(reactionType ReactionType, data Eventable) {
 		for i := len(reactions) - 1; i >= 0; i-- {
 			reaction := reactions[i]
 
+			if !reaction.IsEnabled() {
+				continue
+			}
+
 			data.setEvent(event)
 
 			if event.stopPropagation {
@@ -100,15 +102,6 @@ type Gesturer interface {
 func NewGesturer() *gesturer {
 	return &gesturer{}
 }
-
-// type MouseMoved struct {
-// 	X, Y int
-// }
-
-// type MouseUpEvent struct {
-// 	X, Y   int
-// 	Button ebiten.MouseButton
-// }
 
 func (g *gesturer) CurrentMouseLocation() (int, int) {
 	return g.MouseX, g.MouseY
@@ -159,6 +152,11 @@ func (g *gesturer) Update() {
 				TimeStart: time.Now(),
 				Button:    pressedMouseButton,
 			}
+			g.trigger(MouseDown, &MouseDownEvent{
+				X:      x,
+				Y:      y,
+				Button: g.Press.Button,
+			})
 		}
 
 		if time.Since(g.Press.TimeStart) > 100*time.Millisecond || (math.Abs(float64(g.Press.StartX-x)) > 25 || math.Abs(float64(g.Press.StartY-y)) > 25) {

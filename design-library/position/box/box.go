@@ -1,8 +1,8 @@
 package box
 
 import (
-	"fmt"
 	"log/slog"
+	"slices"
 )
 
 type Box struct {
@@ -18,6 +18,11 @@ type Box struct {
 	dependents []*Box
 
 	recalculationCount int
+}
+
+func (b *Box) XY() (int, int) {
+	b.recalculateIfNeeded()
+	return b.x, b.y
 }
 
 func (b *Box) ZeroOut() *Box {
@@ -48,9 +53,11 @@ func (b *Box) Recalculate() *Box {
 	return b
 }
 
-func (b *Box) AddDependent(dependent *Box) {
-	slog.Debug("Adding dependent Box", "dependent", fmt.Sprintf("%p", dependent), "to", fmt.Sprintf("%p", b))
+func (b *Box) HasDependent(dependent *Box) bool {
+	return slices.Contains(b.dependents, dependent)
+}
 
+func (b *Box) AddDependent(dependent *Box) {
 	if b == dependent {
 		// panic("A Box cannot depend on itself")
 		slog.Warn("A Box cannot depend on itself, ignoring dependency", "box", b)

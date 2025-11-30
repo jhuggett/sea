@@ -2,16 +2,20 @@ package world_map
 
 import (
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
+	"design-library/radio"
 	"design-library/stack"
 	"fmt"
+	"image/color"
 
 	"github.com/jhuggett/frontend/colors"
 	"github.com/jhuggett/frontend/game"
 	"github.com/jhuggett/sea/inbound"
 	"github.com/jhuggett/sea/outbound"
+	"github.com/jhuggett/sea/timeline"
 )
 
 func NewTimeControlDoodad(
@@ -40,79 +44,9 @@ type TimeControlDoodad struct {
 
 func (w *TimeControlDoodad) Setup() {
 
-	currentTimeLabel := label.New(label.Config{
-		Message: fmt.Sprintf("Day %d of Year %d", w.tcr.CurrentDay, w.tcr.CurrentYear),
-		Layout:  box.Zeroed(),
-	})
-
-	increaseSpeedButton := button.New(button.Config{
-		OnClick: func(*button.Button) {
-			t := w.Manager.LastTimeChangedReq.TicksPerSecond + 1
-			_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
-				SetTicksPerSecondTo: &t,
-			})
-			if err != nil {
-				fmt.Println("Error increasing time:", err)
-				return
-			}
-		},
-		Config: label.Config{
-			Message: "+",
-		},
-	})
-
-	decreaseSpeedButton := button.New(button.Config{
-		OnClick: func(*button.Button) {
-			t := w.Manager.LastTimeChangedReq.TicksPerSecond - 1
-			_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
-				SetTicksPerSecondTo: &t,
-			})
-			if err != nil {
-				fmt.Println("Error decreasing time:", err)
-				return
-			}
-		},
-		Config: label.Config{
-			Message: "-",
-		},
-	})
-
-	pauseResumeButton := button.New(button.Config{
-		OnClick: func(*button.Button) {
-			shouldResume := w.Manager.LastTimeChangedReq.IsPaused
-			shouldPause := !shouldResume
-			_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
-				Pause:  shouldPause,
-				Resume: shouldResume,
-			})
-			if err != nil {
-				fmt.Println("Error toggling time pause:", err)
-				return
-			}
-		},
-		Config: label.Config{
-			Message: "Pause/Resume",
-		},
-	})
-
-	children := doodad.NewChildren(
-		w,
-		[]doodad.Doodad{
-			currentTimeLabel,
-			increaseSpeedButton,
-			decreaseSpeedButton,
-			pauseResumeButton,
-		})
-
 	panel := stack.New(stack.Config{
-		Type: stack.Horizontal,
-		Layout: box.Computed(func(b *box.Box) {
-			boundingBox := box.Bounding(children.Boxes())
-			b.CopyDimensionsOf(boundingBox).CenterHorizontallyWithin(w.Layout())
-		}),
-		Children:        children,
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
-		Padding: stack.Padding{
+		Padding: config.Padding{
 			Top:    10,
 			Right:  10,
 			Bottom: 10,
@@ -121,125 +55,97 @@ func (w *TimeControlDoodad) Setup() {
 		SpaceBetween: 20,
 	})
 
-	w.DoOnTeardown(w.Manager.OnTimeChangedCallback.Register(func(tcr outbound.TimeChangedReq) error {
-		// currentTimeLabelDoodad.SetMessage(fmt.Sprintf("Time Control: %d", tcr.CurrentTick))
-		// currentTickSpeedLabel.SetMessage(fmt.Sprintf("S: %d, P: %v", tcr.TicksPerSecond, tcr.IsPaused))
+	w.AddChild(panel)
 
-		// currentTimeLabel.SetMessage(fmt.Sprintf("Day %d of Year %d", tcr.CurrentDay, tcr.CurrentYear))
+	timeControlRadio := doodad.Stateful(w, "radio", func() *radio.Radio {
+		return radio.New(radio.Config{
+			Flow: config.LeftToRight,
+			Options: []*radio.Option{
+				{Label: "x0", OnSelect: func() {
+					var t timeline.Tick = 0
+					_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
+						SetTicksPerSecondTo: &t,
+					})
+					if err != nil {
+						fmt.Println("Error setting time to 0:", err)
+						return
+					}
+				}},
+				{Label: "x1", OnSelect: func() {
+					var t timeline.Tick = 1
+					_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
+						SetTicksPerSecondTo: &t,
+					})
+					if err != nil {
+						fmt.Println("Error setting time to 1:", err)
+						return
+					}
+				}},
+				{Label: "x3", OnSelect: func() {
+					var t timeline.Tick = 3
+					_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
+						SetTicksPerSecondTo: &t,
+					})
+					if err != nil {
+						fmt.Println("Error setting time to 3:", err)
+						return
+					}
+				}},
+				{Label: "x9", OnSelect: func() {
+					var t timeline.Tick = 9
+					_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
+						SetTicksPerSecondTo: &t,
+					})
+					if err != nil {
+						fmt.Println("Error setting time to 9:", err)
+						return
+					}
+				}},
+			},
+			SelectedDoodad: func(option *radio.Option) doodad.Doodad {
+				return label.New(label.Config{
+					Message:         option.Label,
+					BackgroundColor: color.RGBA{50, 120, 140, 250},
+				})
+			},
+			UnselectedDoodad: func(option *radio.Option) doodad.Doodad {
+				return button.New(button.Config{
+					OnClick: func(b *button.Button) {
+						option.Select()
+					},
+					Config: label.Config{
+						Message: option.Label,
+					},
+				})
+			},
+		})
+	})
+	panel.AddChild(timeControlRadio)
+
+	bottomRow := stack.New(stack.Config{
+		Flow: config.LeftToRight,
+	})
+
+	panel.AddChild(bottomRow)
+
+	currentTimeLabel := label.New(label.Config{
+		Message: fmt.Sprintf("Day %d of Year %d", w.tcr.CurrentDay, w.tcr.CurrentYear),
+	})
+
+	bottomRow.AddChild(currentTimeLabel)
+
+	w.DoOnTeardown(w.Manager.OnTimeChangedCallback.Register(func(tcr outbound.TimeChangedReq) error {
 		w.tcr = tcr
 		doodad.ReSetup(w)
 
 		return nil
 	}))
 
-	w.AddChild(panel)
 	w.Children().Setup()
 
 	w.Layout().Recalculate()
 
-	// panelDoodad, err := panel.New(panel.Config{
-	// 	Position: w.Position,
-	// 	Gesturer: w.Gesturer,
-	// })
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create panel doodad: %w", err)
-	// }
-	// w.Children.Add(panelDoodad)
-
-	// currentTimeLabelDoodad, err := label.New(label.Config{
-	// 	Layout:  position.NewBox(position.BoxConfig{}),
-	// 	Message: "Time Control",
-	// })
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create current time label doodad: %w", err)
-	// }
-	// w.Children.Add(currentTimeLabelDoodad)
-
-	// currentTickSpeedLabel, err := label.New(label.Config{
-	// 	// Position: doodad.Below2(currentTimeLabelDoodad),
-	// 	Layout: position.
-	// 		NewBox(position.BoxConfig{}).
-	// 		MoveBelow(currentTimeLabelDoodad.Layout()),
-	// 	Message: "Tick Speed",
-	// })
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create current tick speed label doodad: %w", err)
-	// }
-	// w.Children.Add(currentTickSpeedLabel)
-
-	// w.Manager.OnTimeChangedCallback.Add(func(tcr outbound.TimeChangedReq) error {
-	// 	currentTimeLabelDoodad.SetMessage(fmt.Sprintf("Time Control: %d", tcr.CurrentTick))
-	// 	currentTickSpeedLabel.SetMessage(fmt.Sprintf("S: %d, P: %v", tcr.TicksPerSecond, tcr.IsPaused))
-	// 	return nil
-	// })
-
-	// increaseTimeButton, err := button.New(button.Config{
-	// 	Message: "Increase Tick Speed",
-	// 	OnClick: func() {
-	// 		t := w.Manager.LastTimeChangedReq.TicksPerSecond + 1
-	// 		_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
-	// 			SetTicksPerSecondTo: &t,
-	// 		})
-	// 		if err != nil {
-	// 			fmt.Println("Error increasing time:", err)
-	// 			return
-	// 		}
-	// 	},
-	// 	Gesturer: w.Gesturer,
-	// 	// Position: doodad.Below2(currentTickSpeedLabel),
-
-	// })
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create increase time button: %w", err)
-	// }
-	// w.Children.Add(increaseTimeButton)
-
-	// decreaseTimeButton, err := button.New(button.Config{
-	// 	Message: "Decrease Tick Speed",
-	// 	OnClick: func() {
-	// 		t := w.Manager.LastTimeChangedReq.TicksPerSecond - 1
-	// 		_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
-	// 			SetTicksPerSecondTo: &t,
-	// 		})
-	// 		if err != nil {
-	// 			fmt.Println("Error decreasing time:", err)
-	// 			return
-	// 		}
-	// 	},
-	// 	Gesturer: w.Gesturer,
-	// 	// Position: doodad.Below2(increaseTimeButton),
-	// 	Layout: position.NewBox(position.BoxConfig{}).
-	// 		Copy(increaseTimeButton.Layout()).
-	// 		MoveBelow(increaseTimeButton.Layout()),
-	// })
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create decrease time button: %w", err)
-	// }
-	// w.Children.Add(decreaseTimeButton)
-
-	// pauseTimeButton, err := button.New(button.Config{
-	// 	Message: "Pause/Resume Time",
-	// 	OnClick: func() {
-	// 		shouldResume := w.Manager.LastTimeChangedReq.IsPaused
-	// 		shouldPause := !shouldResume
-	// 		_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
-	// 			Pause:  shouldPause,
-	// 			Resume: shouldResume,
-	// 		})
-	// 		if err != nil {
-	// 			fmt.Println("Error toggling time pause:", err)
-	// 			return
-	// 		}
-	// 	},
-	// 	Gesturer: w.Gesturer,
-	// 	// Position: doodad.Below2(decreaseTimeButton),
-	// 	Layout: position.NewBox(position.BoxConfig{}).
-	// 		Copy(decreaseTimeButton.Layout()).
-	// 		MoveBelow(decreaseTimeButton.Layout()),
-	// })
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create pause time button: %w", err)
-	// }
-	// w.Children.Add(pauseTimeButton)
-
+	panel.Layout().Computed(func(b *box.Box) {
+		b.CenterHorizontallyWithin(w.Box)
+	})
 }

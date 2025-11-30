@@ -24,6 +24,8 @@ type ContinentDoodad struct {
 	SpaceTranslator space_translator.SpaceTranslator
 
 	Image *ebiten.Image
+
+	PortDoodads []*PortDoodad
 }
 
 func (w *ContinentDoodad) Draw(screen *ebiten.Image) {
@@ -44,8 +46,7 @@ func (w *ContinentDoodad) Draw(screen *ebiten.Image) {
 	w.Children().Draw(screen)
 }
 
-func (w *ContinentDoodad) Setup() {
-
+func (w *ContinentDoodad) Load() {
 	for _, point := range w.Continent.Points() {
 		if point.X < w.SmallestPointX {
 			w.SmallestPointX = point.X
@@ -98,14 +99,23 @@ func (w *ContinentDoodad) Setup() {
 			false,
 		)
 	}
-
 	w.Image = img
 
 	for _, port := range w.Continent.Ports {
-		w.AddChild(NewPortDoodad(
+		portDoodad := NewPortDoodad(
 			port,
 			w.SpaceTranslator,
-		))
+		)
+
+		portDoodad.Load()
+
+		w.PortDoodads = append(w.PortDoodads, portDoodad)
+	}
+}
+
+func (w *ContinentDoodad) Setup() {
+	for _, portDoodad := range w.PortDoodads {
+		w.AddChild(portDoodad)
 	}
 
 	w.Children().Setup()

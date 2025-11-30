@@ -1,6 +1,7 @@
 package bottom_bar
 
 import (
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/stack"
 
@@ -20,7 +21,7 @@ type Panel struct {
 
 func (p *Panel) Setup() {
 	panelStack := stack.New(stack.Config{
-		Type:            stack.Horizontal,
+		Flow:            config.LeftToRight,
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
 	})
 	p.AddChild(panelStack)

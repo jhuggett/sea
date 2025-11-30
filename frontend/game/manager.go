@@ -160,7 +160,7 @@ func (m *Manager) Start() error {
 
 	m.Conn = conn
 
-	start.Game(conn)
+	go start.Game(conn)
 
 	m.WorldMap = NewWorldMap(m)
 

@@ -32,14 +32,6 @@ type ShipDoodad struct {
 	doodad.Default
 }
 
-func (w *ShipDoodad) Teardown() error {
-	return nil
-}
-
-func (w *ShipDoodad) Update() error {
-	return nil
-}
-
 func (w *ShipDoodad) Draw(screen *ebiten.Image) {
 
 	originX, originY := w.Origin()

@@ -2,6 +2,7 @@ package world_map
 
 import (
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -43,21 +44,14 @@ type RouteInformationDoodad struct {
 
 func (w *RouteInformationDoodad) Setup() {
 	panel := stack.New(stack.Config{
-		Layout: box.Computed(func(b *box.Box) {
-			// boundingBox := box.Bounding(panelChildren.Boxes())
-			// w.Postioner(b.CopyDimensionsOf(boundingBox))
-
-			b.SetPosition(0, 0)
-		}),
-		FitContents: true,
-		Padding: stack.Padding{
+		Padding: config.Padding{
 			Top:    10,
 			Right:  10,
 			Bottom: 10,
 			Left:   10,
 		},
 		SpaceBetween:    10,
-		Type:            stack.Vertical, // Changed to vertical for better information display
+		Flow:            config.TopToBottom,
 		BackgroundColor: colors.Panel,
 	})
 

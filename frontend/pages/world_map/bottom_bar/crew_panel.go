@@ -1,6 +1,7 @@
 package bottom_bar
 
 import (
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -48,10 +49,7 @@ func (c *CrewPanel) Setup() {
 	}
 
 	// Main container stack
-	mainStack := stack.New(stack.Config{
-		FitContents: true,
-		Type:        stack.Vertical,
-	})
+	mainStack := stack.New(stack.Config{})
 	c.AddChild(mainStack)
 
 	// Title
@@ -73,10 +71,7 @@ func (c *CrewPanel) Setup() {
 	}
 
 	// Display general crew information
-	infoStack := stack.New(stack.Config{
-		Type:        stack.Vertical,
-		FitContents: true,
-	})
+	infoStack := stack.New(stack.Config{})
 	mainStack.AddChild(infoStack)
 
 	infoStack.AddChild(
@@ -100,11 +95,11 @@ func (c *CrewPanel) Setup() {
 
 	// Create header for crew members table
 	headerStack := stack.New(stack.Config{
-		Type:            stack.Horizontal,
+		Flow:            config.LeftToRight,
 		BackgroundColor: colors.SemiTransparent(colors.Panel),
-		FitContents:     true,
-		SpaceBetween:    10,
-		Padding: stack.Padding{
+
+		SpaceBetween: 10,
+		Padding: config.Padding{
 			Top: 15,
 		},
 	})
@@ -140,17 +135,13 @@ func (c *CrewPanel) Setup() {
 	)
 
 	// Create a scrollable list for crew members
-	crewContainer := stack.New(stack.Config{
-		Type:        stack.Vertical,
-		FitContents: true,
-	})
+	crewContainer := stack.New(stack.Config{})
 	mainStack.AddChild(crewContainer)
 
 	// Add each crew member to the list
 	for _, member := range c.CrewData.CrewMembers {
 		crewRow := stack.New(stack.Config{
-			Type:         stack.Horizontal,
-			FitContents:  true,
+			Flow:         config.LeftToRight,
 			SpaceBetween: 10,
 		})
 		crewContainer.AddChild(crewRow)

@@ -44,7 +44,7 @@ func (w *TileInformationDoodad) Setup() {
 	w.Reactions().Add()
 
 	w.Reactions().Add(reaction.NewMouseUpReaction(
-		doodad.MouseMovedWithin[*reaction.MouseUpEvent](w),
+		doodad.MouseIsWithin[*reaction.MouseUpEvent](w),
 		func(event *reaction.MouseUpEvent) {
 			if event.Button != ebiten.MouseButtonRight {
 				return

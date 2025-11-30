@@ -46,12 +46,21 @@ func (c *Children) Setup() {
 		return
 	}
 
-	for i := len(c.Doodads) - 1; i >= 0; i-- {
-		d := c.Doodads[i]
-
-		d.Setup()
-		d.Reactions().Register(c.Parent.Gesturer(), d.Z())
+	for _, doodad := range c.Doodads {
+		doodad.Setup()
+		doodad.Reactions().Register(c.Parent.Gesturer(), doodad.Z())
 	}
+
+	// if len(c.Doodads) == 0 {
+	// 	slog.Warn("No children to setup")
+	// 	return
+	// }
+
+	// for i := len(c.Doodads) - 1; i >= 0; i-- {
+	// 	d := c.Doodads[i]
+	// 	d.Setup()
+	// 	d.Reactions().Register(c.Parent.Gesturer(), d.Z())
+	// }
 }
 
 func (c *Children) add(doodad Doodad) {
@@ -73,6 +82,7 @@ func (c *Children) Clear() error {
 	if err := c.Teardown(); err != nil {
 		return fmt.Errorf("failed to teardown children: %w", err)
 	}
+
 	c.Doodads = []Doodad{}
 	return nil
 }

@@ -47,9 +47,7 @@ func (s *ShipInfoPanel) Setup() {
 		return // No ship data available yet
 	}
 
-	listStack := stack.New(stack.Config{
-		Type: stack.Vertical,
-	})
+	listStack := stack.New(stack.Config{})
 
 	s.AddChild(listStack)
 

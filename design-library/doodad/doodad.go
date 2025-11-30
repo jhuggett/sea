@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func MouseMovedWithin[T reaction.PositionedEvent](doodad Doodad) func(event T) bool {
+func MouseIsWithin[T reaction.PositionedEvent](doodad Doodad) func(event T) bool {
 	return func(event T) bool {
 		if !doodad.IsVisible() {
 			return false
@@ -19,7 +19,7 @@ func MouseMovedWithin[T reaction.PositionedEvent](doodad Doodad) func(event T) b
 	}
 }
 
-func MouseMovedOutside[T reaction.PositionedEvent](doodad Doodad) func(event T) bool {
+func MouseIsOutside[T reaction.PositionedEvent](doodad Doodad) func(event T) bool {
 	return func(event T) bool {
 		if !doodad.IsVisible() {
 			return false
@@ -27,6 +27,7 @@ func MouseMovedOutside[T reaction.PositionedEvent](doodad Doodad) func(event T) 
 
 		layout := doodad.Layout()
 		x, y := event.XY()
+
 		return x < layout.X() || x > layout.X()+layout.Width() ||
 			y < layout.Y() || y > layout.Y()+layout.Height()
 	}
@@ -37,8 +38,18 @@ type Rectangle struct {
 	Height int
 }
 
+type CachedDraw struct {
+	Image *ebiten.Image
+	X     int
+	Y     int
+	Op    *ebiten.DrawImageOptions
+}
+
 type Doodad interface {
 	Draw(screen *ebiten.Image)
+
+	CachedDraw() []*CachedDraw
+	SetCachedDraw(cachedDraw ...*CachedDraw)
 
 	// Loads up any resources that need caching, such as images or fonts.
 	Setup()
@@ -73,6 +84,9 @@ type Doodad interface {
 
 	Z() int
 	SetZ(z int)
+
+	StatefulDoodads() map[string]Doodad
+	AddStatefulChild(key string, create func() Doodad) Doodad
 }
 
 type Rectangular interface {
@@ -81,5 +95,13 @@ type Rectangular interface {
 
 func ReSetup(doodad Doodad) {
 	doodad.Teardown()
-	doodad.Setup()
+	Setup(doodad)
+}
+
+func Setup(doodads ...Doodad) {
+	for _, doodad := range doodads {
+		doodad.Setup()
+		doodad.Layout().Recalculate()
+		doodad.Reactions().Register(doodad.Gesturer(), doodad.Z())
+	}
 }

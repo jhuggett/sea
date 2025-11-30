@@ -2,13 +2,13 @@ package world_map
 
 import (
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
 	"design-library/stack"
 	"image/color"
 
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/colors"
 	"github.com/jhuggett/frontend/game"
 )
@@ -35,9 +35,7 @@ func NewDockConfirmation(manager *game.Manager, port *game.Port, onDockAccept fu
 func (d *DockConfirmation) Setup() {
 	// Root panel catches all mouse input to prevent clicks from passing through
 	rootPanel := stack.New(stack.Config{
-		Layout: box.Computed(func(b *box.Box) {
-			b.Copy(d.Box)
-		}),
+		LayoutRule: stack.Fill,
 	})
 	d.AddChild(rootPanel)
 
@@ -46,16 +44,14 @@ func (d *DockConfirmation) Setup() {
 	}
 
 	panel := stack.New(stack.Config{
-		Type:            stack.Vertical,
 		BackgroundColor: colors.Panel,
 		SpaceBetween:    20,
-		Padding: stack.Padding{
+		Padding: config.Padding{
 			Top:    20,
 			Bottom: 20,
 			Left:   40,
 			Right:  40,
 		},
-		FitContents: true,
 	})
 
 	d.AddChild(panel)
@@ -75,9 +71,8 @@ func (d *DockConfirmation) Setup() {
 
 	// Create button container
 	buttonContainer := stack.New(stack.Config{
-		Type:         stack.Horizontal,
+		Flow:         config.LeftToRight,
 		SpaceBetween: 20,
-		FitContents:  true,
 	})
 	panel.AddChild(buttonContainer)
 
@@ -129,22 +124,18 @@ func (d *DockConfirmation) Setup() {
 	d.Layout().Recalculate()
 }
 
-func (d *DockConfirmation) Draw(screen *ebiten.Image) {
-	if !d.IsVisible() {
-		return
-	}
+// func (d *DockConfirmation) Draw(screen *ebiten.Image) {
+// 	if !d.IsVisible() {
+// 		return
+// 	}
 
-	// Apply semi-transparent overlay to the background
-	background := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
-	background.DrawImage(screen, nil)
-	options := &ebiten.DrawImageOptions{}
-	options.ColorM.Scale(0.3, 0.3, 0.3, 1) // Darken the background
-	screen.DrawImage(background, options)
+// 	// Apply semi-transparent overlay to the background
+// 	background := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
+// 	background.DrawImage(screen, nil)
+// 	options := &ebiten.DrawImageOptions{}
+// 	options.ColorM.Scale(0.3, 0.3, 0.3, 1) // Darken the background
+// 	screen.DrawImage(background, options)
 
-	// Draw the dialog
-	d.Children().Draw(screen)
-}
-
-func (d *DockConfirmation) Update() error {
-	return nil
-}
+// 	// Draw the dialog
+// 	d.Children().Draw(screen)
+// }

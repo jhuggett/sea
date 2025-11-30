@@ -27,10 +27,6 @@ type CursorDoodad struct {
 	doodad.Default
 }
 
-func (w *CursorDoodad) Teardown() error {
-	return nil
-}
-
 func (w *CursorDoodad) Update() error {
 	return nil
 }
@@ -91,7 +87,7 @@ func (w *CursorDoodad) Setup() {
 
 	w.Reactions().Add(
 		reaction.NewMouseMovedReaction(
-			doodad.MouseMovedWithin[*reaction.MouseMovedEvent](w),
+			doodad.MouseIsWithin[*reaction.MouseMovedEvent](w),
 			func(event *reaction.MouseMovedEvent) {
 				w.MouseX, w.MouseY = event.XY()
 			},

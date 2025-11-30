@@ -86,7 +86,7 @@ func (w *RouteDoodad) Setup() {
 
 	w.Reactions().Add(
 		reaction.NewMouseUpReaction(
-			doodad.MouseMovedWithin[*reaction.MouseUpEvent](w),
+			doodad.MouseIsWithin[*reaction.MouseUpEvent](w),
 			func(mm *reaction.MouseUpEvent) {
 				if mm.Button != ebiten.MouseButtonLeft {
 					return

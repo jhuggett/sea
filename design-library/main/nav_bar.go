@@ -3,6 +3,7 @@ package main
 import (
 	design_library "design-library"
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -66,23 +67,18 @@ func (n *NavBar) Setup() {
 	})
 
 	mainStack := stack.New(stack.Config{
-		Type: stack.Vertical,
 		BackgroundColor: color.RGBA{
 			R: 100,
 			G: 150,
 			B: 100,
 			A: 255,
 		},
-		Layout: box.Computed(func(b *box.Box) {
-			b.SetDimensions(titleLabel.Box.Width(), n.Layout().Height())
-		}),
-		Padding: stack.Padding{
-			Top:    10,
-			Right:  20,
-			Bottom: 10,
-			Left:   20,
-		},
+		Padding:      config.SymmetricPadding(1, 2),
 		SpaceBetween: 10,
+
+		LayoutRule: stack.Fill,
+
+		// BOXES seem to not be taking padding into account. NEED TO FIGURE THIS OUT
 	})
 	n.AddChild(mainStack)
 
@@ -92,6 +88,10 @@ func (n *NavBar) Setup() {
 		secondPageButton,
 		thirdPageButton,
 	)
+
+	n.Layout().Computed(func(b *box.Box) {
+		b.SetWidth(190)
+	})
 
 	n.Children().Setup()
 }

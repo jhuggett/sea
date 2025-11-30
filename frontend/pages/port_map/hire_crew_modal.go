@@ -2,6 +2,7 @@ package port_map
 
 import (
 	"design-library/button"
+	"design-library/config"
 	"design-library/doodad"
 	"design-library/label"
 	"design-library/position/box"
@@ -38,9 +39,9 @@ func (h *HireCrewModal) Setup() {
 
 	panel := stack.New(stack.Config{
 		BackgroundColor: colors.Panel,
-		Padding:         stack.Padding{10, 10, 10, 10},
-		FitContents:     true,
-		SpaceBetween:    20,
+		Padding:         config.Padding{10, 10, 10, 10},
+
+		SpaceBetween: 20,
 	})
 
 	h.AddChild(panel)
@@ -53,8 +54,7 @@ func (h *HireCrewModal) Setup() {
 
 	for _, crewMember := range h.PotentialCrew {
 		row := stack.New(stack.Config{
-			Type:         stack.Horizontal,
-			FitContents:  true,
+			Flow:         config.LeftToRight,
 			SpaceBetween: 10,
 		})
 

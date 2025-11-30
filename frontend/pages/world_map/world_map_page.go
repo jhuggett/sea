@@ -3,15 +3,11 @@ package world_map
 import (
 	design_library "design-library"
 	"design-library/doodad"
-	"design-library/label"
 	"design-library/position/box"
 	"design-library/reaction"
 	"fmt"
-	"image/color"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/jhuggett/frontend/game"
 	"github.com/jhuggett/frontend/pages/port_map"
 	"github.com/jhuggett/frontend/pages/world_map/bottom_bar"
@@ -24,98 +20,6 @@ import (
 	"golang.org/x/image/math/f64"
 )
 
-func (w *WorldMapPage) CanvasTranslateTo(x, y float64) *ebiten.DrawImageOptions {
-	op := &ebiten.DrawImageOptions{}
-
-	return op
-}
-
-func (w *WorldMapPage) CanvasTranslateFrom(x, y float64) (float64, float64) {
-	return 0, 0
-}
-
-type PlottedRoute struct {
-	Points []inbound.Coordinate
-
-	EndTileX, EndTileY int
-
-	EstimatedSailingSpeed float64
-	EstimatedDuration     float64 // in days
-
-	OriginX, OriginY int
-	Image            *ebiten.Image
-
-	IsActive bool
-}
-
-func (p *PlottedRoute) RenderImage(tileSize float64) {
-	smallestX, smallestY := 0.0, 0.0
-	largestX, largestY := 0.0, 0.0
-
-	for _, point := range p.Points {
-		if point.X < smallestX {
-			smallestX = point.X
-		}
-		if point.Y < smallestY {
-			smallestY = point.Y
-		}
-		if point.X > largestX {
-			largestX = point.X
-		}
-		if point.Y > largestY {
-			largestY = point.Y
-		}
-	}
-
-	p.OriginX = int(smallestX)
-	p.OriginY = int(smallestY)
-
-	img := ebiten.NewImage(
-		int((largestX-smallestX+1)*tileSize),
-		int((largestY-smallestY+1)*tileSize),
-	)
-
-	for _, point := range p.Points {
-		vector.DrawFilledRect(
-			img,
-			float32((point.X-smallestX)*tileSize+tileSize/4),
-			float32((point.Y-smallestY)*tileSize+tileSize/4),
-			float32(tileSize/2),
-			float32(tileSize/2),
-			color.RGBA{
-				B: 255,
-				A: 255,
-			},
-			false,
-		)
-	}
-
-	p.Image = img
-}
-
-type Press struct {
-	StartX, StartY int
-	X, Y           int
-	TimeStart      time.Time
-}
-
-type Continent struct {
-	OriginX, OriginY int
-
-	Image *ebiten.Image
-}
-
-type Port struct {
-	X, Y  int
-	Image *ebiten.Image
-}
-
-type Ship struct {
-	X, Y float64
-
-	Image *ebiten.Image
-}
-
 type WorldMapPage struct {
 	App *design_library.App
 
@@ -127,26 +31,18 @@ type WorldMapPage struct {
 
 	doodad.Default
 
-	loaded bool
+	dockConfirmation *DockConfirmation
 
-	dockConfirmation      *DockConfirmation
-	portInteractionScreen *PortInteractionScreen
+	portMapPage *port_map.PortMapPage
 }
 
-func (w *WorldMapPage) SetupLoadingScreen() {
-	loadingMessage := label.New(label.Config{
-		Message:  "Loading...",
-		Layout:   box.Zeroed(),
-		FontSize: 24,
-	})
+func New(snapshot *game_context.Snapshot, app *design_library.App) *WorldMapPage {
+	p := &WorldMapPage{
+		GameSnapshot: snapshot,
+		App:          app,
+	}
 
-	w.AddChild(loadingMessage)
-
-	w.Children().Setup()
-
-	loadingMessage.Box.Computed(func(b *box.Box) {
-		b.CenterWithin(w.Box)
-	})
+	return p
 }
 
 func (w *WorldMapPage) LoadRequiredData() error {
@@ -156,11 +52,6 @@ func (w *WorldMapPage) LoadRequiredData() error {
 		Position:   f64.Vec2{0, 0},
 		ZoomFactor: 1,
 	}
-
-	// w.SpaceTranslator = &spaceTranslator{
-	// 	camera:   w.Camera,
-	// 	tileSize: w.Camera.TileSize,
-	// }
 
 	w.SpaceTranslator = space_translator.New(w.Camera, float64(w.Camera.TileSize))
 
@@ -174,116 +65,175 @@ func (w *WorldMapPage) LoadRequiredData() error {
 
 	w.GameManager = gameManager
 
-	w.loaded = true
+	worldMap := doodad.Stateful(w, "world-map", func() *WorldMapDoodad {
+		return NewWorldMapDoodad(
+			w.GameManager.WorldMap,
+			w.SpaceTranslator,
+		)
+	})
+
+	worldMap.Load()
+
 	return nil
 }
 
-func (w *WorldMapPage) SetupMainScreen() {
-	worldMapDoodad := NewWorldMapDoodad(
-		w.GameManager.WorldMap,
-		w.SpaceTranslator,
-	)
-	w.AddChild(worldMapDoodad)
+func (w *WorldMapPage) Setup() {
+	// worldMapDoodad := NewWorldMapDoodad(
+	// 	w.GameManager.WorldMap,
+	// 	w.SpaceTranslator,
+	// )
+	// w.AddChild(worldMapDoodad)
 
-	// Need to preload the things we need before we get to this method
-	// then we can just render
+	// Should be pre-loaded in LoadRequiredData
+	w.AddStatefulChild("world-map", nil)
 
-	w.AddChild(NewRouteDoodad(
-		w.SpaceTranslator,
-		w.GameManager.PlayerShip,
-	))
+	// w.AddChild(NewRouteDoodad(
+	// 	w.SpaceTranslator,
+	// 	w.GameManager.PlayerShip,
+	// ))
 
-	w.AddChild(NewPlayerShipDoodad(
-		w.GameManager,
-		w.Camera,
-	))
+	w.AddStatefulChild("route", func() doodad.Doodad {
+		return NewRouteDoodad(
+			w.SpaceTranslator,
+			w.GameManager.PlayerShip,
+		)
+	})
 
-	w.AddChild(NewTileInformationDoodad(
-		w.SpaceTranslator,
-	))
+	// w.AddChild(NewPlayerShipDoodad(
+	// 	w.GameManager,
+	// 	w.Camera,
+	// ))
 
-	w.AddChild(NewCursorDoodad(
-		w.SpaceTranslator,
-	))
+	w.AddStatefulChild("player-ship", func() doodad.Doodad {
+		return NewPlayerShipDoodad(
+			w.GameManager,
+			w.Camera,
+		)
+	})
 
-	timeControlDoodad := NewTimeControlDoodad(
-		w.GameManager,
-	)
+	// w.AddChild(NewTileInformationDoodad(
+	// 	w.SpaceTranslator,
+	// ))
 
-	// // Setup callbacks for ship docking
-	// w.GameManager.OnShipMovedCallback.Register(func(req outbound.ShipMovedReq) error {
-	// 	// Check if ship is near a port when it moves
-	// 	w.checkNearbyPorts()
-	// 	return nil
-	// })
+	w.AddStatefulChild("tile-information", func() doodad.Doodad {
+		return NewTileInformationDoodad(
+			w.SpaceTranslator,
+		)
+	})
 
-	w.GameManager.OnShipDockedCallback.Register(func(req outbound.ShipDockedReq) error {
+	// w.AddChild(NewCursorDoodad(
+	// 	w.SpaceTranslator,
+	// ))
+
+	w.AddStatefulChild("cursor", func() doodad.Doodad {
+		return NewCursorDoodad(
+			w.SpaceTranslator,
+		)
+	})
+
+	timeControlDoodad := doodad.Stateful(w, "time-control", func() *TimeControlDoodad {
+		return NewTimeControlDoodad(
+			w.GameManager,
+		)
+	})
+
+	w.DoOnTeardown(w.GameManager.OnShipDockedCallback.Register(func(req outbound.ShipDockedReq) error {
 		if !req.Undocked {
 			w.dockConfirmation.Port = game.PortFromOutboundData(w.GameManager, req.Port)
 			w.dockConfirmation.Show()
 			doodad.ReSetup(w.dockConfirmation)
 		}
 		return nil
-	})
+	}))
 	w.AddChild(timeControlDoodad)
-	timeControlDoodad.Layout().Computed(func(b *box.Box) {
-		b.Copy(w.Box)
-	})
+	// timeControlDoodad.Layout().Computed(func(b *box.Box) {
+	// 	b.Copy(w.Box)
+	// })
 
-	bottomBar := bottom_bar.NewBottomBar(w.GameManager)
+	bottomBar := doodad.Stateful(w, "bottom-bar", func() *bottom_bar.BottomBar {
+		return bottom_bar.NewBottomBar(w.GameManager)
+	})
 	w.AddChild(bottomBar)
 
-	routeInfoDoodad := NewRouteInformationDoodad(
-		w.GameManager.PlayerShip,
-		func(b *box.Box) {
-			b.MoveAbove(bottomBar.Box).MoveDown(100).CenterHorizontallyWithin(w.Box)
-		},
-	)
-
-	w.AddChild(routeInfoDoodad)
-	// routeInfoDoodad.Hide()
-
-	pauseMenu := pause_menu.NewPauseMenu(w.App)
-	w.AddChild(pauseMenu)
-	pauseMenu.Layout().Computed(func(b *box.Box) {
-		b.Copy(w.Box)
+	routeInfoDoodad := doodad.Stateful(w, "route-info", func() *RouteInformationDoodad {
+		return NewRouteInformationDoodad(
+			w.GameManager.PlayerShip,
+			func(b *box.Box) {
+				b.MoveAbove(bottomBar.Box).MoveDown(100).CenterHorizontallyWithin(w.Box)
+			},
+		)
 	})
+	w.AddChild(routeInfoDoodad)
+
+	pauseMenu := doodad.Stateful(w, "pause-menu", func() *pause_menu.PauseMenu {
+		return pause_menu.NewPauseMenu(w.App)
+	})
+	w.AddChild(pauseMenu)
+	// pauseMenu.Layout().Computed(func(b *box.Box) {
+	// 	b.Copy(w.Box)
+	// })
 	pauseMenu.Hide()
 
-	// Setup dock confirmation dialog (initially hidden)
-	w.dockConfirmation = NewDockConfirmation(
-		w.GameManager,
-		nil, // Will set this when a port is detected
-		func(port *game.Port) {
-			// On dock accepted
-			w.dockConfirmation.Hide()
+	w.dockConfirmation = doodad.Stateful(w, "dock-confirmation", func() *DockConfirmation {
+		return NewDockConfirmation(
+			w.GameManager,
+			nil,
+			func(port *game.Port) {
+				// On dock accepted
+				w.dockConfirmation.Hide()
 
-			w.GameManager.ControlTime(inbound.ControlTimeReq{
-				Pause: true,
-			})
+				w.GameManager.ControlTime(inbound.ControlTimeReq{
+					Pause: true,
+				})
 
-			portMap := port_map.New(
-				w.GameManager,
-				w.App,
-				port,
-			)
+				// portMap := port_map.New(
+				// 	w.GameManager,
+				// 	w.App,
+				// 	port,
+				// )
 
-			portMap.GoBack = func() {
-				w.App.Pop()
-			}
+				// w.portMapPage.Show()
 
-			w.App.Push(portMap)
-		},
-		func() {
-			// On dock declined
-			w.dockConfirmation.Hide()
-		},
-	)
-	w.AddChild(w.dockConfirmation)
-	w.dockConfirmation.Layout().Computed(func(b *box.Box) {
-		b.Copy(w.Box)
+				portMapPage := port_map.New(
+					w.GameManager,
+					w.App,
+					port,
+				)
+
+				w.AddChild(portMapPage)
+
+				portMapPage.GoBack = func() {
+					w.Children().Remove(portMapPage)
+				}
+
+				// portMapPage.Setup()
+
+				doodad.Setup(portMapPage)
+
+				// portMap.GoBack = func() {
+				// 	w.App.Pop()
+				// }
+
+				// w.App.Push(portMap)
+			},
+			func() {
+				// On dock declined
+				w.dockConfirmation.Hide()
+			},
+		)
 	})
+	w.AddChild(w.dockConfirmation)
+	// w.dockConfirmation.Layout().Computed(func(b *box.Box) {
+	// 	b.Copy(w.Box)
+	// })
 	w.dockConfirmation.Hide()
+
+	// w.portMapPage = port_map.New(
+	// 	w.GameManager,
+	// 	w.App,
+	// 	nil,
+	// )
+	// w.AddChild(w.portMapPage)
 
 	w.Reactions().Add(
 		reaction.NewKeyDownReaction(reaction.SpecificKeyDown(ebiten.KeySpace),
@@ -347,41 +297,6 @@ func (w *WorldMapPage) SetupMainScreen() {
 	w.Reactions().Register(w.Gesturer(), w.Z())
 
 	w.Children().Setup()
-}
 
-func (w *WorldMapPage) Setup() {
-	if len(w.Children().Doodads) > 0 {
-		w.Children().Clear()
-	}
-
-	if w.loaded {
-		// show map
-		w.SetupMainScreen()
-	} else {
-		// show loading screen
-		w.SetupLoadingScreen()
-		go func() {
-			err := w.LoadRequiredData()
-			if err != nil {
-				panic(fmt.Errorf("failed to load required data: %w", err))
-			}
-			w.Setup() // recursively call Setup to switch to main screen
-		}()
-	}
-
-	w.Box.Recalculate()
-}
-
-func New(snapshot *game_context.Snapshot, app *design_library.App) *WorldMapPage {
-	p := &WorldMapPage{
-		GameSnapshot: snapshot,
-		App:          app,
-	}
-
-	return p
-}
-
-func (w *WorldMapPage) SetWidthAndHeight(width, height int) {
-	w.Box.SetDimensions(width, height)
 	w.Box.Recalculate()
 }
