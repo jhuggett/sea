@@ -50,6 +50,7 @@ func (w *WorldMap) Load() error {
 			}
 		}
 
+		// This line is freezing everything up
 		w.Continents = append(w.Continents, c)
 	}
 

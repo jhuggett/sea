@@ -135,7 +135,7 @@ func (w *WorldMap) Generate() error {
 		{Scale: .15, Weight: .4},
 	})
 
-	width, height := 250, 250
+	width, height := 50, 50
 
 	visited := map[coordination.Point]bool{}
 	groups := []map[coordination.Point]*Point{}

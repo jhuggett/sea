@@ -6,6 +6,7 @@ import (
 	"design-library/position/box"
 	"design-library/reaction"
 	"fmt"
+	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/game"
@@ -46,6 +47,8 @@ func New(snapshot *game_context.Snapshot, app *design_library.App) *WorldMapPage
 }
 
 func (w *WorldMapPage) LoadRequiredData() error {
+	slog.Info("Loading World Map Page Required Data")
+
 	w.Camera = &camera.Camera{
 		ViewPort:   f64.Vec2{float64(w.Box.Width()), float64(w.Box.Height())},
 		TileSize:   32,
@@ -72,6 +75,7 @@ func (w *WorldMapPage) LoadRequiredData() error {
 		)
 	})
 
+	slog.Info("Loading World Map Data, worldMap.Load()")
 	worldMap.Load()
 
 	return nil

@@ -15,17 +15,15 @@ type Product struct {
 var persisted_db *gorm.DB
 
 func Conn() *gorm.DB {
-	if persisted_db != nil {
-		return persisted_db
+	if persisted_db == nil {
+		db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+		if err != nil {
+			panic("failed to connect data.base")
+		}
+		persisted_db = db
 	}
 
-	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect data.base")
-	}
-
-	persisted_db = db
-	return persisted_db
+	return persisted_db.Debug()
 }
 
 func Close() {

@@ -2,3 +2,6 @@
 ./dist/*
 ./DS_Store
 frontend/test.db
+
+heap.prof
+cpu.prof

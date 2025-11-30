@@ -43,7 +43,7 @@ func Game(conn *Connection) func() {
 		return timeline.Day
 	}, timeline.Day))
 
-	Timeline.Start()
+	// Timeline.Start()
 
 	s, err := conn.Context().Ship()
 	if err != nil {

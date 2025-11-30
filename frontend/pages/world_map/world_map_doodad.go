@@ -2,7 +2,7 @@ package world_map
 
 import (
 	"design-library/doodad"
-	"image/color"
+	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/jhuggett/frontend/game"
@@ -77,6 +77,13 @@ func (w *WorldMapDoodad) Draw(screen *ebiten.Image) {
 }
 
 func (w *WorldMapDoodad) Load() { // So setting up all the renderables doesn't block the UI thread
+	if w.ContinentDoodads != nil {
+		slog.Info("WorldMapDoodad Load: already loaded, skipping")
+		return
+	}
+
+	w.ContinentDoodads = []*ContinentDoodad{}
+
 	for _, continent := range w.WorldMap.Continents {
 		continentDoodad := &ContinentDoodad{
 			Continent:       continent,
@@ -87,43 +94,41 @@ func (w *WorldMapDoodad) Load() { // So setting up all the renderables doesn't b
 
 		w.ContinentDoodads = append(w.ContinentDoodads, continentDoodad)
 
-		largestX := 0
-		largestY := 0
-
-		for _, continent := range w.WorldMap.Continents {
-			if continent.LargestX > largestX {
-				largestX = continent.LargestX
-			}
-			if continent.LargestY > largestY {
-				largestY = continent.LargestY
-			}
-			if continent.SmallestX < w.SmallestContinentPointX {
-				w.SmallestContinentPointX = continent.SmallestX
-			}
-			if continent.SmallestY < w.SmallestContinentPointY {
-				w.SmallestContinentPointY = continent.SmallestY
-			}
-		}
-
-		w.Background = ebiten.NewImage(
-			int(float64(largestX+1)*float64(w.WorldMap.Manager.TileSize()))-int(float64(w.SmallestContinentPointX)*float64(w.WorldMap.Manager.TileSize())),
-			int(float64(largestY+1)*float64(w.WorldMap.Manager.TileSize()))-int(float64(w.SmallestContinentPointY)*float64(w.WorldMap.Manager.TileSize())),
-		)
+		// w.Background = ebiten.NewImage(
+		// 	int(float64(largestX+1)*float64(w.WorldMap.Manager.TileSize()))-int(float64(w.SmallestContinentPointX)*float64(w.WorldMap.Manager.TileSize())),
+		// 	int(float64(largestY+1)*float64(w.WorldMap.Manager.TileSize()))-int(float64(w.SmallestContinentPointY)*float64(w.WorldMap.Manager.TileSize())),
+		// )
 
 		// w.Background.Fill(color.RGBA{
-		// 	R: 220,
-		// 	G: 202,
-		// 	B: 127,
-		// 	A: 20,
+		// 	R: 0,
+		// 	G: 0,
+		// 	B: 0,
+		// 	A: 255,
 		// })
 
-		w.Background.Fill(color.RGBA{
-			R: 0,
-			G: 0,
-			B: 0,
-			A: 255,
-		})
 	}
+	largestX := 0
+	largestY := 0
+
+	for _, continent := range w.WorldMap.Continents {
+		if continent.LargestX > largestX {
+			largestX = continent.LargestX
+		}
+		if continent.LargestY > largestY {
+			largestY = continent.LargestY
+		}
+		if continent.SmallestX < w.SmallestContinentPointX {
+			w.SmallestContinentPointX = continent.SmallestX
+		}
+		if continent.SmallestY < w.SmallestContinentPointY {
+			w.SmallestContinentPointY = continent.SmallestY
+		}
+	}
+
+	mapWidth := int(float64(largestX+1)*float64(w.WorldMap.Manager.TileSize())) - int(float64(w.SmallestContinentPointX)*float64(w.WorldMap.Manager.TileSize()))
+	mapHeight := int(float64(largestY+1)*float64(w.WorldMap.Manager.TileSize())) - int(float64(w.SmallestContinentPointY)*float64(w.WorldMap.Manager.TileSize()))
+
+	slog.Info("WorldMapDoodad Load", "mapWidth", mapWidth, "mapHeight", mapHeight)
 }
 
 func (w *WorldMapDoodad) Setup() {
