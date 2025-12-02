@@ -6,6 +6,7 @@ import (
 	"design-library/reaction"
 	"fmt"
 	"log/slog"
+	"sort"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -66,6 +67,9 @@ type App struct {
 }
 
 func (g *App) Start() {
+
+	g.SetZ([]int{0, 0, 0})
+
 	g.startup(g)
 }
 
@@ -170,7 +174,37 @@ func (g *App) Draw(screen *ebiten.Image) {
 
 	// g.CurrentPage.Draw(screen)
 
-	g.Children().Draw(screen)
+	// g.Children().Draw(screen)
+
+	// Should consider caching the list, have adding/moving doodads invalidate it
+
+	doodadsToDraw := g.Children().FlattenedDoodads()
+
+	sort.SliceStable(doodadsToDraw, func(i, j int) bool {
+		// return reactions[i].Depth() < reactions[j].Depth()
+
+		depthA := doodadsToDraw[i].Z()
+		depthB := doodadsToDraw[j].Z()
+
+		minLen := len(depthA)
+		if len(depthB) < minLen {
+			minLen = len(depthB)
+		}
+
+		for d := 0; d < minLen; d++ {
+			if depthA[d] < depthB[d] {
+				return true
+			} else if depthA[d] > depthB[d] {
+				return false
+			}
+		}
+
+		return len(depthA) < len(depthB)
+	})
+
+	for _, doodad := range doodadsToDraw {
+		doodad.Draw(screen)
+	}
 
 	x, y := g.Gesturer().CurrentMouseLocation()
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Mouse: %d, %d", x, y), 4, screen.Bounds().Dy()-14)

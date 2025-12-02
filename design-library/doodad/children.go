@@ -67,6 +67,17 @@ func (c *Children) add(doodad Doodad) {
 	c.Doodads = append(c.Doodads, doodad)
 }
 
+func (c *Children) FlattenedDoodads() []Doodad {
+	var doodads []Doodad
+	for _, doodad := range c.Doodads {
+		doodads = append(doodads, doodad)
+		if len(doodad.Children().Doodads) > 0 {
+			doodads = append(doodads, doodad.Children().FlattenedDoodads()...)
+		}
+	}
+	return doodads
+}
+
 func (c *Children) Teardown() error {
 	for _, doodad := range c.Doodads {
 		if err := doodad.Teardown(); err != nil {

@@ -150,6 +150,7 @@ func (w *WorldMapPage) Setup() {
 		return nil
 	}))
 	w.AddChild(timeControlDoodad)
+	timeControlDoodad.SetZ([]int{1, 0, 0})
 	// timeControlDoodad.Layout().Computed(func(b *box.Box) {
 	// 	b.Copy(w.Box)
 	// })
@@ -158,6 +159,7 @@ func (w *WorldMapPage) Setup() {
 		return bottom_bar.NewBottomBar(w.GameManager)
 	})
 	w.AddChild(bottomBar)
+	bottomBar.SetZ([]int{1, 0, 0})
 
 	routeInfoDoodad := doodad.Stateful(w, "route-info", func() *RouteInformationDoodad {
 		return NewRouteInformationDoodad(
@@ -233,8 +235,8 @@ func (w *WorldMapPage) Setup() {
 	pauseMenu := doodad.Stateful(w, "pause-menu", func() *pause_menu.PauseMenu {
 		return pause_menu.NewPauseMenu(w.App)
 	})
-	pauseMenu.SetZ([]int{90000})
 	w.AddChild(pauseMenu)
+	pauseMenu.SetZ([]int{1, 0, 0})
 	pauseMenu.Hide()
 
 	w.Reactions().Add(

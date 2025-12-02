@@ -62,7 +62,7 @@ func (t *Default) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	t.Children().Draw(screen)
+	// t.Children().Draw(screen)
 }
 
 func (t *Default) Teardown() error {
