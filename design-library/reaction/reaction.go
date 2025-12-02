@@ -11,8 +11,8 @@ type Reaction interface {
 
 	TryPerform(event *Event, data any) error
 
-	SetDepth(depth int)
-	Depth() int
+	SetDepth(depth []int)
+	Depth() []int
 }
 
 func NewReaction[T any](

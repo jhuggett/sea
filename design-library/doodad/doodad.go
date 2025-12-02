@@ -82,8 +82,8 @@ type Doodad interface {
 	Show()
 	IsVisible() bool
 
-	Z() int
-	SetZ(z int)
+	Z() []int
+	SetZ(z []int)
 
 	StatefulDoodads() map[string]Doodad
 	AddStatefulChild(key string, create func() Doodad) Doodad

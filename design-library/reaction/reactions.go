@@ -16,7 +16,7 @@ func (r *Reactions) Disable() {
 	}
 }
 
-func (r *Reactions) Register(gesturer Gesturer, atDepth int) {
+func (r *Reactions) Register(gesturer Gesturer, atDepth []int) {
 	for _, r := range r.Reactions {
 		r.SetUnregister(gesturer.Register(r, atDepth))
 	}

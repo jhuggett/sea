@@ -17,7 +17,7 @@ type Default struct {
 
 	hidden bool
 
-	z int
+	z []int
 
 	cachedDraw []*CachedDraw
 
@@ -30,11 +30,11 @@ func (t *Default) DoOnTeardown(actions ...func()) {
 	t.actionOnTeardown = append(t.actionOnTeardown, actions...)
 }
 
-func (t *Default) Z() int {
+func (t *Default) Z() []int {
 	return t.z
 }
 
-func (t *Default) SetZ(z int) {
+func (t *Default) SetZ(z []int) {
 	t.z = z
 }
 
@@ -119,7 +119,17 @@ func (t *Default) AddChild(doodads ...Doodad) {
 			doodad.SetReactions(&reaction.Reactions{})
 		}
 
-		doodad.SetZ(t.Z() + 1)
+		parentZ := t.Z()
+
+		if len(parentZ) == 0 {
+			parentZ = []int{0}
+		}
+
+		childZ := make([]int, len(parentZ))
+		copy(childZ, parentZ)
+		childZ[len(childZ)-1] += 1
+
+		doodad.SetZ(childZ)
 
 		t.Children().add(doodad)
 		doodad.SetParent(t)

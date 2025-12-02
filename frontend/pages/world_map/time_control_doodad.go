@@ -57,20 +57,23 @@ func (w *TimeControlDoodad) Setup() {
 
 	w.AddChild(panel)
 
+	defaultOption := 0
+
 	timeControlRadio := doodad.Stateful(w, "radio", func() *radio.Radio {
 		return radio.New(radio.Config{
-			Flow: config.LeftToRight,
+			DefaultOptionIndex: &defaultOption,
+			Flow:               config.LeftToRight,
 			Options: []*radio.Option{
-				{Label: "x0", OnSelect: func() {
-					var t timeline.Tick = 0
-					_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
-						SetTicksPerSecondTo: &t,
-					})
-					if err != nil {
-						fmt.Println("Error setting time to 0:", err)
-						return
-					}
-				}},
+				// {Label: "x0", OnSelect: func() {
+				// 	var t timeline.Tick = 0
+				// 	_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
+				// 		SetTicksPerSecondTo: &t,
+				// 	})
+				// 	if err != nil {
+				// 		fmt.Println("Error setting time to 0:", err)
+				// 		return
+				// 	}
+				// }},
 				{Label: "x1", OnSelect: func() {
 					var t timeline.Tick = 1
 					_, err := w.Manager.ControlTime(inbound.ControlTimeReq{
@@ -105,7 +108,8 @@ func (w *TimeControlDoodad) Setup() {
 			SelectedDoodad: func(option *radio.Option) doodad.Doodad {
 				return label.New(label.Config{
 					Message:         option.Label,
-					BackgroundColor: color.RGBA{50, 120, 140, 250},
+					BackgroundColor: color.RGBA{25, 25, 25, 100},
+					Padding:         label.Padding{Top: 5, Right: 10, Bottom: 5, Left: 10},
 				})
 			},
 			UnselectedDoodad: func(option *radio.Option) doodad.Doodad {
@@ -123,7 +127,8 @@ func (w *TimeControlDoodad) Setup() {
 	panel.AddChild(timeControlRadio)
 
 	bottomRow := stack.New(stack.Config{
-		Flow: config.LeftToRight,
+		Flow:         config.TopToBottom,
+		SpaceBetween: 4,
 	})
 
 	panel.AddChild(bottomRow)
@@ -133,6 +138,37 @@ func (w *TimeControlDoodad) Setup() {
 	})
 
 	bottomRow.AddChild(currentTimeLabel)
+
+	gameIsPaused := w.tcr.IsPaused
+	pauseButtonMessage := "Pause"
+	if gameIsPaused {
+		pauseButtonMessage = "Resume"
+	}
+
+	bottomRow.AddChild(button.New(button.Config{
+		OnClick: func(b *button.Button) {
+			var req inbound.ControlTimeReq
+
+			if gameIsPaused {
+				req = inbound.ControlTimeReq{
+					Resume: true,
+				}
+			} else {
+				req = inbound.ControlTimeReq{
+					Pause: true,
+				}
+			}
+
+			_, err := w.Manager.ControlTime(req)
+			if err != nil {
+				fmt.Println("Error controlling time:", err)
+				return
+			}
+		},
+		Config: label.Config{
+			Message: pauseButtonMessage,
+		},
+	}))
 
 	w.DoOnTeardown(w.Manager.OnTimeChangedCallback.Register(func(tcr outbound.TimeChangedReq) error {
 		w.tcr = tcr

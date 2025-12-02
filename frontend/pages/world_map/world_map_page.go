@@ -169,15 +169,6 @@ func (w *WorldMapPage) Setup() {
 	})
 	w.AddChild(routeInfoDoodad)
 
-	pauseMenu := doodad.Stateful(w, "pause-menu", func() *pause_menu.PauseMenu {
-		return pause_menu.NewPauseMenu(w.App)
-	})
-	w.AddChild(pauseMenu)
-	// pauseMenu.Layout().Computed(func(b *box.Box) {
-	// 	b.Copy(w.Box)
-	// })
-	pauseMenu.Hide()
-
 	w.dockConfirmation = doodad.Stateful(w, "dock-confirmation", func() *DockConfirmation {
 		return NewDockConfirmation(
 			w.GameManager,
@@ -238,6 +229,13 @@ func (w *WorldMapPage) Setup() {
 	// 	nil,
 	// )
 	// w.AddChild(w.portMapPage)
+
+	pauseMenu := doodad.Stateful(w, "pause-menu", func() *pause_menu.PauseMenu {
+		return pause_menu.NewPauseMenu(w.App)
+	})
+	pauseMenu.SetZ([]int{90000})
+	w.AddChild(pauseMenu)
+	pauseMenu.Hide()
 
 	w.Reactions().Add(
 		reaction.NewKeyDownReaction(reaction.SpecificKeyDown(ebiten.KeySpace),

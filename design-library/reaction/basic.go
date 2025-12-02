@@ -8,18 +8,18 @@ type basicReaction[T any] struct {
 
 	unregister func()
 
-	depth int
+	depth []int
 }
 
 func (r *basicReaction[T]) IsEnabled() bool {
 	return r.Enabled
 }
 
-func (r *basicReaction[T]) SetDepth(depth int) {
+func (r *basicReaction[T]) SetDepth(depth []int) {
 	r.depth = depth
 }
 
-func (r *basicReaction[T]) Depth() int {
+func (r *basicReaction[T]) Depth() []int {
 	return r.depth
 }
 

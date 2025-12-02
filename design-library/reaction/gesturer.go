@@ -24,7 +24,7 @@ type gesturer struct {
 	Press  *Press
 }
 
-func (g *gesturer) Register(reaction Reaction, atDepth int) func() {
+func (g *gesturer) Register(reaction Reaction, atDepth []int) func() {
 	if g.events == nil {
 		g.events = make(map[ReactionType][]Reaction)
 	}
@@ -37,7 +37,25 @@ func (g *gesturer) Register(reaction Reaction, atDepth int) func() {
 	g.events[reaction.ReactionType()] = append(g.events[reaction.ReactionType()], reaction)
 	reactions := g.events[reaction.ReactionType()]
 	sort.SliceStable(reactions, func(i, j int) bool {
-		return reactions[i].Depth() < reactions[j].Depth()
+		// return reactions[i].Depth() < reactions[j].Depth()
+
+		depthA := reactions[i].Depth()
+		depthB := reactions[j].Depth()
+
+		minLen := len(depthA)
+		if len(depthB) < minLen {
+			minLen = len(depthB)
+		}
+
+		for d := 0; d < minLen; d++ {
+			if depthA[d] < depthB[d] {
+				return true
+			} else if depthA[d] > depthB[d] {
+				return false
+			}
+		}
+
+		return len(depthA) < len(depthB)
 	})
 	g.events[reaction.ReactionType()] = reactions
 
@@ -94,7 +112,7 @@ type ReactionType string
 
 type Gesturer interface {
 	Update()
-	Register(reaction Reaction, atDepth int) func()
+	Register(reaction Reaction, atDepth []int) func()
 
 	CurrentMouseLocation() (int, int)
 }
